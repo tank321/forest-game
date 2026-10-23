@@ -4,7 +4,14 @@ import type { SkillId } from './skills';
 export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3 } as const;
 export type Tile = (typeof Tile)[keyof typeof Tile];
 
-export type VillagerState = 'idle' | 'toTree' | 'chop' | 'toHome';
+export const RESOURCES = ['wood', 'food'] as const;
+export type ResourceKey = (typeof RESOURCES)[number];
+export type Resources = Record<ResourceKey, number>;
+export type Cost = Partial<Resources>;
+
+export type Job = 'lumber' | 'farm';
+/** Lumberjack: idle → toTree → chop → toHome. Farmer: idle → toWork → work → toHome. */
+export type VillagerState = 'idle' | 'toTree' | 'chop' | 'toWork' | 'work' | 'toHome';
 
 export interface Villager {
   id: number;
@@ -14,7 +21,9 @@ export interface Villager {
   path: number[]; // tile indices to walk through
   pathI: number; // next waypoint
   target: number; // claimed tree tile, -1 if none (kept across trips until it falls)
-  carry: number;
+  carry: number; // of the job's resource
+  job: Job;
+  workplace: number; // building id for building jobs (farm), -1 otherwise
 }
 
 export interface Building {
@@ -23,11 +32,6 @@ export interface Building {
   x: number; // top-left tile
   y: number;
 }
-
-export interface Resources {
-  wood: number;
-}
-export type Cost = Partial<Resources>;
 
 export interface Rect {
   x: number;
@@ -49,7 +53,9 @@ export interface GameState {
   buildings: Building[];
   villagers: Villager[];
   resources: Resources;
-  upgrades: { axe: number };
+  upgrades: { axe: number; farm: number };
+  hires: { wood: number; food: number }; // villagers bought with each resource (separate price tracks)
+  paused: number[]; // ids of paused workplaces
   skills: Partial<Record<SkillId, number>>;
   totals: Resources; // lifetime gathered (for rates/stats)
   treesLeft: number;

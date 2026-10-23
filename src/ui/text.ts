@@ -6,6 +6,8 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Wood drop-off.' },
   house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a house.' },
   lumberCamp: { name: 'Lumber Camp', desc: 'Extra wood drop-off. Axe upgrades.' },
+  barn: { name: 'Barn', desc: 'Food drop-off. Farm upgrades.' },
+  farm: { name: 'Farm', desc: 'Takes one villager as a farmer. Never runs out.' },
 };
 
 export const SKILL_TEXT: Record<SkillId, { name: string; desc: string }> = {
@@ -18,6 +20,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string }> = {
   masterBuilders: { name: 'Master Builders', desc: 'Buildings cost 20% less' },
   campCrews: { name: 'Camp Crews', desc: 'Chop ×1.5 within 3 tiles of a Lumber Camp' },
   teamwork: { name: 'Teamwork', desc: 'Two villagers can work the same tree' },
+  greenThumbs: { name: 'Green Thumbs', desc: '+20% farm harvest per level' },
 };
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];
@@ -28,7 +31,8 @@ export function fmt(n: number): string {
   const v = n / 1000 ** e;
   return `${v.toFixed(v < 10 ? 2 : v < 100 ? 1 : 0)}${UNITS[e]}`;
 }
-export const fmtCost = (c: Cost | null) => (c ? `${fmt(c.wood ?? 0)} wood` : '—');
+export const fmtCost = (c: Cost | null) =>
+  c ? Object.entries(c).map(([k, v]) => `${fmt(v)} ${k}`).join(' · ') : '—';
 
 export function duration(sec: number): string {
   const h = Math.floor(sec / 3600);

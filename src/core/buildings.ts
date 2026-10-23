@@ -1,37 +1,39 @@
-import type { Building, Cost, GameState } from './types';
+import type { Building, Cost, GameState, Job, ResourceKey } from './types';
 import { Tile } from './types';
 
 export interface BuildingDef {
   w: number;
   h: number;
-  dropoff: boolean; // villagers deliver wood here
+  dropoff: readonly ResourceKey[]; // resources villagers may deliver here
+  workers: number; // job slots (0 = not a workplace)
+  job?: Job; // job its workers do
   buildable: boolean; // appears in the build menu
   cityNeighbor: boolean; // must touch the Town Center or another house
   cost: (owned: number) => Cost;
 }
 
+const def = (d: Partial<BuildingDef> & Pick<BuildingDef, 'w' | 'h' | 'cost'>): BuildingDef => ({
+  dropoff: [],
+  workers: 0,
+  buildable: true,
+  cityNeighbor: false,
+  ...d,
+});
+
 export const BUILDINGS = {
-  townCenter: { w: 4, h: 4, dropoff: true, buildable: false, cityNeighbor: false, cost: () => ({}) },
-  house: {
+  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food'], buildable: false, cost: () => ({}) }),
+  house: def({
     w: 1,
     h: 1,
-    dropoff: false,
-    buildable: true,
     cityNeighbor: true,
-    cost: (n) => ({ wood: Math.round(100 * 1.5 ** n) }),
-  },
-  lumberCamp: {
-    w: 2,
-    h: 2,
-    dropoff: true,
-    buildable: true,
-    cityNeighbor: false,
-    cost: (n) => ({ wood: 100 * 2 ** n }),
-  },
+    cost: (n) => ({ wood: Math.round(100 * 1.5 ** n), food: n >= 3 ? Math.round(50 * 1.5 ** (n - 3)) : 0 }),
+  }),
+  lumberCamp: def({ w: 2, h: 2, dropoff: ['wood'], cost: (n) => ({ wood: 100 * 2 ** n }) }),
+  barn: def({ w: 2, h: 2, dropoff: ['food'], cost: (n) => ({ wood: 150 * 2 ** n }) }),
+  farm: def({ w: 3, h: 3, workers: 1, job: 'farm', cost: (n) => ({ wood: Math.round(250 * 1.5 ** n) }) }),
 } satisfies Record<string, BuildingDef>;
 export type BuildingKind = keyof typeof BUILDINGS;
 
-/** Kinds whose buildings form the "city" a house must touch. */
 export const CITY_KINDS: readonly BuildingKind[] = ['townCenter', 'house'];
 
 export const countOf = (s: GameState, kind: BuildingKind) =>
@@ -60,3 +62,9 @@ export function addBuilding(s: GameState, kind: BuildingKind, x: number, y: numb
   s.buildings.push(b);
   return b;
 }
+
+export const buildingById = (s: GameState, id: number) => s.buildings.find((b) => b.id === id);
+
+/** A workplace that should be staffed: exists and is not paused. */
+export const isActive = (s: GameState, b: Building | undefined): b is Building =>
+  b !== undefined && !s.paused.includes(b.id);

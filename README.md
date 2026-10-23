@@ -1,4 +1,4 @@
-# Forest Game (alpha v3)
+# Forest Game (alpha v4)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -13,7 +13,12 @@ npm run build   # typecheck + production build to dist/
 ## Controls
 Drag to pan, wheel or pinch to zoom. In **Chop** mode, tap a tree next to your land for +1 wood.
 In **Mark** mode (or right-click), a tap flags a priority tree. Tap a building to select it:
-the Town Center hires villagers, a Lumber Camp upgrades the axe. Esc cancels.
+the Town Center hires villagers (with wood or food), a Lumber Camp upgrades the axe, a Barn
+upgrades farms. Esc cancels.
+
+**Food:** a Farm (3×3) takes one empty-handed lumberjack as its farmer; farmers deliver food to
+the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. Food pays for
+food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
 
 Every few felled trees a **relic** appears in the forest (gold square). Chop until your land
 touches it, tap it, and pick one of three skills. **Skills** lists levels; **Export/Import** move
@@ -24,8 +29,8 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/core/` – pure simulation, no DOM
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
-  - `pathing.ts` drop-off BFS field, `pathHome`, `nearestTree` (villager-centred, marked first)
-  - `systems/villagers.ts` state machine with sticky tree claims
+  - `pathing.ts` per-resource drop-off BFS fields, `pathHome`, `nearestTree` (villager-centred, marked first), `pathToAny`
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (sticky tree claims) / `farmer.ts` · `movement.ts` shared walking
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrade hook)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations

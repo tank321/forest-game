@@ -134,10 +134,11 @@ setInterval(save, CONFIG.save.intervalMs);
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
-// Dev console helpers: `world`, `reset()`.
+// Dev console helpers: `world`, `cam`, `reset()`.
 if (import.meta.env.DEV) {
   Object.assign(window, {
     world,
+    cam,
     reset: () => {
       resetting = true;
       clearSave();

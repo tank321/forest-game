@@ -38,8 +38,8 @@ describe('pathing', () => {
     const s = w.state;
     const { x, y } = s.origin;
     const corner = (y + 5) * s.w + x + 5;
-    const p = pathHome(w.field, corner);
+    const p = pathHome(w.fields.wood, corner);
     expect(p.length).toBe(3); // corner → edge tile → TC corner
-    expect(w.field.dist[p[p.length - 1]]).toBe(0);
+    expect(w.fields.wood.dist[p[p.length - 1]]).toBe(0);
   });
 });

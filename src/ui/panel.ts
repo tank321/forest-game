@@ -3,7 +3,7 @@ import { pickSkill } from '../core/commands';
 import { buildingCost, canAfford } from '../core/economy';
 import { lvl, SKILL_IDS, SKILLS, type SkillDef, type SkillId } from '../core/skills';
 import type { World } from '../core/world';
-import { ACTIONS, type Action } from './actions';
+import { ACTIONS, INFO, type Action } from './actions';
 import type { UiState } from './state';
 import { BUILDING_TEXT, fmtCost, SKILL_TEXT } from './text';
 
@@ -63,9 +63,10 @@ export class Panel {
     }
     if (ui.selected) {
       const k = ui.selected.kind;
-      const actions = ACTIONS[k]?.(w) ?? [];
+      const actions = ACTIONS[k]?.(w, ui.selected) ?? [];
       actions.push({ label: 'Close', cost: null, enabled: true, run: () => (ui.selected = null) });
-      return { title: BUILDING_TEXT[k].name, sub: BUILDING_TEXT[k].desc, actions };
+      const info = INFO[k]?.(w, ui.selected);
+      return { title: BUILDING_TEXT[k].name, sub: info ? `${BUILDING_TEXT[k].desc} ${info}` : BUILDING_TEXT[k].desc, actions };
     }
     if (ui.view === 'skills') {
       return {

@@ -3,13 +3,13 @@ import { isTerritory } from './grid';
 import { buildField, type Field } from './pathing';
 import { spawnRelic } from './relics';
 import { maxWoodTable } from './trees';
-import type { GameState } from './types';
-import { Tile } from './types';
+import type { GameState, ResourceKey } from './types';
+import { RESOURCES, Tile } from './types';
 
 /** Runtime container: persistent state plus derived data that is never saved. */
 export interface World {
   state: GameState;
-  field: Field; // drop-off distance field
+  fields: Record<ResourceKey, Field>; // drop-off distance field per resource
   fog: Uint8Array; // Chebyshev distance to territory, capped at fogRadius + 1
   maxWood: Float64Array; // full-grown wood per tile (static)
   dev: { manualMult: number }; // dev-only testing aids (never saved)
@@ -18,7 +18,7 @@ export interface World {
 export function createWorld(state: GameState): World {
   const w: World = {
     state,
-    field: buildField(state),
+    fields: buildFields(state),
     fog: new Uint8Array(state.w * state.h).fill(CONFIG.fogRadius + 1),
     maxWood: maxWoodTable(state),
     dev: { manualMult: 1 },
@@ -48,7 +48,7 @@ export function claimTile(w: World, i: number): void {
   s.wood[i] = 0;
   s.marked = s.marked.filter((m) => m !== i);
   stampFog(w, i);
-  w.field = buildField(s);
+  w.fields = buildFields(s);
 }
 
 /** The single place a tree is felled. */
@@ -60,7 +60,11 @@ export function clearTree(w: World, i: number): void {
   if (s.treesChopped >= s.nextRelicAt) spawnRelic(s, w.fog);
 }
 
-/** Drop-off field must be rebuilt when drop-off buildings change. */
+/** Drop-off fields must be rebuilt when drop-off buildings change. */
 export function onBuildingsChanged(w: World): void {
-  w.field = buildField(w.state);
+  w.fields = buildFields(w.state);
+}
+
+function buildFields(s: GameState): Record<ResourceKey, Field> {
+  return Object.fromEntries(RESOURCES.map((r) => [r, buildField(s, r)])) as Record<ResourceKey, Field>;
 }

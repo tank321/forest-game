@@ -60,14 +60,14 @@ describe('villager simulation', () => {
     const s = w.state;
     const { x, y } = s.origin;
     const probe = y * s.w + x - 3;
-    const before = w.field.dist[probe];
+    const before = w.fields.wood.dist[probe];
     for (const [tx, ty] of [[x - 1, y], [x - 1, y + 1], [x - 2, y], [x - 2, y + 1]]) {
       const i = ty * s.w + tx;
       while (s.tiles[i] === Tile.Tree) chopTree(w, i);
     }
     expect(placeBuilding(w, 'lumberCamp', x - 2, y)).toBe(true);
     expect(before).toBe(-1); // unreachable before the camp
-    expect(w.field.dist[probe]).toBe(1);
+    expect(w.fields.wood.dist[probe]).toBe(1);
   });
 
   it('clears a small forest completely and then idles', () => {

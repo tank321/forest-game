@@ -17,6 +17,7 @@ export const SKILLS = {
   masterBuilders: { max: 1 }, // buildings −20%
   campCrews: { max: 1, requires: 'sharpAxes' }, // ×1.5 chop within 3 tiles of a Lumber Camp
   teamwork: { max: 1, requires: 'bigBaskets' }, // 2 villagers per tree
+  greenThumbs: { max: 5 }, // +20% farm harvest / lvl
 } as const satisfies Record<string, SkillDef>;
 export type SkillId = keyof typeof SKILLS;
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];

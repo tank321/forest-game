@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { relicGap } from './relics';
 import type { GameState } from './types';
 
-const VERSION = 3;
+const VERSION = 4;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -29,6 +29,22 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
         nextRelicAt: chopped + relicGap(0),
         cards: [],
         picksPending: 0,
+      },
+    };
+  },
+  3: (f) => {
+    const s = f.state;
+    return {
+      ...f,
+      version: 4,
+      state: {
+        ...s,
+        resources: { ...s.resources, food: 0 },
+        totals: { ...s.totals, food: 0 },
+        upgrades: { ...s.upgrades, farm: 0 },
+        hires: { wood: s.villagers.length, food: 0 },
+        paused: [],
+        villagers: s.villagers.map((v) => ({ ...v, job: 'lumber', workplace: -1 })),
       },
     };
   },

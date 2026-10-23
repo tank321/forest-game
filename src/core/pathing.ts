@@ -1,10 +1,10 @@
 import { BUILDINGS, footprint } from './buildings';
 import { isWalkable, neighbors4 } from './grid';
-import type { GameState } from './types';
+import type { GameState, ResourceKey } from './types';
 import { Tile } from './types';
 
 /**
- * Multi-source BFS from all drop-off buildings over walkable tiles.
+ * Multi-source BFS from all drop-off buildings for one resource over walkable tiles.
  * parent[i] points one step closer to the nearest drop-off; for a tree touching territory it is
  * the walkable tile it is chopped from.
  */
@@ -13,7 +13,7 @@ export interface Field {
   parent: Int32Array;
 }
 
-export function buildField(s: GameState): Field {
+export function buildField(s: GameState, res: ResourceKey): Field {
   const n = s.w * s.h;
   const dist = new Int32Array(n).fill(-1);
   const parent = new Int32Array(n).fill(-1);
@@ -21,7 +21,7 @@ export function buildField(s: GameState): Field {
   let head = 0;
   let tail = 0;
   for (const b of s.buildings) {
-    if (!BUILDINGS[b.kind].dropoff) continue;
+    if (!(BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) continue;
     for (const i of footprint(s, b)) {
       dist[i] = 0;
       queue[tail++] = i;
@@ -91,4 +91,28 @@ export function nearestTree(
   const path = [bestStand];
   for (let i = bestStand; i !== from; i = parent[i]) path.push(parent[i]);
   return { tree: best, path: path.reverse() };
+}
+
+/** Walkable path from `from` to the nearest of `goals` (walkable tiles), or null. */
+export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>): number[] | null {
+  const parent = new Int32Array(s.w * s.h).fill(-1);
+  const queue = new Int32Array(s.w * s.h);
+  let head = 0;
+  let tail = 0;
+  parent[from] = from;
+  queue[tail++] = from;
+  while (head < tail) {
+    const u = queue[head++];
+    if (goals.has(u)) {
+      const path = [u];
+      for (let i = u; i !== from; i = parent[i]) path.push(parent[i]);
+      return path.reverse();
+    }
+    for (const v of neighbors4(s, u)) {
+      if (parent[v] !== -1 || !isWalkable(s, v)) continue;
+      parent[v] = u;
+      queue[tail++] = v;
+    }
+  }
+  return null;
 }

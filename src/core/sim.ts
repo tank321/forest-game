@@ -1,10 +1,11 @@
+import { jobSystem } from './systems/jobs';
 import { villagerSystem } from './systems/villagers';
 import type { World } from './world';
 
 export type System = (w: World, dt: number) => void;
 
 /** Run order matters; new systems (production, growth, events) are appended here. */
-const systems: System[] = [villagerSystem];
+const systems: System[] = [jobSystem, villagerSystem];
 
 export function tick(w: World, dt: number): void {
   for (const sys of systems) sys(w, dt);

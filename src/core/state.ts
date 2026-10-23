@@ -23,10 +23,12 @@ export function createInitialState(
     marked: [],
     buildings: [],
     villagers: [],
-    resources: { wood: 0 },
-    upgrades: { axe: 0 },
+    resources: { wood: 0, food: 0 },
+    upgrades: { axe: 0, farm: 0 },
+    hires: { wood: 0, food: 0 },
+    paused: [],
     skills: {},
-    totals: { wood: 0 },
+    totals: { wood: 0, food: 0 },
     treesLeft: n - start * start,
     treesChopped: 0,
     relics: [],
@@ -58,6 +60,8 @@ export function spawnVillager(s: GameState): Villager {
     pathI: 0,
     target: -1,
     carry: 0,
+    job: 'lumber',
+    workplace: -1,
   };
   s.villagers.push(v);
   return v;

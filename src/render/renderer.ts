@@ -19,13 +19,18 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
   house: '#d8b47a',
   lumberCamp: '#a0522d',
+  barn: '#8e3b2e',
+  farm: '#cdb14e',
 };
 const VILLAGER_COLOR: Record<VillagerState, string> = {
   idle: '#9aa0a6',
   toTree: '#f2f2f2',
   chop: '#ffd54a',
-  toHome: '#ff8a3d',
+  toHome: '#ff8a3d', // lumberjacks carrying wood; farmers carrying food use FARMER_HOME
+  toWork: '#b3e5fc',
+  work: '#29b6f6',
 };
+const FARMER_HOME = '#f48fb1';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -88,11 +93,15 @@ export class Renderer {
       const d = BUILDINGS[b.kind];
       ctx.fillStyle = BUILDING_COLOR[b.kind];
       rect(b.x + 0.05, b.y + 0.05, d.w - 0.1, d.h - 0.1);
+      if (s.paused.includes(b.id)) {
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
+        rect(b.x + 0.05, b.y + 0.05, d.w - 0.1, d.h - 0.1);
+      }
     }
 
     const vs = 0.35;
     for (const v of s.villagers) {
-      ctx.fillStyle = VILLAGER_COLOR[v.state];
+      ctx.fillStyle = v.job === 'farm' && v.state === 'toHome' ? FARMER_HOME : VILLAGER_COLOR[v.state];
       rect(v.x - vs / 2, v.y - vs / 2, vs, vs);
     }
 

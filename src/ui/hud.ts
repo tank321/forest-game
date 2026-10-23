@@ -1,4 +1,5 @@
 import { popCap } from '../core/economy';
+import { RESOURCES, type Resources } from '../core/types';
 import type { World } from '../core/world';
 import type { UiState } from './state';
 import { duration, fmt } from './text';
@@ -10,7 +11,9 @@ const RATE_WINDOW = 60; // sim seconds
 export class Hud {
   private els = {
     wood: $('wood'),
-    rate: $('rate'),
+    woodRate: $('woodRate'),
+    food: $('food'),
+    foodRate: $('foodRate'),
     pop: $('pop'),
     land: $('land'),
     trees: $('trees'),
@@ -21,7 +24,7 @@ export class Hud {
   private tools = [...document.querySelectorAll<HTMLButtonElement>('[data-tool]')];
   private cache = new Map<HTMLElement, string>();
   private msgUntil = 0;
-  private samples: [number, number][] = []; // [sim time, lifetime wood]
+  private samples: [number, Resources][] = []; // [sim time, lifetime totals]
 
   constructor(
     private world: () => World,
@@ -39,8 +42,11 @@ export class Hud {
 
   update(): void {
     const s = this.world().state;
+    const rate = this.perMinute();
     this.set(this.els.wood, fmt(s.resources.wood));
-    this.set(this.els.rate, `+${fmt(this.woodPerMinute())}/min`);
+    this.set(this.els.woodRate, `+${fmt(rate.wood)}/min`);
+    this.set(this.els.food, fmt(s.resources.food));
+    this.set(this.els.foodRate, `+${fmt(rate.food)}/min`);
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
     this.set(this.els.trees, fmt(s.treesLeft));
@@ -54,15 +60,17 @@ export class Hud {
     else if (this.msgUntil && performance.now() > this.msgUntil) this.message('', 0);
   }
 
-  /** Lifetime-wood slope over the last minute of simulated time (offline catch-up included). */
-  private woodPerMinute(): number {
+  /** Lifetime-totals slope over the last minute of simulated time (offline catch-up included). */
+  private perMinute(): Resources {
     const s = this.world().state;
     const smp = this.samples;
-    if (!smp.length || s.time - smp[smp.length - 1][0] >= 1) smp.push([s.time, s.totals.wood]);
+    if (!smp.length || s.time - smp[smp.length - 1][0] >= 1) smp.push([s.time, { ...s.totals }]);
     while (smp.length > 2 && s.time - smp[0][0] > RATE_WINDOW) smp.shift();
-    const [t0, w0] = smp[0];
+    const [t0, r0] = smp[0];
     const dt = s.time - t0;
-    return dt > 0 ? ((s.totals.wood - w0) / dt) * 60 : 0;
+    return Object.fromEntries(
+      RESOURCES.map((k) => [k, dt > 0 ? ((s.totals[k] - r0[k]) / dt) * 60 : 0]),
+    ) as Resources;
   }
 
   private set(el: HTMLElement, text: string): void {

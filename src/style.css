@@ -2,7 +2,7 @@
 html, body { height: 100%; background: #0b100b; color: #e8efe2; font: 14px/1.4 system-ui, sans-serif; overscroll-behavior: none; }
 #app { display: flex; flex-direction: column; height: 100dvh; max-width: 520px; margin: 0 auto; }
 #hud { padding: 8px 12px 4px; display: grid; gap: 6px; }
-.stats { display: flex; justify-content: space-between; }
+.stats { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .stats b { font-variant-numeric: tabular-nums; }
 .stats small { display: block; font-size: 11px; color: #9fb197; font-variant-numeric: tabular-nums; }
 .tools { display: flex; gap: 6px; align-items: center; }

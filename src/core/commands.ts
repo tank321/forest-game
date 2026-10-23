@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
-import { addBuilding, BUILDINGS, buildingAt, CITY_KINDS, footprint, type BuildingKind } from './buildings';
-import { axeCost, buildingCost, gain, pay, popCap, villagerCost } from './economy';
+import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, type BuildingKind } from './buildings';
+import { axeCost, buildingCost, farmUpgradeCost, gain, pay, popCap, villagerCost } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { spawnVillager } from './state';
@@ -29,18 +29,33 @@ export function toggleMark(w: World, i: number): boolean {
   return true;
 }
 
-export function hireVillager(w: World): boolean {
+/** Hire a villager paid in wood or food (separate price tracks, shared population cap). */
+export function hireVillager(w: World, res: 'wood' | 'food' = 'wood'): boolean {
   const s = w.state;
-  if (s.villagers.length >= popCap(s) || !pay(s, villagerCost(s))) return false;
+  if (s.villagers.length >= popCap(s) || !pay(s, villagerCost(s, res))) return false;
+  s.hires[res]++;
   spawnVillager(s);
   return true;
 }
 
-export function upgradeAxe(w: World): boolean {
+const UPGRADE_COST = { axe: axeCost, farm: farmUpgradeCost };
+
+export function upgrade(w: World, kind: keyof typeof UPGRADE_COST): boolean {
   const s = w.state;
-  const cost = axeCost(s.upgrades.axe);
+  const cost = UPGRADE_COST[kind](s.upgrades[kind]);
   if (!cost || !pay(s, cost)) return false;
-  s.upgrades.axe++;
+  s.upgrades[kind]++;
+  return true;
+}
+
+export const upgradeAxe = (w: World) => upgrade(w, 'axe');
+
+/** Pause/resume a workplace; its workers return to lumberjacking while paused. */
+export function togglePause(w: World, id: number): boolean {
+  const s = w.state;
+  const b = buildingById(s, id);
+  if (!b || !BUILDINGS[b.kind].workers) return false;
+  s.paused = s.paused.includes(id) ? s.paused.filter((p) => p !== id) : [...s.paused, id];
   return true;
 }
 
@@ -63,7 +78,7 @@ export function placeBuilding(w: World, kind: BuildingKind, x: number, y: number
   const s = w.state;
   if (!canPlace(w, kind, x, y) || !pay(s, buildingCost(s, kind))) return false;
   addBuilding(s, kind, x, y);
-  if (BUILDINGS[kind].dropoff) onBuildingsChanged(w);
+  if (BUILDINGS[kind].dropoff.length) onBuildingsChanged(w);
   return true;
 }
 
