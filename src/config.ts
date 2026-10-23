@@ -59,16 +59,25 @@ export const CONFIG = {
   seasons: { length: 180, farm: [1, 1, 1.5, 0] }, // s per season; farm multiplier: spring, summer, autumn, winter
   // food/wood per villager beyond freeVillagers per s (wood in winter only); work multipliers on shortage
   upkeep: { freeVillagers: 5, food: 0.1, wood: 0.1, hungry: 0.5, cold: 0.5 },
-  // Town Center: walk speed for every villager, and the same flat carry for every gatherer
-  barrow: {
+  // Tailor: Shoes speed up every villager, Backpacks give every gatherer the same flat carry
+  shoes: {
     costs: {
-      wood: [150, 300, 500, 800, 1200, 1800, 2700, 4000, 6000, 9000],
-      food: [0, 0, 100, 200, 350, 550, 850, 1300, 2000, 3000],
-      stone: [0, 0, 0, 0, 50, 100, 200, 400, 700, 1200],
-      cloth: [0, 0, 0, 0, 0, 0, 40, 100, 200, 400],
-      gold: [0, 0, 0, 0, 0, 0, 0, 0, 150, 400],
+      wood: [100, 200, 325, 525, 775, 1175, 1750, 2600, 3900, 5850],
+      food: [0, 0, 65, 130, 230, 360, 550, 850, 1300, 1950],
+      stone: [0, 0, 0, 0, 35, 65, 130, 260, 450, 780],
+      cloth: [10, 20, 35, 55, 85, 130, 200, 300, 450, 650],
+      gold: [0, 0, 0, 0, 0, 0, 0, 0, 100, 260],
     },
     speedGrowth: 1.05, // walk speed ×1.05^lvl
+  },
+  backpack: {
+    costs: {
+      wood: [100, 200, 325, 525, 775, 1175, 1750, 2600, 3900, 5850],
+      food: [0, 0, 65, 130, 230, 360, 550, 850, 1300, 1950],
+      stone: [0, 0, 0, 0, 35, 65, 130, 260, 450, 780],
+      cloth: [10, 20, 35, 55, 85, 130, 200, 300, 450, 650],
+      gold: [0, 0, 0, 0, 0, 0, 0, 0, 100, 260],
+    },
     carryPerLevel: 2, // flat carry added after each job's own multipliers
   },
   coats: {

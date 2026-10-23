@@ -38,7 +38,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'taxCollectors': return `+${20 * level}% tax`;
     case 'packMules': return `+${25 * level}% gold per trade trip`;
     case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level }, legacy: newLegacy() }))}% market commission`;
-    case 'quarrying': case 'wells': case 'orchards': case 'sheepFarms': case 'cottonFields':
+    case 'quarrying': case 'wells': case 'orchards': case 'sheepFarms': case 'tailoring': case 'cottonFields':
     case 'markets': case 'taxOffices': case 'tradingPosts':
       return `${BUILDING_TEXT[unlocks(id)!].name} ${level ? 'unlocked' : 'not yet buildable'}`;
     case 'deepWells': return `Wells reach farms within ${CONFIG.well.radius + level} tile${CONFIG.well.radius + level === 1 ? '' : 's'}`;

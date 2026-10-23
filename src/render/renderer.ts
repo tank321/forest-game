@@ -75,6 +75,7 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   quarry: '#78909c',
   sheepFarm: '#9ccc65',
   cottonPlantation: '#e8e2d0',
+  tailor: '#a5689b',
   well: '#4fc3f7',
   market: '#b23b2e',
   taxOffice: '#9aa3ac',

@@ -16,12 +16,12 @@ Hover over a tree to see its wood left out of its full-grown wood; a tree that h
 shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
 Right-clicking a tree flags it as a priority: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
-the Town Center hires villagers (with wood, food or cloth) and upgrades the wheelbarrow and coats, a Lumber Camp upgrades the axe, a Barn
-upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
+the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
+upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
-unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Cotton Fields, Markets,
+unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
 Tax Offices, Trading Posts) and joins the build menu once learned.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
@@ -59,7 +59,11 @@ wood, stone and gold) takes five pickers, each gathering ×3 as fast and carryin
 herder. Workers spread out over the field instead of crowding one edge. Barn (farm) upgrades raise
 herding and picking speed and carry too. Pause a sheep farm or plantation to give its workers back.
 The **Fertile Herding** skill makes herders (not pickers) bring back as much food as cloth. Cloth pays for
-cloth-priced villagers, the last two axe/farm/pick levels, and houses from the 10th.
+cloth-priced villagers, the last two axe/farm/pick levels, Tailor upgrades, and houses from the 10th.
+
+**Tailor** (2×2, wood and cloth; unlocked by the Tailoring skill, after Sheep Farms) takes no deliveries:
+its upgrades are paid straight from the stockpile. **Shoes** make every villager walk ×1.05 faster per level,
+**Backpacks** give every gatherer +2 carry per level on top of its own, and **Coats** cut winter firewood by 25% per level.
 
 **Seasons & upkeep:** a year is four 3-minute seasons, shown on the stats plaque; hover over the
 season (or tap it, or press Enter on it) to see what this season and the next one do. Farms and orchards harvest
@@ -117,6 +121,12 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v16** – Tailor.
+- New **Tailor** building (2×2, wood and cloth), unlocked by the new **Tailoring** skill in the Herding track, between Sheep Farms and Fertile Herding.
+- The Wheelbarrow is split in two at the Tailor: **Shoes** (walk speed ×1.05 per level) and **Backpack** (+2 flat carry per level). Each costs about two thirds of the old track, with cloth from the first level.
+- **Coats** moved from the Town Center to the Tailor. The Town Center now only hires villagers.
+- Saves migrate from v15 with Shoes and Backpack both at the old Wheelbarrow level, so stats are unchanged. Further levels need a Tailor.
+
 **v15** – Legacy (prestige).
 - Learn 15 skill levels to unlock a **rebuild**. Rebuilding starts a new run on a new map and wipes buildings, villagers, resources and skills. You keep your Legacy perks. Each rebuild raises the requirement by 5 levels, up to every skill maxed.
 - Each rebuild takes one perk from the Legacy tree and adds 10 starting roads. The tree starts with Master Harvest (villagers gather ×3) and Swift & Strong (walk ×3, carry ×3), then forks:

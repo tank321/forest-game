@@ -26,6 +26,7 @@ export const SKILLS = {
   wells: { max: 1 },
   orchards: { max: 1 },
   sheepFarms: { max: 1 },
+  tailoring: { max: 1 },
   cottonFields: { max: 1 },
   markets: { max: 1 },
   taxOffices: { max: 1 },
@@ -43,7 +44,7 @@ export const TRACKS = {
   villagers: ['swiftFeet', 'bigBaskets', 'roomyHouses', 'recruiters'],
   buildings: ['masterBuilders', 'masons'],
   farming: ['greenThumbs', 'wells', 'deepWells', 'orchards'],
-  herding: ['sheepFarms', 'fertileHerding', 'cottonFields'],
+  herding: ['sheepFarms', 'tailoring', 'fertileHerding', 'cottonFields'],
   mining: ['quarrying', 'stonecutters', 'quarryCrews'],
   trade: ['markets', 'taxOffices', 'taxCollectors', 'tradingPosts', 'packMules', 'shrewdTraders'],
 } as const satisfies Record<string, readonly SkillId[]>;

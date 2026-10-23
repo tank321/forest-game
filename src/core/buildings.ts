@@ -66,6 +66,12 @@ export const BUILDINGS = {
     unlock: 'cottonFields',
     cost: (n) => ({ wood: Math.round(5000 * 1.5 ** n), stone: Math.round(500 * 1.5 ** n), gold: Math.round(250 * 1.5 ** n) }),
   }),
+  tailor: def({
+    w: 2,
+    h: 2,
+    unlock: 'tailoring',
+    cost: (n) => ({ wood: Math.round(800 * 1.5 ** n), cloth: Math.round(60 * 1.5 ** n) }),
+  }),
   well: def({ w: 1, h: 1, road: false, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
   market: def({
     w: 2,

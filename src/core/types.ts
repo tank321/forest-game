@@ -58,7 +58,7 @@ export interface GameState {
   buildings: Building[];
   villagers: Villager[];
   resources: Resources;
-  upgrades: { axe: number; farm: number; pick: number; coats: number; barrow: number };
+  upgrades: { axe: number; farm: number; pick: number; coats: number; shoes: number; backpack: number };
   hires: Record<HireResource, number>; // villagers bought with each resource (separate price tracks)
   paused: number[]; // ids of paused workplaces
   skills: Partial<Record<SkillId, number>>;

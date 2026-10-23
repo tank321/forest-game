@@ -56,7 +56,7 @@ No linter or formatter is configured.
   Upkeep (`eat`, `burn`), tax and the `hungry`/`cold` shortages are derived there from villager count,
   buildings, season and stock. Well-boosted farms are
   also computed there on demand, so there is no cache to invalidate.
-- **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`, `coats`) read per-resource
+- **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`, `coats`, `shoes`, `backpack`) read per-resource
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and
   `maxLevel(kind)`. Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
 - **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or

@@ -918,6 +918,7 @@ export const BUILDING_ENTRANCES: Partial<Record<BuildingKind, number>> = {
   barn: 0,
   taxOffice: 0,
   tradingPost: 0,
+  tailor: 0,
   farm: 1,
   sheepFarm: 1,
   cottonPlantation: 3,
@@ -978,6 +979,9 @@ export const BUILDING_PALETTE: Record<string, Rgba> = {
   T: [46, 92, 42, 255], // #2e5c2a
   z: [242, 246, 250, 255], // #f2f6fa snow
   A: [190, 204, 220, 255], // #becddc snow in shade
+  P: [112, 58, 104, 255], // #703a68
+  p: [150, 84, 138, 255], // #96548a
+  t: [186, 120, 170, 255], // #ba78aa
 };
 
 /**
@@ -1623,6 +1627,44 @@ export const BUILDING_SPRITES: Partial<Record<BuildingKind, readonly string[]>> 
     '................................',
     '................................',
   ],
+  tailor: [
+    '.......oooooooooooooooo.........',
+    '......opptppptppptppptpo........',
+    '.....oPtPPPtPPPtPPPtPPPto.......',
+    '....opptppptppptppptppptpo......',
+    '...oPtPPPtPPPtPPPtPPPtPPPto.....',
+    '..opptppptppptppptppptppptpo....',
+    '.oPtPPPtPPPtPPPtPPPtPPPtPPPtox..',
+    '.optppptppptppptppptppptppptoxx.',
+    '.oPPPtPPPtPPPtPPPtPPPtPPPtPPoxx.',
+    '.oppptppptppptppptppptppptppoxx.',
+    '.oPtPPPtPPPtPPPtPPPtPPPtPPPtoxx.',
+    '.optppptppptppptppptppptppptoxx.',
+    '.ooooooooooooooooooooooooooooxx.',
+    '..oLLLLLLLLLLLLLLLLLLLLLLLLoxx..',
+    '..oLWWWWWWWWLWWWWWWWWWWWWWLoxx..',
+    '..oLwwwwwwwwLoooooooooooooLoxx..',
+    '..oLooooooooLpVVppVVppVVppLoxx..',
+    '..oLokyppykoLpVVppVVppVVppLoxx..',
+    '..oLokyppykoLPWWPPWWPPWWPPLoxx..',
+    '..oLooooooooLwooooooooooooLoxx..',
+    '..oLwwwwwwwwLwolllllllllloLoxx..',
+    '..oLwwwwwwwwLwoBBccBBcFFcoLoxx..',
+    '..oLwoooooowLwoBBBBBBcFFcoLoxx..',
+    '..oLwoNbNNowLwocBBBBcFFFFoLoxx..',
+    '..oLwoNbNNowLwocBBBBcFFFFoLoxx..',
+    '..oLwoNbNNowLwocBBBBcFFFFoLoxx..',
+    '..oLwoNbNYowLwoccccccccccoLoxx..',
+    '..oLwoNbNNowLwooooooooooooLoxx..',
+    '..oLwoNbNNowLhhhhhhhhhhhhhLoxx..',
+    '..oLwoNbNNowLWWWWWWWWWWWWWLoxx..',
+    '..oLwoNbNNowLwwwwwwwwwwwwwLoxx..',
+    '..ooooooooooooooooooooooooooxx..',
+    '...xxxxxxxxxxxxxxxxxxxxxxxxxxx..',
+    '...xxxxxxxxxxxxxxxxxxxxxxxxxxx..',
+    '...xxxxxxxxxxxxxxxxxxxxxxxxxxx..',
+    '................................',
+  ],
 };
 
 /** The orchard in winter: bare fruit trees with snow on their branches. */
@@ -1774,6 +1816,7 @@ export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
   market: [{ rows: [5, 6], snow: 'V', shade: 'F' }],
   taxOffice: [{ rows: [1, 11], snow: 'K', shade: 'Z' }],
   tradingPost: [{ rows: [4, 9], snow: 'ur', shade: 'R' }],
+  tailor: [{ rows: [1, 11], snow: 'pt', shade: 'P' }],
 };
 
 /**

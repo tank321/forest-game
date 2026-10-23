@@ -10,7 +10,7 @@ export interface Stats {
   speed: number; // villager tiles/s
   chopRate: number; // villager wood/s
   carry: number;
-  carryBonus: number; // Wheelbarrow: flat carry every gatherer gets on top of its own
+  carryBonus: number; // Backpack: flat carry every gatherer gets on top of its own
   manualChop: number; // wood per tap
   campBonus: number; // chop multiplier near a Lumber Camp
   campRadius: number;
@@ -45,15 +45,14 @@ export interface Stats {
 
 /** Effective gameplay values: base config × upgrades × skills × legacy perks × season and upkeep. */
 export function getStats(s: GameState): Stats {
-  const { axe, farm, pick, barrow } = s.upgrades;
+  const { axe, farm, pick, shoes, backpack } = s.upgrades;
   const f = CONFIG.farm;
   const p = CONFIG.pick;
   const wellRadius = wellReach(s);
   const { speed, chopRate, carry } = CONFIG.villager;
-  const b = CONFIG.barrow;
   const L = CONFIG.legacy.perks;
   const haul = perkMult(s, 'swiftAndStrong', L.swiftAndStrong.carry);
-  const carryBonus = b.carryPerLevel * barrow * haul; // added after every job's own multipliers, so it is the same for all
+  const carryBonus = CONFIG.backpack.carryPerLevel * backpack * haul; // added after every job's own multipliers, so it is the same for all
   const a = CONFIG.axe;
   const u = CONFIG.upkeep;
   const season = seasonOf(s.time);
@@ -70,7 +69,7 @@ export function getStats(s: GameState): Stats {
   const warm = cold ? u.cold : 1;
   const linked = linkedBuildings(s);
   const taxedHouses = inRange(s, linked, 'house', 'taxOffice', CONFIG.tax.radius);
-  const walk = speed * b.speedGrowth ** barrow * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed);
+  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed);
   const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm * gather * guild.farm;
   const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
   const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm * gather * guild.herd; // Barn upgrades cover herders too

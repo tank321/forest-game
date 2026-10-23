@@ -3,7 +3,7 @@ import { unlocks, type BuildingKind } from '../core/buildings';
 import type { PerkId } from '../core/legacy';
 import type { SkillId, Track } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
-import type { UiIcon } from '../render/sprites';
+import { BUILDING_SPRITES, type UiIcon } from '../render/sprites';
 
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
@@ -21,6 +21,7 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
     name: 'Cotton Plantation',
     desc: `Five pickers gather cloth ×${CONFIG.cotton.rateMult} as fast as a herder and carry ×${CONFIG.cotton.carryMult} as much. Barn upgrades apply.`,
   },
+  tailor: { name: 'Tailor', desc: 'Sews cloth from the stockpile into shoes, backpacks and coats for the whole town.' },
   well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
   market: {
     name: 'Market',
@@ -69,6 +70,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   wells: { name: 'Wells', desc: 'Unlocks the Well', icon: 'drop' },
   orchards: { name: 'Orchards', desc: 'Unlocks the Fruit Orchard', icon: 'food' },
   sheepFarms: { name: 'Sheep Farms', desc: 'Unlocks the Sheep Farm', icon: 'cloth' },
+  tailoring: { name: 'Tailoring', desc: 'Unlocks the Tailor', icon: 'cloth' },
   cottonFields: { name: 'Cotton Fields', desc: 'Unlocks the Cotton Plantation', icon: 'cloth' },
   markets: { name: 'Markets', desc: 'Unlocks the Market', icon: 'gold' },
   taxOffices: { name: 'Tax Offices', desc: 'Unlocks the Tax Office', icon: 'gold' },
@@ -108,10 +110,10 @@ export const LEGACY_TEXT: Record<PerkId, { name: string; desc: string; icon: UiI
   legacyX2: { name: 'Legacy ×2', desc: `Every gather rate ×${P.legacyX2.gather}. Can be taken again at every rebuild`, icon: 'bolt' },
 };
 
-/** A skill's icon; a skill that unlocks a building shows that building's thumbnail instead. */
+/** A skill's icon; a skill that unlocks a building with a sprite shows that building's thumbnail instead. */
 export function skillIcon(id: SkillId): string {
   const kind = unlocks(id);
-  return kind ? `<i class="ico skill-thumb thumb-${kind}"></i>` : icon(SKILL_TEXT[id].icon);
+  return kind && BUILDING_SPRITES[kind] ? `<i class="ico skill-thumb thumb-${kind}"></i>` : icon(SKILL_TEXT[id].icon);
 }
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];

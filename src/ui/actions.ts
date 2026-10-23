@@ -72,7 +72,8 @@ const SCOPE: Record<UpgradeKind, string> = {
   farm: 'Shown for a farmer · orchardists, herders and pickers improve too',
   pick: 'Per miner',
   coats: 'Whole town · firewood is burned in winter',
-  barrow: 'Every villager walks faster · every gatherer carries the same extra amount',
+  shoes: 'Every villager walks faster',
+  backpack: 'Every gatherer carries the same extra amount',
 };
 
 const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
@@ -94,10 +95,10 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     hire(w, 'wood'),
     hire(w, 'food'),
     hire(w, 'cloth'),
-    upgradeAction(w, 'barrow', 'Wheelbarrow', (st) => [
-      { label: 'Walking', value: `${st.speed.toFixed(2)} tiles/s` },
-      { label: 'Extra carry', value: `+${st.carryBonus}` },
-    ]),
+  ],
+  tailor: (w) => [
+    upgradeAction(w, 'shoes', 'Shoes', (st) => [{ label: 'Walking', value: `${st.speed.toFixed(2)} tiles/s` }]),
+    upgradeAction(w, 'backpack', 'Backpack', (st) => [{ label: 'Extra carry', value: `+${st.carryBonus}` }]),
     upgradeAction(w, 'coats', 'Coats', (st) => [{ label: 'Winter firewood', value: perSec(st.winterBurn, 'wood') }]),
   ],
   lumberCamp: (w) => [

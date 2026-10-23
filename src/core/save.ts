@@ -5,7 +5,7 @@ import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 15;
+const VERSION = 16;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -117,7 +117,7 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
       },
     };
   },
-  10: (f) => ({ ...f, version: 11, state: { ...f.state, upgrades: { ...f.state.upgrades, barrow: 0 } } }),
+  10: (f) => ({ ...f, version: 11, state: { ...f.state, upgrades: { ...f.state.upgrades, barrow: 0 } as GameState['upgrades'] } }),
   11: (f) => ({ ...f, version: 12, state: { ...f.state, buildings: f.state.buildings.map((b) => ({ ...b, tally: {} })) } }),
   // v13 locks buildings behind skills: keep every kind the save already has buildable.
   12: (f) => {
@@ -128,6 +128,11 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   // v14 adds roads (a new tile kind). Old buildings have none, so they stand isolated until roads reach them.
   13: (f) => ({ ...f, version: 14 }),
   14: (f) => ({ ...f, version: 15, state: { ...f.state, legacy: newLegacy() } }),
+  // v16 splits the Wheelbarrow into Shoes (walk speed) and Backpack (carry), both at its level.
+  15: (f) => {
+    const { barrow = 0, ...rest } = f.state.upgrades as GameState['upgrades'] & { barrow?: number };
+    return { ...f, version: 16, state: { ...f.state, upgrades: { ...rest, shoes: barrow, backpack: barrow } } };
+  },
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */
