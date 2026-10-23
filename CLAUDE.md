@@ -21,7 +21,7 @@ No linter or formatter is configured.
   where every player action validates itself and returns success.
 - **`GameState` vs `World`.** `GameState` (`types.ts`) is the persistent, JSON-serializable state.
   Its typed arrays are converted to plain arrays in `save.ts`. `World` (`world.ts`) wraps it with
-  derived data that is never saved: drop-off BFS fields per resource, fog, max wood per tile.
+  derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
   Change tiles through `claimTile`/`clearTree`. After placing a drop-off building, call
   `onBuildingsChanged` so the fields are rebuilt.
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, then
@@ -33,7 +33,7 @@ No linter or formatter is configured.
   state and checks that the continued simulation matches exactly.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
   - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery. `nearestTree`
-    picks marked trees first, then the shortest walk to a wood drop-off (`fields.wood`), then nearest the villager.
+    picks marked trees first, then the shortest next trip: walk to the tree plus its walk home (`fields.wood`).
   - Workplace jobs (`farm`, `mine`, `herd`) share `workplace.ts`. Its `WORK` table maps each job
     to a resource and the stats that drive it, plus an optional `also` resource delivered alongside
     it (herders' food from Fertile Herding). Workplaces never run out.
@@ -45,9 +45,11 @@ No linter or formatter is configured.
 - **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`) read per-resource
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and
   `maxLevel(kind)`. Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
-- **Pathing** (`pathing.ts`). Grid BFS over walkable tiles, meaning territory (grass or building).
-  Trees and relics are never walked through. Each resource has a multi-source distance field from
-  its drop-off buildings.
+- **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or
+  building), with integer costs (`STEP` 10, `DIAG` 14 per tile). Diagonals never cut past a tree
+  corner; trees and relics are never walked through. Paths are straightened (`smooth`/`clearLine`)
+  so villagers cross open ground in straight lines. Each resource has a multi-source distance field
+  from its drop-off buildings.
 - **Saves.** `save.ts` keeps a `VERSION` and a chain of `migrations[v]` (v → v+1). Any change to
   the `GameState` shape needs a version bump, a migration, and a migration test.
 

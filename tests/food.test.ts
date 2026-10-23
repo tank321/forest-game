@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hireVillager, placeBuilding, togglePause, upgrade } from '../src/core/commands';
 import { buildingCost, upgradeCost, villagerCost } from '../src/core/economy';
-import { pathHome } from '../src/core/pathing';
+import { pathHome, STEP } from '../src/core/pathing';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
@@ -68,11 +68,11 @@ describe('farms', () => {
     const s = w.state;
     const { x, y } = s.origin;
     const farmTile = (y + 1) * s.w + x - 3;
-    expect(pathHome(w.fields.food, farmTile).length).toBeGreaterThan(2); // walks to the TC
+    expect(w.fields.food.dist[farmTile]).toBe(4 * STEP); // walks to the TC
     clearArea(w, x - 5, y, x - 4, y + 1);
     s.resources.wood = 150;
     expect(placeBuilding(w, 'barn', x - 5, y)).toBe(true);
-    expect(pathHome(w.fields.food, farmTile)).toHaveLength(2); // barn is adjacent
+    expect(pathHome(s, w.fields.food, farmTile)).toEqual([farmTile, farmTile - 1]); // barn is adjacent
     expect(w.fields.wood.dist[(y + 1) * s.w + x - 5]).not.toBe(0); // barns don't take wood
   });
 

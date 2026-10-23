@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chopTree, placeBuilding, toggleMark } from '../src/core/commands';
+import { tileAt } from '../src/core/grid';
+import { nearestTree, pathToAny } from '../src/core/pathing';
 import { simulate } from '../src/core/sim';
 import { Tile } from '../src/core/types';
 import { clearArea, smallWorld, totalWood } from './helpers';
@@ -57,11 +59,13 @@ describe('villager simulation', () => {
     s.nextRelicAt = Infinity;
     const { x, y } = s.origin;
     clearArea(w, x - 6, y, x - 1, y + 1);
-    simulate(w, 2, 1 / 30);
     const v = s.villagers[0];
-    const first = v.target;
-    s.resources.wood = 100;
-    expect(placeBuilding(w, 'lumberCamp', x - 6, y)).toBe(true); // its neighbors are now the best trees
+    const first = (y + 1) * s.w + x - 7; // end of a corridor: a long trip, never the best choice
+    const stand = first + 1;
+    v.target = first;
+    v.path = pathToAny(s, tileAt(s, v.x, v.y), new Set([stand]))!;
+    v.pathI = 0;
+    v.state = 'toTree';
     let delivered = false;
     for (let k = 0; k < 60 * 30 && !delivered; k++) {
       const carry = v.carry;
@@ -69,9 +73,10 @@ describe('villager simulation', () => {
       delivered = carry > 0 && v.carry === 0;
     }
     expect(delivered).toBe(true);
-    expect(s.tiles[first]).toBe(Tile.Tree); // released, not felled
+    expect(s.wood[first]).toBeLessThan(w.maxWood[first]); // worked on…
+    expect(s.tiles[first]).toBe(Tile.Tree); // …but released, not felled
     expect(v.target).not.toBe(first);
-    expect(w.fields.wood.dist[v.target]).toBe(1);
+    expect(v.target).toBe(nearestTree(s, w.fields.wood, tileAt(s, v.x, v.y), () => false)!.tree);
   });
 
   it('recovers when the player fells the tree a villager is working', () => {
@@ -91,7 +96,7 @@ describe('villager simulation', () => {
     const w = smallWorld(30);
     const s = w.state;
     const { x, y } = s.origin;
-    const probe = y * s.w + x - 3;
+    const probe = y * s.w + x - 2; // the camp's corner, a tree until cleared
     const before = w.fields.wood.dist[probe];
     for (const [tx, ty] of [[x - 1, y], [x - 1, y + 1], [x - 2, y], [x - 2, y + 1]]) {
       const i = ty * s.w + tx;
@@ -99,7 +104,7 @@ describe('villager simulation', () => {
     }
     expect(placeBuilding(w, 'lumberCamp', x - 2, y)).toBe(true);
     expect(before).toBe(-1); // unreachable before the camp
-    expect(w.fields.wood.dist[probe]).toBe(1);
+    expect(w.fields.wood.dist[probe]).toBe(0);
   });
 
   it('clears a small forest completely and then idles', () => {

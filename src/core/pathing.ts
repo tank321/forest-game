@@ -3,53 +3,79 @@ import { isWalkable, neighbors4 } from './grid';
 import type { GameState, ResourceKey } from './types';
 import { Tile } from './types';
 
+/** Walking costs in tenths of a tile: integers keep the search exact and deterministic. */
+export const STEP = 10;
+export const DIAG = 14;
+
 /**
- * Multi-source BFS from all drop-off buildings for one resource over walkable tiles.
- * parent[i] points one step closer to the nearest drop-off; for a tree touching territory it is
- * the walkable tile it is chopped from.
+ * Shortest walking distances over walkable tiles, 8-directional. A diagonal step needs both tiles
+ * beside it walkable, so villagers never cut past a tree's corner. parent[i] points one step back
+ * toward the nearest source; dist is -1 where unreached.
  */
 export interface Field {
   dist: Int32Array;
   parent: Int32Array;
 }
 
-export function buildField(s: GameState, res: ResourceKey): Field {
+/**
+ * Dijkstra from `sources`. `visit(u, d)` runs as each tile's distance becomes final and may stop
+ * the search by returning true. Ties pop in tile order, so results never depend on timing.
+ */
+function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: number) => boolean): Field {
   const n = s.w * s.h;
   const dist = new Int32Array(n).fill(-1);
   const parent = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let head = 0;
-  let tail = 0;
-  for (const b of s.buildings) {
-    if (!(BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) continue;
-    for (const i of footprint(s, b)) {
-      dist[i] = 0;
-      queue[tail++] = i;
-    }
-  }
-  while (head < tail) {
-    const u = queue[head++];
-    for (const v of neighbors4(s, u)) {
-      if (dist[v] !== -1) continue;
-      dist[v] = dist[u] + 1;
-      parent[v] = u;
-      if (isWalkable(s, v)) queue[tail++] = v;
-    }
+  const heap: number[] = []; // keys d * n + tile
+  const relax = (v: number, d: number, from: number) => {
+    if (dist[v] !== -1 && dist[v] <= d) return;
+    dist[v] = d;
+    parent[v] = from;
+    push(heap, d * n + v);
+  };
+  for (const i of sources) relax(i, 0, -1);
+  while (heap.length) {
+    const key = pop(heap);
+    const u = key % n;
+    const d = (key - u) / n;
+    if (d > dist[u]) continue; // stale entry
+    if (visit?.(u, d)) break;
+    const x = u % s.w;
+    const left = x > 0 && isWalkable(s, u - 1);
+    const right = x < s.w - 1 && isWalkable(s, u + 1);
+    const up = u >= s.w && isWalkable(s, u - s.w);
+    const down = u < n - s.w && isWalkable(s, u + s.w);
+    if (left) relax(u - 1, d + STEP, u);
+    if (right) relax(u + 1, d + STEP, u);
+    if (up) relax(u - s.w, d + STEP, u);
+    if (down) relax(u + s.w, d + STEP, u);
+    if (up && left && isWalkable(s, u - s.w - 1)) relax(u - s.w - 1, d + DIAG, u);
+    if (up && right && isWalkable(s, u - s.w + 1)) relax(u - s.w + 1, d + DIAG, u);
+    if (down && left && isWalkable(s, u + s.w - 1)) relax(u + s.w - 1, d + DIAG, u);
+    if (down && right && isWalkable(s, u + s.w + 1)) relax(u + s.w + 1, d + DIAG, u);
   }
   return { dist, parent };
 }
 
-/** Walkable tiles from `from` to the nearest drop-off, inclusive. */
-export function pathHome(f: Field, from: number): number[] {
+/** Walking distance from every tile to the nearest drop-off accepting `res` (0 on the drop-off). */
+export function buildField(s: GameState, res: ResourceKey): Field {
+  const sources: number[] = [];
+  for (const b of s.buildings) {
+    if ((BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) sources.push(...footprint(s, b));
+  }
+  return search(s, sources);
+}
+
+/** Walk from `from` to the nearest drop-off, inclusive. */
+export function pathHome(s: GameState, f: Field, from: number): number[] {
   const path = [from];
   for (let i = from; f.dist[i] > 0; i = f.parent[i]) path.push(f.parent[i]);
-  return path;
+  return smooth(s, path);
 }
 
 /**
- * Tree to work next: marked first, then the shortest walk from a drop-off (`field`), then nearest
- * to `from`, then lowest index. Only trees the field reaches (touching ground connected to a
- * drop-off) qualify. Returns the tree and the walk from `from` to the tile beside it.
+ * Tree for the shortest next trip: the walk from `from` to a tile beside the tree, plus the walk
+ * from there to the nearest drop-off (`field`). Marked trees come first at any distance; ties go to
+ * the lower tree index. Returns the tree and the walk to the tile it is chopped from.
  */
 export function nearestTree(
   s: GameState,
@@ -58,47 +84,115 @@ export function nearestTree(
   isFull: (tree: number) => boolean,
 ): { tree: number; path: number[] } | null {
   const marked = new Set(s.marked);
-  const fx = from % s.w;
-  const fy = (from / s.w) | 0;
-  const n = s.w * s.h; // > any field distance
-  const span = s.w ** 2 + s.h ** 2; // > any squared distance to `from`
-  let best = -1;
-  let bestScore = Infinity;
-  for (let i = 0; i < n; i++) {
-    if (s.tiles[i] !== Tile.Tree || field.dist[i] === -1 || isFull(i)) continue;
-    // lexicographic (unmarked, drop-off distance, squared distance to `from`) as one exact integer
-    const near = ((i % s.w) - fx) ** 2 + (((i / s.w) | 0) - fy) ** 2;
-    const score = ((marked.has(i) ? 0 : n) + field.dist[i]) * span + near;
-    if (score < bestScore) {
-      best = i;
-      bestScore = score;
+  let tree = -1;
+  let stand = -1;
+  let best = Infinity;
+  let bestMarked = false;
+  const walk = search(s, [from], (u, d) => {
+    if (d > best && (bestMarked || !marked.size)) return true; // no shorter trip left
+    if (field.dist[u] === -1) return false; // no way home from here
+    for (const t of neighbors4(s, u)) {
+      if (s.tiles[t] !== Tile.Tree || isFull(t)) continue;
+      const m = marked.has(t);
+      const trip = d + field.dist[u];
+      if (m === bestMarked ? trip < best || (trip === best && t < tree) : m) {
+        [tree, stand, best, bestMarked] = [t, u, trip, m];
+      }
     }
-  }
-  if (best === -1) return null;
-  const path = pathToAny(s, from, new Set(neighbors4(s, best).filter((i) => isWalkable(s, i))));
-  return path && { tree: best, path };
+    return false;
+  });
+  return tree === -1 ? null : { tree, path: trace(s, walk, stand) };
 }
 
-/** Walkable path from `from` to the nearest of `goals` (walkable tiles), or null. */
+/** Walk from `from` to the nearest of `goals` (walkable tiles), or null. */
 export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>): number[] | null {
-  const parent = new Int32Array(s.w * s.h).fill(-1);
-  const queue = new Int32Array(s.w * s.h);
-  let head = 0;
-  let tail = 0;
-  parent[from] = from;
-  queue[tail++] = from;
-  while (head < tail) {
-    const u = queue[head++];
-    if (goals.has(u)) {
-      const path = [u];
-      for (let i = u; i !== from; i = parent[i]) path.push(parent[i]);
-      return path.reverse();
-    }
-    for (const v of neighbors4(s, u)) {
-      if (parent[v] !== -1 || !isWalkable(s, v)) continue;
-      parent[v] = u;
-      queue[tail++] = v;
-    }
+  let goal = -1;
+  const walk = search(s, [from], (u) => {
+    if (!goals.has(u)) return false;
+    goal = u;
+    return true;
+  });
+  return goal === -1 ? null : trace(s, walk, goal);
+}
+
+/** Path from the search's source to `to`, straightened. */
+function trace(s: GameState, f: Field, to: number): number[] {
+  const path = [to];
+  for (let i = to; f.parent[i] !== -1; i = f.parent[i]) path.push(f.parent[i]);
+  return smooth(s, path.reverse());
+}
+
+/** Drops waypoints that a straight walk can skip: villagers cross open ground in straight lines. */
+export function smooth(s: GameState, path: number[]): number[] {
+  if (path.length < 3) return path;
+  const out = [path[0]];
+  for (let k = 2; k < path.length; k++) {
+    if (!clearLine(s, out[out.length - 1], path[k])) out.push(path[k - 1]);
   }
-  return null;
+  out.push(path[path.length - 1]);
+  return out;
+}
+
+/**
+ * A straight walk between two tile centers stays on walkable tiles: every tile the line passes
+ * through, and both tiles beside any corner it passes exactly through.
+ */
+export function clearLine(s: GameState, a: number, b: number): boolean {
+  let x = a % s.w;
+  let y = (a / s.w) | 0;
+  const dx = (b % s.w) - x;
+  const dy = ((b / s.w) | 0) - y;
+  const nx = Math.abs(dx);
+  const ny = Math.abs(dy);
+  const sx = Math.sign(dx);
+  const sy = Math.sign(dy);
+  const ok = (cx: number, cy: number) => isWalkable(s, cy * s.w + cx);
+  for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
+    const side = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
+    if (side === 0) {
+      if (!ok(x + sx, y) || !ok(x, y + sy)) return false;
+      x += sx;
+      y += sy;
+      ix++;
+      iy++;
+    } else if (side < 0) {
+      x += sx;
+      ix++;
+    } else {
+      y += sy;
+      iy++;
+    }
+    if (!ok(x, y)) return false;
+  }
+  return true;
+}
+
+function push(h: number[], key: number): void {
+  let i = h.length;
+  h.push(key);
+  while (i > 0) {
+    const p = (i - 1) >> 1;
+    if (h[p] <= key) break;
+    h[i] = h[p];
+    i = p;
+  }
+  h[i] = key;
+}
+
+function pop(h: number[]): number {
+  const top = h[0];
+  const last = h.pop()!;
+  if (h.length) {
+    let i = 0;
+    for (;;) {
+      const l = 2 * i + 1;
+      if (l >= h.length) break;
+      const c = l + 1 < h.length && h[l + 1] < h[l] ? l + 1 : l;
+      if (h[c] >= last) break;
+      h[i] = h[c];
+      i = c;
+    }
+    h[i] = last;
+  }
+  return top;
 }

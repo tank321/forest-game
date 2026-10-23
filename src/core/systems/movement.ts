@@ -32,7 +32,7 @@ export const arrived = (v: Villager) => v.pathI >= v.path.length;
 
 /** Heads for the nearest drop-off accepting `res`. */
 export function goHome(w: World, v: Villager, res: ResourceKey): void {
-  v.path = pathHome(w.fields[res], tileAt(w.state, v.x, v.y));
+  v.path = pathHome(w.state, w.fields[res], tileAt(w.state, v.x, v.y));
   v.pathI = 0;
   v.state = 'toHome';
 }

@@ -55,7 +55,7 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/core/` – pure simulation, no DOM
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
-  - `pathing.ts` per-resource drop-off BFS fields, `pathHome`, `nearestTree` (marked first, then nearest a drop-off), `pathToAny`
+  - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, miners, herders) · `movement.ts` shared walking
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
@@ -73,7 +73,8 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - Fertile Herding skill: herders also deliver food equal to their leather.
 - Leather costs on axe/farm/pick levels 9–10 and houses from the 10th; a leather price track for hiring villagers.
 - Sprites: fenced sheep pen, herder with a crook, leather icon.
-- Lumberjacks pick the free tree closest to a wood drop-off (Town Center or Lumber Camp), so each load has the shortest trip home; ties go to the tree nearest the lumberjack. They choose again after every delivery instead of returning to their last tree.
+- Lumberjacks pick the free tree with the shortest next trip: the walk to the tree plus the walk from it to the nearest Town Center or Lumber Camp. They choose again after every delivery instead of returning to their last tree, so they work near the drop-off they just used.
+- Villagers walk in 8 directions and in straight lines across open ground, never cutting past a tree's corner.
 - Fix: a lumberjack whose tree fell just as its load filled walked to another tree before going home.
 - Saves migrate from v6 automatically.
 
