@@ -1,9 +1,11 @@
+import { CONFIG } from '../config';
 import { isActive, workersOf, type BuildingKind } from '../core/buildings';
 import { hireVillager, togglePause, upgrade } from '../core/commands';
 import { canAfford, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { getStats, type Stats } from '../core/stats';
 import type { Building, Cost, GameState, HireResource, Job } from '../core/types';
 import type { World } from '../core/world';
+import { seasonName } from './seasonInfo';
 
 export interface Action {
   label: string;
@@ -31,11 +33,13 @@ function hire(w: World, res: HireResource): Action {
   const s = w.state;
   const full = s.villagers.length >= popCap(s);
   const cost = villagerCost(s, res);
+  const { food, wood, freeVillagers } = CONFIG.upkeep;
   return {
     label: full ? `Hire with ${res} (need a house)` : `Hire villager with ${res}`,
     cost,
     enabled: !full && canAfford(s, cost),
     run: () => hireVillager(w, res),
+    hint: s.villagers.length >= freeVillagers ? `Eats ${food} food/s, and burns ${wood} wood/s in winter.` : undefined,
   };
 }
 
@@ -56,11 +60,20 @@ function upgradeAction(w: World, kind: UpgradeKind, title: string, preview: (st:
       title,
       level: lvl,
       max: maxLevel(kind),
-      scope: kind === 'farm' ? 'Per farmer or herder · Well bonuses apply to farms only' : kind === 'axe' ? 'Per lumberjack' : 'Per miner',
+      scope: SCOPE[kind],
       rows: current.map((row, i) => ({ label: row.label, current: row.value, next: next?.[i].value ?? null })),
     },
   };
 }
+
+const SCOPE: Record<UpgradeKind, string> = {
+  axe: 'Per lumberjack',
+  farm: 'Per farmer or herder · Well bonuses apply to farms only',
+  pick: 'Per miner',
+  coats: 'Whole town · firewood is burned in winter',
+};
+
+const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
 
 function pauseAction(w: World, b: Building): Action {
   const active = isActive(w.state, b);
@@ -75,7 +88,12 @@ function pauseAction(w: World, b: Building): Action {
 
 /** Actions offered when a building of each kind is selected. New buildings add an entry here. */
 export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
-  townCenter: (w) => [hire(w, 'wood'), hire(w, 'food'), hire(w, 'leather')],
+  townCenter: (w) => [
+    hire(w, 'wood'),
+    hire(w, 'food'),
+    hire(w, 'leather'),
+    upgradeAction(w, 'coats', 'Coats', (st) => [{ label: 'Winter firewood', value: perSec(st.winterBurn, 'wood') }]),
+  ],
   lumberCamp: (w) => [
     upgradeAction(w, 'axe', 'Axe upgrades', (st) => [
       { label: 'Chopping', value: `${st.chopRate.toFixed(2)} wood/s` },
@@ -116,12 +134,17 @@ function staffInfo(w: World, b: Building, worker: string): string {
 export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
-    return `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')}`;
+    const st = getStats(w.state);
+    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')}`;
+    return st.eat ? `${jobs} · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : jobs;
   },
   farm: (w, b) => {
     const st = getStats(w.state);
     const well = st.wellFarms.has(b.id) ? ` · Well: harvest ×${st.wellHarvest}, carry ×${st.wellCarry}` : '';
-    return staffInfo(w, b, 'farmer') + well;
+    const season = CONFIG.seasons.farm[st.season];
+    const name = seasonName(st.season);
+    const note = season === 0 ? ` · ${name}: the fields lie fallow.` : season !== 1 ? ` · ${name}: harvest ×${season}` : '';
+    return staffInfo(w, b, 'farmer') + well + note;
   },
   quarry: (w, b) => staffInfo(w, b, 'miner'),
   sheepFarm: (w, b) => {

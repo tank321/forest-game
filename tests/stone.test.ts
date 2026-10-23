@@ -95,7 +95,7 @@ describe('quarries', () => {
     const { state } = deserialize(JSON.stringify({ version: 4, savedAt: 1, state: v4state }));
     expect(state.resources).toEqual({ wood: 5, food: 3, stone: 0, leather: 0 });
     expect(state.totals).toEqual({ wood: 9, food: 4, stone: 0, leather: 0 });
-    expect(state.upgrades).toEqual({ axe: 2, farm: 1, pick: 0 });
+    expect(state.upgrades).toEqual({ axe: 2, farm: 1, pick: 0, coats: 0 });
   });
 
   it('Stonecutters speeds mining; Masons discounts only the stone part of costs', () => {

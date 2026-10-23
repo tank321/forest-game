@@ -136,7 +136,7 @@ describe('food economy', () => {
     };
     const { state } = deserialize(JSON.stringify({ version: 3, savedAt: 1, state: v3state }));
     expect(state.resources).toEqual({ wood: 5, food: 0, stone: 0, leather: 0 });
-    expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0 });
+    expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0 });
     expect(state.hires).toEqual({ wood: 2, food: 0, leather: 0 });
     expect(state.villagers.every((v) => v.job === 'lumber' && v.workplace === -1)).toBe(true);
   });

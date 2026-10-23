@@ -83,9 +83,13 @@ addEventListener('keydown', (e) => {
 
 function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
-  const before = s.resources.wood;
+  const before = { ...s.resources };
   simulate(world, t, catchUpDt);
-  if (t >= 60) hud.message(`Away ${duration(t)}: +${fmt(s.resources.wood - before)} wood`, 8000);
+  const change = (r: 'wood' | 'food') => {
+    const d = s.resources[r] - before[r];
+    return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
+  };
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}`, 8000);
 }
 if (loaded) catchUp((Date.now() - loaded.savedAt) / 1000);
 

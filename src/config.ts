@@ -53,6 +53,16 @@ export const CONFIG = {
   },
   herd: { rate: 0.5, carry: 10 }, // herder leather/s and base carry
   well: { radius: 1, harvestMult: 3, carryMult: 2 }, // farms within radius (Chebyshev) of a Well
+  seasons: { length: 180, farm: [1, 1, 1.5, 0] }, // s per season; farm multiplier: spring, summer, autumn, winter
+  // food/wood per villager beyond freeVillagers per s (wood in winter only); work multipliers on shortage
+  upkeep: { freeVillagers: 5, food: 0.1, wood: 0.1, hungry: 0.5, cold: 0.5 },
+  coats: {
+    costs: {
+      wood: [300, 800, 2000],
+      leather: [30, 100, 300],
+    },
+    burnCut: 0.25, // firewood −25% per level
+  },
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6 }, // zoom = CSS px per tile
   save: { key: 'forest-game-save', intervalMs: 10_000 },

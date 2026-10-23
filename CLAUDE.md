@@ -24,8 +24,9 @@ No linter or formatter is configured.
   derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
   Change tiles through `claimTile`/`clearTree`. After placing a drop-off building, call
   `onBuildingsChanged` so the fields are rebuilt.
-- **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, then
-  `villagerSystem`. The browser steps at 1/30 s, while offline catch-up uses 1 s steps
+- **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`,
+  then `villagerSystem`. `tick` splits its step at season boundaries (`seasons.ts`; the season is
+  derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps
   (`CONFIG.sim`). Villager updaters must be **dt-independent**: they spend their whole time budget
   across state transitions inside one call. Tests assert identical results at both step sizes.
 - **Determinism.** Core randomness goes through the seeded `rand(s)` (`rng.ts`), whose state is
@@ -40,9 +41,11 @@ No linter or formatter is configured.
   - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at
     `carry === 0`. That keeps resources conserved, and tests check the totals.
 - **Effective values.** Gameplay reads villager and production numbers from `getStats(s)`
-  (`stats.ts`: config × upgrades × skills), not from `CONFIG` directly. Well-boosted farms are
+  (`stats.ts`: config × upgrades × skills × season and upkeep), not from `CONFIG` directly.
+  Upkeep (`eat`, `burn`) and the `hungry`/`cold` shortages are derived there from villager count,
+  season and stock. Well-boosted farms are
   also computed there on demand, so there is no cache to invalidate.
-- **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`) read per-resource
+- **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`, `coats`) read per-resource
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and
   `maxLevel(kind)`. Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
 - **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or

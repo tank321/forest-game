@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
 import { canMoveBuilding, canPlace } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
+import { seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import type { Building, GameState, Job, Villager } from '../core/types';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
@@ -42,6 +43,7 @@ import {
 const VOID = [0x07, 0x0a, 0x07]; // fog beyond the visible radius
 const VOID_KEY = -2; // terrain cache key for a fogged-out cell
 const FOG_LIGHT = [1, 1, 0.75, 0.5]; // brightness by fog distance 0..R
+const WINTER_FADE = 10; // s the winter tint takes to fade in or out
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
 const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
 const BUILDING_COLOR: Record<BuildingKind, string> = {
@@ -144,6 +146,7 @@ export class Renderer {
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
     this.drawScene(world);
+    this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
 
     if (ui.selected) {
@@ -162,6 +165,15 @@ export class Renderer {
       ctx.fillStyle = valid ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
       rect(x, y, d.w, d.h);
     }
+  }
+
+  /** Snowy tint over the map in winter, fading in and out at the season's edges. */
+  private drawWinter(time: number): void {
+    if (seasonOf(time) !== WINTER) return;
+    const left = seasonLeft(time);
+    const fade = Math.min(1, left / WINTER_FADE, (CONFIG.seasons.length - left) / WINTER_FADE);
+    this.ctx.fillStyle = `rgba(225,238,255,${(0.22 * fade).toFixed(3)})`;
+    this.ctx.fillRect(0, 0, this.cam.vw, this.cam.vh);
   }
 
   /** Redraws the ground of cells whose fog level changed since the last frame. */

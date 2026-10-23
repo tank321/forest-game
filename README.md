@@ -1,4 +1,4 @@
-# Forest Game (alpha v7)
+# Forest Game (alpha v8)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -42,6 +42,14 @@ herding speed and carry too. Pause a sheep farm to give its herder back.
 The **Fertile Herding** skill makes herders bring back as much food as leather. Leather pays for
 leather-priced villagers, the last two axe/farm/pick levels, and houses from the 10th.
 
+**Seasons & upkeep:** a year is four 3-minute seasons, shown on the stats plaque; hover over the
+season (or tap it, or press Enter on it) to see what this season and the next one do. Farms harvest
+×1.5 in autumn and nothing in winter. The first 5 villagers live for free; every villager beyond
+them eats 0.1 food/s all year and burns 0.1 wood/s in winter. Nobody dies, but when a stock runs
+out the town slows down: **Hungry** (no food) halves chopping and mining, **Cold** (no firewood in
+winter) halves farming, mining and herding. Food and wood rates on the plaque are net of upkeep.
+**Coats** at the Town Center (wood and leather, 3 levels) cut firewood by 25% per level.
+
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
@@ -57,16 +65,24 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, miners, herders) · `movement.ts` shared walking
-  - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
+  - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep)
+  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v8** – Seasons and upkeep.
+- Four 3-minute seasons. Farms harvest ×1.5 in autumn and lie fallow in winter; the map turns snowy in winter.
+- Villagers beyond the first 5 eat food all year and burn firewood in winter. Running out makes the town Hungry (chopping and mining ×0.5) or Cold (farming, mining and herding ×0.5); nobody dies.
+- Coats upgrade at the Town Center (3 levels, wood and leather): −25% firewood per level.
+- Stats plaque: season with a progress bar (hover or tap for this and next season's effects), a Hungry/Cold warning, and food/wood rates net of upkeep. The away message reports food as well as wood.
+- Saves migrate from v7 automatically.
+
 **v7** – Leather.
 - Sheep Farm (3×3) with a herder job; leather resource delivered to the Town Center or the nearest Barn.
 - Barn (farm) upgrades also raise herding speed and carry.
