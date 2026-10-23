@@ -110,14 +110,14 @@ describe('quarries', () => {
     expect(buildingCost(s, 'well')).toEqual({ wood: 150, stone: 29 }); // 40 × 0.85²
   });
 
-  it('Quarry Crews is offered after Stonecutters, Masons after Master Builders', () => {
+  it('Quarry Crews is offered after Stonecutters, Masons after Quarrying', () => {
     const s = smallWorld().state;
     expect(availableSkills(s)).not.toContain('masons');
     expect(availableSkills(s)).not.toContain('quarryCrews');
     s.skills = { stonecutters: 1 };
     expect(availableSkills(s)).toContain('quarryCrews');
     expect(availableSkills(s)).not.toContain('masons');
-    s.skills = { masterBuilders: 1 };
+    s.skills = { quarrying: 1 };
     expect(availableSkills(s)).toContain('masons');
   });
 

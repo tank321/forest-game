@@ -3,6 +3,7 @@ import { BUILDINGS, countOf, type BuildingKind } from './buildings';
 import { perk, perkMult } from './legacy';
 import { linkedBuildings } from './roads';
 import { lvl } from './skills';
+import { isFair } from './stats';
 import type { Building, Cost, GameState, HireResource, ResourceKey } from './types';
 
 const { villagerCosts, villagerCostGrowth, hireOffset, basePop, popPerHouse } = CONFIG.economy;
@@ -44,12 +45,13 @@ export const buildingRefund = (b: Building): Cost =>
 export type TradeResource = Exclude<ResourceKey, 'gold'>;
 export const TRADE_RESOURCES = Object.keys(CONFIG.market.prices) as TradeResource[];
 
-/** Market fee as a fraction of value (Shrewd Traders and Royal Bank lower it). */
-export const commission = (s: Pick<GameState, 'skills' | 'legacy'>) =>
+/** Market fee as a fraction of value (Shrewd Traders and Royal Bank lower it; none during the Midsummer Fair). */
+export const commission = (s: Pick<GameState, 'skills' | 'legacy' | 'time'>) =>
+  isFair(s) ? 0 :
   Math.max(0, CONFIG.market.commission - 0.05 * lvl(s, 'shrewdTraders')) * perkMult(s, 'royalBank', L.royalBank.commission);
 
 /** Gold received for selling `n` of `res`, or paid for buying it. */
-export function marketQuote(s: Pick<GameState, 'skills' | 'legacy'>, res: TradeResource, n: number, side: 'sell' | 'buy'): number {
+export function marketQuote(s: Pick<GameState, 'skills' | 'legacy' | 'time'>, res: TradeResource, n: number, side: 'sell' | 'buy'): number {
   const value = n * CONFIG.market.prices[res];
   const c = commission(s);
   // Round in the Market's favor; the small epsilon keeps 100 × 0.8 from flooring to 79.

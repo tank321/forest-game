@@ -87,16 +87,25 @@ straight-line gap between the two buildings (10 gold at 10 tiles, 28 at 20), so 
 from the Market. Without a Market the post stands idle. Gold pays for houses from the 13th. Skills:
 **Tax Collectors** (+20% tax per level), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
+With **Guild Contracts**, the Market panel also lists three contracts (gather a resource, fell trees or
+reach a population); tap a finished one to claim its gold. With **Merchant Caravans**, a caravan's three
+deals appear there each winter; tap one to take it before spring.
+
+The **Frontier Outpost** (3×3, the Settlement Mastery) is a second hub you can build anywhere on cleared
+land, once. It takes every resource, hires villagers like the Town Center, and roads touching it count as
+connected, so a new town can grow at the forest's edge.
 
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it) and the map pans over to it; the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
-with **Pick skill** in the sidebar. Skills come in six tracks (Forestry, Villagers, Buildings, Farming, Mining,
-Trade), and each skill is offered only once the one before it in its track has a level. A relic offers skills
-from different tracks while it can. **Skills** opens the skill tree: one column per track, easier skills on top,
-with a solid link once a skill unlocks the next one. Hover over a skill to compare current and next-level bonuses
-in the right-hand panel; skills on offer from a relic glow, and clicking one learns it right there. On phones, tap a skill to show details beneath the tree,
-which scrolls sideways. Keyboard users can select skills with Enter or Space. **Legacy** opens the Legacy perk tree;
+with **Pick skill** in the sidebar. Skills come in six tracks, one per economy (Forestry, Settlement, Farming,
+Herding, Mining, Trade). Each track is a tree: a skill is offered once its parent has a level, and one parent can
+unlock several skills. A relic offers skills from different tracks while it can. **Skills** opens the skill tree,
+which fills the window: drag (or swipe) to pan, scroll (or pinch) to zoom, or use the +, − and ⤢ (show everything)
+buttons in the corner and the + and − keys. A link turns solid once its parent has a level. Hover over a skill
+(or tap it, on phones) for a popup beside it with its current and next-level bonus; skills on offer from a relic
+glow, and clicking one (tapping it a second time on phones) learns it right there. Keyboard users can tab through
+skills (the view and the popup follow focus) and learn an offered one with Enter or Space. **Legacy** opens the Legacy perk tree;
 it turns gold once you have learned enough skill levels to rebuild. Pick an available perk and click **Rebuild** twice
 to start over on a new map with that perk kept forever. **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
@@ -108,20 +117,46 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers · `roads.ts` road network, connected buildings, road stock
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
-  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking, each worker's spot in its workplace
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking (faster along roads with Cobblestone), each worker's spot in its workplace · `grazing.ts` Grazing Flocks
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
   - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
-  - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
+  - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `legacyModal.ts` Legacy perk tree and rebuild, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
-**v16** – Tailor.
+**v17** – Settlement and Trade skills, Frontier Outpost, Guild Contracts, Merchant Caravans.
+- Settlement: Swift Feet → Big Baskets → **Errand Runners** (empty-handed villagers walk +25% per level), **Well Fed** (gathering ×1.2 while there are 10 food in stock per villager; a green badge on the plaque); → Roomy Houses → Recruiters, Master Builders → **Surveyors** (+2 roads per house per level).
+- Trade: Markets → Trading Posts → Pack Mules, **Toll Roads** (0.1 gold per road tile walked, per level); → Tax Offices → Tax Collectors, **Guild Contracts**; → Shrewd Traders → **Midsummer Fair** (all summer: no Market commission, Trading Posts ×1.5).
+- Masteries:
+  - **Frontier Outpost** (Settlement): unlocks one Outpost, a second hub that takes every resource, hires villagers and roots its own road network. Houses and Markets can be built against it.
+  - **Merchant Caravans** (Trade): as winter begins a caravan offers three deals (buy a resource at half its value, or sell one at double, sized to about 10 minutes of production). One may be taken; it leaves at spring.
+- **Guild Contracts**: three contracts sized to 3–6 minutes of the town's average production; each pays the market value of what it asks for, and a new one replaces it when claimed.
+- Saves migrate from v16 with an empty contract board and no caravan.
+
+**v16** – Tailor, skill graph, Forestry, Farming, Herding and Mining skills.
+- Twenty new skills, each changing a rule rather than a number. Bonuses, jackpots and combos show as text rising from the map, and the HUD counts their goods under **Skill bonuses**:
+  - Forestry: **Sweeping Strike** (a tap also hits the choppable trees around it for half), **Momentum** (taps under 1 s apart build a combo, +10% each, up to +50% per level), **Keen Eyes** (see 1 more ring into the forest and relics come 10% sooner, per level), **Heartwood** (10% chance per level that a felled tree pays half its wood again).
+  - Farming: **Crop Rotation** (+25% harvest per touching farm, up to +100%), **Farmhands** (+1 farmer per farm per level), **Root Cellars** (food upkeep −15% per level), **Greenhouses** (farms and orchards harvest at half speed in winter).
+- **Masteries** cap a track and are offered once 8 levels are learned in the rest of it. They sit under the track with a gold ring:
+  - **Timber!** (Forestry): a felled tree topples onto a neighbouring tree for half its wood, and falls can chain.
+  - **Harvest Festival** (Farming): as winter begins, farms and orchards deliver a minute of autumn harvest at once, and villagers walk ×1.25 all winter.
+  - **Grazing Flocks** (Herding): each Sheep Farm grazes the visible trees within 4 tiles, nearest first, as fast as 3 lumberjacks.
+  - **Dynamite** (Mining): a Blast button on the Quarry pays 30 s of its stone at once and hits every tree within 2 tiles like 100 taps; once per 90 s per quarry.
+  - Grazing and blasts damage trees rather than felling them, so the big outer trees still take their full wood.
+- Forestry: Sharp Axes → Power Swing → Sweeping Strike, Momentum; → Camp Crews → Teamwork; → Keen Eyes → Heartwood. Farming: Green Thumbs → Wells → Deep Wells, Crop Rotation; → Farmhands → Orchards; → Root Cellars → Greenhouses.
+- Herding: Sheep Farms → **Open Pastures** (+1% wool per level per open grass tile within 2 tiles) → **Shearing Day** (a minute of wool as spring begins); → Fertile Herding → **Golden Fleece** (3% chance per level a delivery is worth 10× the cloth); → Tailoring → **Weavers** (+4% cloth per Tailor upgrade level); → Cotton Fields.
+- Mining: Quarrying → Stonecutters → Quarry Crews, **Deep Shafts** (mining ×1.5 in winter, never slowed by cold); → Masons → **Cobblestone** (+20% walk speed along roads per level); → **Rich Veins** (+2% stone per level per tile from the Town Center, up to 30) → **Geodes** (2% chance per level a delivery brings 25 gold per stone).
+- Skill tracks are trees instead of chains: a skill can unlock several others, and false dependencies are gone (Trading Posts no longer waits on Tax Collectors, Orchards on Deep Wells, Cotton Fields on Fertile Herding). Six tracks, one per economy:
+  - Forestry, Farming, Herding and Mining: see the new skills above.
+  - Settlement (was Villagers and Buildings): Swift Feet → Big Baskets, and → Roomy Houses → Recruiters, Master Builders.
+  - Trade: Markets → Trading Posts → Pack Mules, → Tax Offices → Tax Collectors, and → Shrewd Traders.
+- The skill tree fills the window and can be panned (drag or swipe) and zoomed (wheel, pinch, or the corner buttons). A skill's stats show in a popup beside it on hover or tap, in place of the side panel; on phones an offered skill is learned with a second tap. Saves are unchanged.
 - New **Tailor** building (2×2, wood and cloth), unlocked by the new **Tailoring** skill in the Herding track, between Sheep Farms and Fertile Herding.
 - The Wheelbarrow is split in two at the Tailor: **Shoes** (walk speed ×1.05 per level) and **Backpack** (+2 flat carry per level). Each costs about two thirds of the old track, with cloth from the first level.
 - **Coats** moved from the Town Center to the Tailor. The Town Center now only hires villagers.

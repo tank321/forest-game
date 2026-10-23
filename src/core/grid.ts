@@ -16,6 +16,18 @@ export function neighbors4(s: Dims, i: number): number[] {
   return out;
 }
 
+export function neighbors8(s: Dims, i: number): number[] {
+  const out: number[] = [];
+  const x = i % s.w;
+  const y = (i / s.w) | 0;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if ((dx || dy) && inBounds(s, x + dx, y + dy)) out.push(i + dy * s.w + dx);
+    }
+  }
+  return out;
+}
+
 /** Owned land: open ground, roads or buildings. Also exactly what villagers can walk on. */
 export const isTerritory = (s: GameState, i: number) => s.tiles[i] === Tile.Grass || s.tiles[i] === Tile.Building || s.tiles[i] === Tile.Road;
 export const isWalkable = isTerritory;

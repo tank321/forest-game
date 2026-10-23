@@ -73,4 +73,18 @@ export interface GameState {
   nextId: number;
   time: number; // simulated seconds
   legacy: { runs: number; perks: Partial<Record<PerkId, number>> }; // kept across rebuilds (prestige)
+  contracts: Contract[]; // Guild Contracts on the board
+  caravan: Deal[] | null; // Merchant Caravan deals while it is in town (null = away)
+}
+
+/** A Guild Contract: gather `need` more of a resource, fell `need` more trees, or reach `need` villagers. Pays `reward` gold. */
+export type Contract =
+  | { kind: 'gather'; res: Exclude<ResourceKey, 'gold'>; need: number; base: number; reward: number }
+  | { kind: 'fell'; need: number; base: number; reward: number }
+  | { kind: 'grow'; need: number; reward: number };
+
+/** A Merchant Caravan deal: pay `give` for `get`. */
+export interface Deal {
+  give: Cost;
+  get: Cost;
 }

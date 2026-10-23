@@ -1,8 +1,8 @@
-import { CONFIG } from '../config';
 import { BUILDINGS, buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
 import { linkedBuildings } from '../core/roads';
-import { hireVillager, togglePause, upgrade } from '../core/commands';
+import { blast, blastWait, hireVillager, togglePause, upgrade } from '../core/commands';
 import { canAfford, commission, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
+import { lvl } from '../core/skills';
 import { getStats, type Stats } from '../core/stats';
 import { jobResource } from '../core/systems/workplace';
 import type { Building, Cost, GameState, HireResource, Job, ResourceKey } from '../core/types';
@@ -32,7 +32,7 @@ export interface Action {
 type Selected = (w: World, b: Building) => Action[];
 type Info = (w: World, b: Building) => string;
 
-function hire(w: World, res: HireResource): Action {
+function hire(w: World, res: HireResource, at?: number): Action {
   const s = w.state;
   const full = s.villagers.length >= popCap(s);
   const cost = villagerCost(s, res);
@@ -40,7 +40,7 @@ function hire(w: World, res: HireResource): Action {
     label: full ? `Hire with ${res} (need a house)` : `Hire villager with ${res}`,
     cost,
     enabled: !full && canAfford(s, cost),
-    run: () => hireVillager(w, res),
+    run: () => hireVillager(w, res, at),
   };
 }
 
@@ -89,6 +89,19 @@ function pauseAction(w: World, b: Building): Action {
   };
 }
 
+/** Dynamite: blast the Quarry, then wait out its cooldown. */
+function blastAction(w: World, b: Building): Action {
+  const wait = blastWait(w, b.id);
+  const linked = linkedBuildings(w.state).has(b.id);
+  return {
+    label: wait > 0 ? `Blast (ready in ${Math.ceil(wait)} s)` : 'Blast!',
+    hint: linked ? 'A burst of stone, and the trees around the quarry take a heavy hit.' : 'Connect the quarry by road to blast.',
+    cost: null,
+    enabled: linked && wait === 0,
+    run: () => blast(w, b.id),
+  };
+}
+
 /** Actions offered when a building of each kind is selected. New buildings add an entry here. */
 export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   townCenter: (w) => [
@@ -113,6 +126,11 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
       { label: 'Carry', value: `${Math.round(st.farmCarry)} food` },
     ]),
   ],
+  outpost: (w, b) => [
+    hire(w, 'wood', b.id),
+    hire(w, 'food', b.id),
+    hire(w, 'cloth', b.id),
+  ],
   farm: (w, b) => [pauseAction(w, b)],
   orchard: (w, b) => [pauseAction(w, b)],
   quarry: (w, b) => [
@@ -120,6 +138,7 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
       { label: 'Speed', value: perSec(st.mineRate, 'stone') },
       { label: 'Carry', value: `${Math.round(st.mineCarry)} stone` },
     ]),
+    ...(lvl(w.state, 'dynamite') ? [blastAction(w, b)] : []),
     pauseAction(w, b),
   ],
   sheepFarm: (w, b) => [pauseAction(w, b)],
@@ -165,21 +184,28 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   farm: (w, b) => {
     const st = getStats(w.state);
     const well = st.wellFarms.has(b.id) ? ` · Well: harvest ×${st.wellHarvest}, carry ×${st.wellCarry}` : '';
-    const season = CONFIG.seasons.farm[st.season];
+    const crop = st.cropBonus.get(b.id);
+    const rotation = crop ? ` · Crop Rotation: harvest ×${crop}` : '';
+    const season = st.farmSeason[st.season];
     const name = seasonName(st.season);
     const note = season === 0 ? ` · ${name}: the fields lie fallow.` : season !== 1 ? ` · ${name}: harvest ×${season}` : '';
-    return staffInfo(w, b, 'farmer') + well + note;
+    return staffInfo(w, b, 'farmer') + well + rotation + note;
   },
   orchard: (w, b) => {
     const st = getStats(w.state);
-    const season = CONFIG.seasons.farm[st.season];
+    const season = st.farmSeason[st.season];
     const note = season === 0 ? ` · ${seasonName(st.season)}: no fruit until spring.` : '';
     return `${staffInfo(w, b, 'orchardist')} · Each walks ${st.orchardSpeed.toFixed(1)} tiles/s, picks ${perSec(st.orchardRate, 'food')} and carries ${Math.round(st.orchardCarry)}${note}`;
   },
-  quarry: (w, b) => staffInfo(w, b, 'miner'),
+  quarry: (w, b) => {
+    const vein = getStats(w.state).veinBonus.get(b.id);
+    return staffInfo(w, b, 'miner') + (vein ? ` · Rich Veins: stone ×${vein.toFixed(2)}` : '');
+  },
   sheepFarm: (w, b) => {
     const st = getStats(w.state);
-    return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per cloth' : '');
+    const pasture = st.pastureBonus.get(b.id);
+    return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per cloth' : '') +
+      (pasture ? ` · Open Pastures: wool ×${pasture.toFixed(2)}` : '');
   },
   cottonPlantation: (w, b) => {
     const st = getStats(w.state);

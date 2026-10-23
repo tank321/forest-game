@@ -26,6 +26,7 @@ const SOURCE_LABEL: Record<Source, string> = {
   trade: 'Trading posts',
   hand: 'Chopping by hand',
   tax: 'Tax',
+  bonus: 'Skill bonuses',
 };
 
 /** Gathered per source so far, plus loads still being carried (under the carrier's job), so it grows as goods are gathered, not in lumps at delivery. */
@@ -142,7 +143,7 @@ export class Hud {
     this.set(this.els.season, seasonName(st.season));
     this.updateSeasonBar(st.season, s.time);
     this.updateSeasonInfo(st, s.time);
-    this.updateShortage(s.time, st.hungry, st.cold);
+    this.updateShortage(s.time, st.hungry, st.cold, st.wellFed);
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
     // Zero only while a due relic finds no spot to appear; it retries on the next fell.
@@ -181,7 +182,7 @@ export class Hud {
     info.style.left = `${left}px`;
   }
 
-  private updateShortage(time: number, hungry: boolean, cold: boolean): void {
+  private updateShortage(time: number, hungry: boolean, cold: boolean, wellFed: boolean): void {
     const last = this.lastShort;
     if (time < last.hungry) last.hungry = -Infinity; // time went back: a new game
     if (time < last.cold) last.cold = -Infinity;
@@ -189,9 +190,18 @@ export class Hud {
     if (cold) last.cold = time;
     const h = time - last.hungry < SHORTAGE_HOLD;
     const c = time - last.cold < SHORTAGE_HOLD;
-    this.shortage.hidden = !h && !c;
-    if (!h && !c) return;
     const [b, small] = this.shortage.children as unknown as [HTMLElement, HTMLElement];
+    // Without a shortage the same chip shows Well Fed, in green.
+    const fed = !h && !c && wellFed;
+    this.shortage.hidden = !h && !c && !fed;
+    this.shortage.classList.toggle('alert', h || c);
+    this.shortage.classList.toggle('boon', fed);
+    if (fed) {
+      this.set(b, 'Well Fed');
+      this.set(small, `Gathering ×${CONFIG.skills.wellFed.gather}`);
+      this.shortage.title = `At least ${CONFIG.skills.wellFed.perVillager} food per villager in stock.`;
+    }
+    if (!h && !c) return;
     this.set(b, h && c ? 'Hungry & cold' : h ? 'Hungry' : 'Cold');
     this.set(small, h && c ? 'Most work ×0.5' : h ? 'Chop & mine ×0.5' : 'Farm, mine, herd, pick ×0.5');
     this.shortage.title = h ? 'Out of food: build farms.' + (c ? ' Out of firewood: chop wood.' : '') : 'Out of firewood: chop wood.';

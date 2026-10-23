@@ -1,15 +1,16 @@
 import { CONFIG } from '../config';
 import { perkMult } from './legacy';
 import { rand } from './rng';
+import { lvl } from './skills';
 import { Tile } from './types';
 import type { GameState } from './types';
 
 /** Trees to fell between relic k (0-based) and the next: 18, 19 … 67, then +2 steps. */
 export const relicGap = (k: number) => (k < 50 ? 18 + k : 69 + 2 * (k - 50));
 
-/** The gap this run uses: Relic Hunters shortens it. */
-export const relicSpacing = (s: Pick<GameState, 'legacy'>, k: number) =>
-  Math.ceil(relicGap(k) * perkMult(s, 'relicHunters', CONFIG.legacy.perks.relicHunters.gap));
+/** The gap this run uses: Relic Hunters and Keen Eyes shorten it. */
+export const relicSpacing = (s: Pick<GameState, 'legacy' | 'skills'>, k: number) =>
+  Math.ceil(relicGap(k) * perkMult(s, 'relicHunters', CONFIG.legacy.perks.relicHunters.gap) * (1 - CONFIG.skills.keenEyes.relicGap * lvl(s, 'keenEyes')));
 
 /**
  * Places a relic on a visible tree that is not yet touching territory (fog ≥ 2), so the player

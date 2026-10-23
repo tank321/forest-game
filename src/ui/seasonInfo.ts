@@ -6,7 +6,7 @@ export const seasonName = (i: number) => SEASONS[i][0].toUpperCase() + SEASONS[i
 
 /** What season `i` means for the town as it is now (upkeep scales with villagers and coats). */
 export function seasonEffects(st: Stats, i: number): string[] {
-  const farm = CONFIG.seasons.farm[i];
+  const farm = st.farmSeason[i];
   const { freeVillagers, hungry, cold } = CONFIG.upkeep;
   const winter = i === WINTER;
   return [

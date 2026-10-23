@@ -3,7 +3,7 @@ import { addBuilding, BUILDINGS } from './buildings';
 import { newLegacy, perk, startVillagers, type Legacy } from './legacy';
 import { relicSpacing } from './relics';
 import { maxWoodTable } from './trees';
-import type { GameState, Villager } from './types';
+import type { Building, GameState, Villager } from './types';
 import { Tile } from './types';
 
 export function createInitialState(
@@ -36,12 +36,14 @@ export function createInitialState(
     treesChopped: 0,
     relics: [],
     relicsSpawned: 0,
-    nextRelicAt: relicSpacing({ legacy }, 0),
+    nextRelicAt: relicSpacing({ legacy, skills: {} }, 0),
     cards: [],
     picksPending: 0,
     nextId: 1,
     time: 0,
     legacy,
+    contracts: [],
+    caravan: null,
   };
   s.wood.set(maxWoodTable(s));
   for (let y = o; y < o + start; y++) s.tiles.fill(Tile.Grass, y * size + o, y * size + o + start);
@@ -52,9 +54,9 @@ export function createInitialState(
   return s;
 }
 
-/** Spawns a villager at the center of the Town Center. */
-export function spawnVillager(s: GameState): Villager {
-  const b = s.buildings.find((b) => b.kind === 'townCenter')!;
+/** Spawns a villager at the center of `at` (default: the Town Center). */
+export function spawnVillager(s: GameState, at?: Building): Villager {
+  const b = at ?? s.buildings.find((b) => b.kind === 'townCenter')!;
   const def = BUILDINGS[b.kind];
   const v: Villager = {
     id: s.nextId++,

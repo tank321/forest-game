@@ -2,30 +2,42 @@ import { BUILDINGS, buildingAt, buildingById, footprint, tallyTo, workersOf } fr
 import { gain } from '../economy';
 import { tileAt } from '../grid';
 import { pathHome, pathToAny } from '../pathing';
-import type { Building, GameState, ResourceKey, Villager } from '../types';
-import type { World } from '../world';
+import { Tile, type Building, type GameState, type ResourceKey, type Villager } from '../types';
+import type { Stats } from '../stats';
+import { gainBonus, type World } from '../world';
 
-/** Moves along the path for up to `t` seconds; returns unused time. */
-export function walk(w: World, v: Villager, t: number, speed: number): number {
-  const sw = w.state.w;
+/**
+ * Moves along the path for up to `t` seconds; returns unused time. A stretch between two road waypoints
+ * is walked at `roadWalk` × speed (Cobblestone) and pays `toll` gold per tile (Toll Roads); empty hands
+ * walk at `emptyWalk` × speed (Errand Runners).
+ */
+export function walk(w: World, v: Villager, t: number, speed: number, st: Pick<Stats, 'roadWalk' | 'emptyWalk' | 'toll'>): number {
+  const { w: sw, tiles } = w.state;
+  const base = v.carry > 0 ? speed : speed * st.emptyWalk;
+  let tolled = 0;
   while (v.pathI < v.path.length) {
     const i = v.path[v.pathI];
     const cx = (i % sw) + 0.5;
     const cy = ((i / sw) | 0) + 0.5;
     const dx = cx - v.x;
     const dy = cy - v.y;
-    const need = Math.hypot(dx, dy) / speed;
-    if (need > t) {
-      const f = t / need;
+    const paved = tiles[i] === Tile.Road && (v.pathI === 0 || tiles[v.path[v.pathI - 1]] === Tile.Road);
+    const dist = Math.hypot(dx, dy);
+    const need = dist / (paved ? base * st.roadWalk : base);
+    const f = need > t ? t / need : 1;
+    if (paved) tolled += dist * f;
+    if (f < 1) {
       v.x += dx * f;
       v.y += dy * f;
-      return 0;
+      t = 0;
+      break;
     }
     v.x = cx;
     v.y = cy;
     t -= need;
     v.pathI++;
   }
+  if (st.toll > 0 && tolled > 0) gainBonus(w, 'gold', tolled * st.toll);
   return t;
 }
 

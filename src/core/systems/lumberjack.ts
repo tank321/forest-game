@@ -29,7 +29,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
           lostTarget(w, v, st);
           break;
         }
-        t = walk(w, v, t, st.speed);
+        t = walk(w, v, t, st.speed, st);
         if (!arrived(v)) return;
         v.state = 'chop';
         break;
@@ -62,7 +62,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         break;
       }
       case 'toHome':
-        t = walk(w, v, t, st.speed);
+        t = walk(w, v, t, st.speed, st);
         if (!arrived(v)) return;
         deliver(w, v, 'wood', v.carry);
         v.carry = 0;

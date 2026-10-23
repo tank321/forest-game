@@ -1,9 +1,11 @@
 import { CONFIG } from '../config';
-import { buyResource, hasMarket, sellResource } from '../core/commands';
-import { marketQuote, TRADE_RESOURCES, type TradeResource } from '../core/economy';
+import { buyResource, claimContract, hasMarket, sellResource, takeDeal } from '../core/commands';
+import { canAfford, marketQuote, TRADE_RESOURCES, type TradeResource } from '../core/economy';
+import { contractDone, contractProgress } from '../core/guild';
+import { lvl } from '../core/skills';
 import type { World } from '../core/world';
 import type { UiState } from './state';
-import { fmt, icon } from './text';
+import { costHtml, fmt, icon } from './text';
 
 /** Quick-trade amounts, in units of the selected resource. */
 const LOTS = [1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7] as const;
@@ -23,6 +25,7 @@ export class MarketView {
   private input: HTMLInputElement;
   private custom: Record<Side, HTMLButtonElement>;
   private note: HTMLElement;
+  private guild: HTMLElement;
   private cache = new Map<Element, string>();
 
   constructor(
@@ -33,6 +36,7 @@ export class MarketView {
       LOT_LABEL.map((l) => `<button class="market-lot" data-side="${side}"><b>${l}</b><small></small></button>`).join('');
     this.el.className = 'market';
     this.el.innerHTML = `
+      <div class="market-guild"></div>
       <h3 class="market-label" id="marketRes">Resource</h3>
       <div class="market-tiles" role="radiogroup" aria-labelledby="marketRes">${TRADE_RESOURCES.map((r) =>
         `<button class="market-tile" role="radio" title="${NAME[r]}">${icon(r)}<small></small></button>`).join('')}</div>
@@ -67,6 +71,34 @@ export class MarketView {
     this.el.querySelector<HTMLButtonElement>('.market-max')!.onclick = () => {
       this.input.value = String(Math.floor(this.world().state.resources[this.ui.marketRes]));
     };
+    this.guild = this.el.querySelector('.market-guild')!;
+    this.guild.onclick = (e) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>('button');
+      if (!b || b.disabled) return;
+      const w = this.world();
+      if (b.dataset.deal !== undefined && takeDeal(w, Number(b.dataset.deal))) this.note.textContent = 'Deal done. The caravan moves on.';
+      if (b.dataset.contract !== undefined && claimContract(w, Number(b.dataset.contract))) this.note.textContent = 'Contract complete!';
+    };
+  }
+
+  /**
+   * The Merchant Caravan's deals while it is in town, then the Guild Contracts board. Rebuilt only when its
+   * HTML changes, so the amount field below keeps focus.
+   */
+  private updateGuild(): void {
+    const s = this.world().state;
+    const open = hasMarket(s);
+    const deals = (s.caravan ?? []).map((d, k) =>
+      `<button class="market-deal" data-deal="${k}"${open && canAfford(s, d.give) ? '' : ' disabled'}>${costHtml(d.give, s.resources)} → ${costHtml(d.get, { ...s.resources, ...d.get })}</button>`);
+    const contracts = lvl(s, 'guildContracts') ? s.contracts.map((c, k) => {
+      const done = contractDone(s, c);
+      const ask = c.kind === 'gather' ? `Gather ${fmt(c.need)} ${icon(c.res)}` : c.kind === 'fell' ? `Fell ${fmt(c.need)} trees` : `Reach ${fmt(c.need)} villagers`;
+      const progress = `${fmt(Math.floor(contractProgress(s, c)))}/${fmt(c.need)}`;
+      return `<button class="market-contract${done ? ' gold' : ''}" data-contract="${k}"${done && open ? '' : ' disabled'}><span>${ask}</span><small>${done ? 'Claim' : progress} · ${icon('gold')}${fmt(c.reward)}</small></button>`;
+    }) : [];
+    this.html(this.guild,
+      (deals.length ? `<h3 class="market-label">Merchant caravan · one deal, until spring</h3><div class="market-deals">${deals.join('')}</div>` : '') +
+      (contracts.length ? `<h3 class="market-label">Guild contracts</h3><div class="market-contracts">${contracts.join('')}</div>` : ''));
   }
 
   update(): void {
@@ -75,6 +107,7 @@ export class MarketView {
     const have = s.resources;
     const quote = (n: number, side: Side) => marketQuote(s, res, n, side);
     const open = hasMarket(s); // an isolated Market can't trade
+    this.updateGuild();
     this.tiles.forEach((b, i) => {
       const r = TRADE_RESOURCES[i];
       b.classList.toggle('active', r === res);

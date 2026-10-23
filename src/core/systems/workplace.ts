@@ -1,8 +1,11 @@
 import { CONFIG } from '../../config';
 import { buildingById, isActive } from '../buildings';
+import { tileAt } from '../grid';
+import { rand } from '../rng';
+import { lvl, type SkillId } from '../skills';
 import type { Stats } from '../stats';
 import type { Building, Job, ResourceKey, Villager } from '../types';
-import type { World } from '../world';
+import { gainBonus, type Fx, type World } from '../world';
 import { arrived, deliver, goHome, pathToWork, returnToWork, walk } from './movement';
 
 export type WorkplaceJob = Exclude<Job, 'lumber'>;
@@ -20,13 +23,21 @@ interface Work {
 const WORK: Record<WorkplaceJob, Work> = {
   farm: {
     res: 'food',
-    output: (st, b) => st.wellFarms.has(b.id)
-      ? { rate: st.farmRate * st.wellHarvest, carry: st.farmCarry * st.wellCarry }
-      : { rate: st.farmRate, carry: st.farmCarry },
+    output: (st, b) => {
+      const well = st.wellFarms.has(b.id);
+      return {
+        rate: st.farmRate * (well ? st.wellHarvest : 1) * (st.cropBonus.get(b.id) ?? 1),
+        carry: st.farmCarry * (well ? st.wellCarry : 1),
+      };
+    },
   },
   orchard: { res: 'food', output: (st) => ({ rate: st.orchardRate, carry: st.orchardCarry }), speed: 'orchardSpeed' },
-  mine: { res: 'stone', output: (st) => ({ rate: st.mineRate, carry: st.mineCarry }) },
-  herd: { res: 'cloth', output: (st) => ({ rate: st.herdRate, carry: st.herdCarry }), also: { res: 'food', per: 'herdFood' } },
+  mine: { res: 'stone', output: (st, b) => ({ rate: st.mineRate * (st.veinBonus.get(b.id) ?? 1), carry: st.mineCarry }) },
+  herd: {
+    res: 'cloth',
+    output: (st, b) => ({ rate: st.herdRate * (st.pastureBonus.get(b.id) ?? 1), carry: st.herdCarry }),
+    also: { res: 'food', per: 'herdFood' },
+  },
   cotton: { res: 'cloth', output: (st) => ({ rate: st.cottonRate, carry: st.cottonCarry }) },
   // Loading takes the same time on every route, so a longer route also pays more per second.
   trade: {
@@ -37,6 +48,43 @@ const WORK: Record<WorkplaceJob, Work> = {
     },
   },
 };
+
+/**
+ * What `seconds` of work by every working villager in `jobs` gathers at current rates, by workplace id
+ * (Harvest Festival, Shearing Day).
+ */
+export function burst(w: World, st: Stats, jobs: readonly WorkplaceJob[], seconds: number): Map<number, number> {
+  const s = w.state;
+  const out = new Map<number, number>();
+  for (const v of s.villagers) {
+    if (!(jobs as readonly Job[]).includes(v.job)) continue;
+    const place = buildingById(s, v.workplace);
+    if (isActive(s, place, st.linked)) out.set(place.id, (out.get(place.id) ?? 0) + WORK[v.job as WorkplaceJob].output(st, place).rate * seconds);
+  }
+  return out;
+}
+
+/** Golden Fleece and Geodes: a herder's or miner's delivery may bring a jackpot on top. */
+const JACKPOTS: Partial<Record<WorkplaceJob, { skill: SkillId; res: ResourceKey; chance: number; n: (load: number) => number; fx: Fx['kind'] }>> = {
+  herd: {
+    skill: 'goldenFleece', res: 'cloth', chance: CONFIG.skills.goldenFleece.chance, fx: 'fleece',
+    n: (load) => load * (CONFIG.skills.goldenFleece.mult - 1),
+  },
+  mine: {
+    skill: 'geodes', res: 'gold', chance: CONFIG.skills.geodes.chance, fx: 'geode',
+    n: (load) => load * CONFIG.skills.geodes.goldPerStone,
+  },
+};
+
+function jackpot(w: World, v: Villager): void {
+  const s = w.state;
+  const j = JACKPOTS[v.job as WorkplaceJob];
+  const level = j ? lvl(s, j.skill) : 0;
+  if (!j || !level || v.carry <= 0 || rand(s) >= j.chance * level) return;
+  const n = j.n(v.carry);
+  gainBonus(w, j.res, n);
+  w.fx.push({ kind: j.fx, i: tileAt(s, v.x, v.y), n });
+}
 
 /** Resource a villager with this job carries. */
 export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : WORK[job].res);
@@ -83,7 +131,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
           v.state = 'idle';
           break;
         }
-        t = walk(w, v, t, speed);
+        t = walk(w, v, t, speed, st);
         if (!arrived(v)) return;
         v.state = 'work';
         break;
@@ -105,11 +153,12 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
         break;
       }
       case 'toHome':
-        t = walk(w, v, t, speed);
+        t = walk(w, v, t, speed, st);
         if (!arrived(v)) return;
         // A removed workplace's last load still counts for the drop-off.
         deliver(w, v, res, v.carry, place);
         if (also && st[also.per] > 0) deliver(w, v, also.res, v.carry * st[also.per], place);
+        jackpot(w, v);
         v.carry = 0;
         if (active) returnToWork(w, v);
         else v.state = 'idle';

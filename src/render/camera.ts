@@ -12,6 +12,7 @@ export class Camera {
   constructor(
     private worldW: number,
     private worldH: number,
+    private maxZoom: number = CONFIG.camera.maxZoom,
   ) {
     this.x = worldW / 2;
     this.y = worldH / 2;
@@ -59,7 +60,7 @@ export class Camera {
   zoomAt(sx: number, sy: number, factor: number): void {
     this.glide = null;
     const [wx, wy] = this.toWorld(sx, sy);
-    this.zoom = Math.min(CONFIG.camera.maxZoom, Math.max(this.minZoom(), this.zoom * factor));
+    this.zoom = Math.min(this.maxZoom, Math.max(this.minZoom(), this.zoom * factor));
     const [nx, ny] = this.toWorld(sx, sy);
     this.x += wx - nx;
     this.y += wy - ny;
@@ -67,7 +68,7 @@ export class Camera {
   }
 
   /** Fully zoomed out shows the whole map. */
-  private minZoom(): number {
+  minZoom(): number {
     return Math.min(this.vw / this.worldW, this.vh / this.worldH);
   }
 

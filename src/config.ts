@@ -114,6 +114,38 @@ export const CONFIG = {
       legacyX2: { gather: 2 }, // every gather rate × per level
     },
   },
+  skills: {
+    masteryLevels: 8, // levels learned in a track before its Mastery is offered
+    sweep: 0.5, // Sweeping Strike: share of a tap dealt to each choppable neighbour
+    combo: { window: 1, step: 0.1, capPerLevel: 0.5 }, // Momentum: s between chained taps, bonus per chained tap, max bonus per level
+    keenEyes: { vision: 1, relicGap: 0.1 }, // per level: extra rings of forest in sight, trees between relics −10%
+    heartwood: { chance: 0.1, bonus: 0.5 }, // per level chance a felled tree pays bonus × its full wood
+    timber: 0.5, // share of a felled tree's full wood dealt to a neighbouring tree
+    cropRotation: { perFarm: 0.25, max: 4 }, // harvest bonus per touching farm, up to max farms
+    rootCellars: 0.85, // food upkeep × this per level
+    greenhouse: 0.5, // winter farm and orchard harvest multiplier
+    festival: { seconds: 60, winterWalk: 1.25 }, // seconds of farm and orchard harvest paid as winter starts; walk speed all winter
+    openPastures: { radius: 2, perTile: 0.01 }, // wool bonus per level per open grass tile this close to a Sheep Farm
+    shearing: 60, // seconds of herders' wool paid as spring starts
+    goldenFleece: { chance: 0.03, mult: 10 }, // per level chance a herder's delivery is worth mult × its cloth
+    weavers: 0.04, // cloth bonus per Tailor upgrade level owned
+    grazing: { radius: 4, crews: 3 }, // Grazing Flocks: reach from a Sheep Farm; grazes as fast as this many lumberjacks
+    richVeins: { perTile: 0.02, maxTiles: 30 }, // stone bonus per level per tile between a Quarry and the Town Center
+    geodes: { chance: 0.02, goldPerStone: 25 }, // per level chance a miner's delivery brings a gem worth this gold per stone
+    cobblestone: 0.2, // walk speed bonus per level along roads
+    deepShafts: 1.5, // mining multiplier in winter (and cold never slows miners)
+    dynamite: { stoneSeconds: 30, radius: 2, taps: 100, cooldown: 90 }, // stone burst, tree reach, damage in taps, s between blasts
+    errandRunners: 0.25, // empty-handed walk speed bonus per level
+    wellFed: { perVillager: 10, gather: 1.2 }, // food in stock per villager needed; gather multiplier while fed
+    surveyors: 2, // extra roads per house per level
+    outpost: { wood: 20_000, stone: 2_000, gold: 500 },
+    toll: 0.1, // gold per road tile walked, per level
+    fair: { tradeMult: 1.5 }, // Midsummer Fair: Trading Post gold × this all summer (and no market commission)
+    // Guild Contracts: sized as minutes of the lifetime average rate (at least `min`), paid as `rewardMult` × the goods' market value
+    contracts: { board: 3, minutes: [3, 6], min: { gather: 50, fell: 10, grow: 2 }, rewardMult: 1, goldPerFell: 2 },
+    // Merchant Caravans: deal size in seconds of the lifetime average rate; buy at buyMult × value, sell at sellMult × value
+    caravan: { deals: 3, seconds: 600, min: 100, buyMult: 0.5, sellMult: 2 },
+  },
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900 }, // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic
   save: { key: 'forest-game-save', intervalMs: 10_000 },

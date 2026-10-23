@@ -5,7 +5,7 @@ import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 16;
+const VERSION = 17;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -133,6 +133,8 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
     const { barrow = 0, ...rest } = f.state.upgrades as GameState['upgrades'] & { barrow?: number };
     return { ...f, version: 16, state: { ...f.state, upgrades: { ...rest, shoes: barrow, backpack: barrow } } };
   },
+  // v17 adds Guild Contracts and the Merchant Caravan: an empty board, no caravan in town.
+  16: (f) => ({ ...f, version: 17, state: { ...f.state, contracts: [], caravan: null } }),
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */

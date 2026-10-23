@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import { lvl, type SkillId } from './skills';
 import type { Building, Cost, GameState, Job, ResourceKey } from './types';
 import { Tile } from './types';
@@ -12,6 +13,7 @@ export interface BuildingDef {
   cityNeighbor: boolean; // must touch the Town Center or another city building
   road: boolean; // works only while touching a connected road or the Town Center (see roads.ts)
   unlock?: SkillId; // skill that must be learned before it can be built (none = from the start)
+  limit?: number; // most that may stand at once (none = no limit)
   cost: (owned: number) => Cost;
 }
 
@@ -96,6 +98,16 @@ export const BUILDINGS = {
     unlock: 'tradingPosts',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
   }),
+  // Frontier Outpost: a second hub, anywhere on cleared land. Takes every resource and roots its own roads (see roads.ts).
+  outpost: def({
+    w: 3,
+    h: 3,
+    dropoff: ['wood', 'food', 'stone', 'cloth'],
+    road: false,
+    unlock: 'frontierOutpost',
+    limit: 1,
+    cost: () => ({ ...CONFIG.skills.outpost }),
+  }),
 } satisfies Record<string, BuildingDef>;
 export type BuildingKind = keyof typeof BUILDINGS;
 
@@ -110,10 +122,19 @@ export function isUnlocked(s: Pick<GameState, 'skills'>, kind: BuildingKind): bo
 /** The building a skill unlocks, if any. */
 export const unlocks = (id: SkillId): BuildingKind | undefined => KINDS.find((k) => BUILDINGS[k].unlock === id);
 
-export const CITY_KINDS: readonly BuildingKind[] = ['townCenter', 'house', 'market', 'taxOffice'];
+export const CITY_KINDS: readonly BuildingKind[] = ['townCenter', 'outpost', 'house', 'market', 'taxOffice'];
+
+/** Hubs: every resource is delivered there, and roads touching one are connected (see roads.ts). */
+export const HUB_KINDS: readonly BuildingKind[] = ['townCenter', 'outpost'];
 
 /** A workplace that works only while a building of the other kind exists. */
 export const NEEDS: Partial<Record<BuildingKind, BuildingKind>> = { tradingPost: 'market' };
+
+/** Whether as many of this kind stand as its `limit` allows (the Outpost). */
+export const atLimit = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) => {
+  const limit: number | undefined = (BUILDINGS[kind] as BuildingDef).limit;
+  return limit !== undefined && countOf(s, kind) >= limit;
+};
 
 export const countOf = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) =>
   s.buildings.reduce((n, b) => n + (b.kind === kind ? 1 : 0), 0);
@@ -175,9 +196,9 @@ export function buildingGap(a: Pick<Building, 'kind' | 'x' | 'y'>, b: Pick<Build
   return Math.max(b.x - (a.x + da.w - 1), a.x - (b.x + db.w - 1), b.y - (a.y + da.h - 1), a.y - (b.y + db.h - 1), 0);
 }
 
-/** Job slots of a workplace, including skill bonuses. */
+/** Job slots of a workplace, including skill bonuses (Quarry Crews, Farmhands). */
 export const workersOf = (s: GameState, b: Building) =>
-  BUILDINGS[b.kind].workers + (b.kind === 'quarry' ? lvl(s, 'quarryCrews') : 0);
+  BUILDINGS[b.kind].workers + (b.kind === 'quarry' ? lvl(s, 'quarryCrews') : b.kind === 'farm' ? lvl(s, 'farmhands') : 0);
 
 export const buildingById = (s: GameState, id: number) => s.buildings.find((b) => b.id === id);
 

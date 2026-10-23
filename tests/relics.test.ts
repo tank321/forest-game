@@ -4,7 +4,8 @@ import { buildingCost, popCap, villagerCost } from '../src/core/economy';
 import { isCollectable, neighbors4 } from '../src/core/grid';
 import { relicGap, spawnRelic } from '../src/core/relics';
 import { simulate } from '../src/core/sim';
-import { availableSkills, dealCards, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS } from '../src/core/skills';
+import { availableSkills, dealCards, isMastery, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS, unlockedBy, type SkillId } from '../src/core/skills';
+import { NODE, skillLayout } from '../src/ui/skillGraph';
 import { getStats } from '../src/core/stats';
 import { Tile } from '../src/core/types';
 import type { World } from '../src/core/world';
@@ -96,7 +97,16 @@ describe('skill tracks', () => {
     expect(availableSkills(s).sort()).toEqual(TRACK_IDS.map((t) => TRACKS[t][0]).sort());
   });
 
-  it('unlock each skill once the one before it has a level', () => {
+  it('form one tree per track: a parent comes earlier in the same track and can unlock several skills', () => {
+    for (const t of TRACK_IDS) {
+      const ids: readonly SkillId[] = TRACKS[t];
+      expect(ids.filter((id) => !prerequisite(id) && !isMastery(id))).toEqual([ids[0]]);
+      for (const id of ids.slice(1)) expect(ids.indexOf(prerequisite(id)!)).toBeLessThan(ids.indexOf(id));
+    }
+    expect(unlockedBy('markets')).toEqual(['tradingPosts', 'taxOffices', 'shrewdTraders']);
+  });
+
+  it('unlock each skill once its parent has a level', () => {
     const s = smallWorld().state;
     for (const id of SKILL_IDS) {
       const req = prerequisite(id);
@@ -105,6 +115,23 @@ describe('skill tracks', () => {
       expect(availableSkills(s)).not.toContain(id);
       s.skills = { [req]: 1 };
       expect(availableSkills(s)).toContain(id);
+    }
+  });
+
+  it('lay the tree out with children below their parent and no overlapping nodes', () => {
+    const { w, h, nodes } = skillLayout();
+    for (const id of SKILL_IDS) {
+      const { x, y } = nodes[id];
+      const req = prerequisite(id);
+      if (req) expect(y).toBeGreaterThan(nodes[req].y + NODE.h);
+      expect(x - NODE.w / 2).toBeGreaterThanOrEqual(0);
+      expect(x + NODE.w / 2).toBeLessThanOrEqual(w);
+      expect(y + NODE.h).toBeLessThanOrEqual(h);
+      for (const other of SKILL_IDS) {
+        if (other === id) continue;
+        const o = nodes[other];
+        expect(Math.abs(o.x - x) >= NODE.w || Math.abs(o.y - y) >= NODE.h).toBe(true);
+      }
     }
   });
 
@@ -119,7 +146,8 @@ describe('skill tracks', () => {
     s.skills = { sharpAxes: 1, powerSwing: 1 };
     for (const t of TRACK_IDS) if (t !== 'forestry') for (const id of TRACKS[t]) s.skills[id] = SKILLS[id].max;
     dealCards(s);
-    expect([...s.cards].sort()).toEqual(['campCrews', 'powerSwing', 'sharpAxes']);
+    expect(s.cards.map(trackOf)).toEqual(['forestry', 'forestry', 'forestry']);
+    expect(new Set(s.cards).size).toBe(3);
   });
 });
 

@@ -8,7 +8,7 @@ import { getStats, wellFarms, wellReach } from '../core/stats';
 import { carried } from '../core/systems/workplace';
 import type { Building, GameState, Job, ResourceKey, Villager } from '../core/types';
 import { RESOURCES, Tile } from '../core/types';
-import type { World } from '../core/world';
+import { visionRadius, type Fx, type World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
 import { fmt } from '../ui/text';
@@ -60,13 +60,32 @@ const VOID = [0x07, 0x0a, 0x07]; // fog beyond the visible radius
 const VOID_KEY = -2; // terrain cache key for a fogged-out cell
 const ROAD_KEY = 10_000; // terrain cache keys from here up are road cells
 const ISOLATED_ROAD_LIGHT = 0.7; // roads not (yet) joined to the Town Center are drawn darker
-const FOG_LIGHT = [1, 1, 0.75, 0.5]; // brightness by fog distance 0..R
+const FOG_LIGHT = [1, 1, 0.75, 0.5, 0.4, 0.3]; // brightness by fog distance 0..MAX_FOG (Keen Eyes sees the last rings)
+const FX_MS = 1100; // how long a floating skill effect rises and fades
+const FX_RISE = 0.6; // tiles it rises
+const FX_FONT = '800 15px system-ui, "Segoe UI", sans-serif';
+/** Each effect's floating text, from its formatted and raw amount. The festival shows as a toast instead. */
+const FX_TEXT: Record<Fx['kind'], (n: string, raw: number) => string> = {
+  combo: (_, raw) => `×${raw.toFixed(1)}`,
+  heartwood: (n) => `+${n}!`,
+  timber: (n) => `Timber! +${n}`,
+  festival: (n) => `+${n} food`,
+  shearing: (n) => `Shearing! +${n} cloth`,
+  fleece: (n) => `Golden Fleece! +${n}`,
+  geode: (n) => `Gem! +${n} gold`,
+  grazed: (n) => `Grazed! +${n}`,
+  blast: (n) => (n === '0' ? 'BOOM!' : `BOOM! +${n} stone`),
+  fair: () => 'Midsummer Fair!', // shown as toasts
+  caravan: () => 'Caravan!',
+};
+const FX_COLOR: Partial<Record<Fx['kind'], string>> = { combo: '#bfe6ff', blast: '#ff9a4a', shearing: '#f2efe6' };
 const WINTER_FADE = 10; // s the winter tint takes to fade in or out
 const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at its own moment
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
 const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
+  outpost: '#9a6a34',
   house: '#d8b47a',
   lumberCamp: '#a0522d',
   barn: '#8e3b2e',
@@ -96,6 +115,8 @@ export class Renderer {
   private tctx: CanvasRenderingContext2D;
   /** Ground key last drawn per cell into `terrain` (-1 = never), so only changed cells redraw. */
   private drawn: Int16Array;
+  /** Skill effects still rising, with the wall-clock time each appeared. */
+  private floaters: { fx: Fx; born: number }[] = [];
   /** Fixed grass variant per cell (index into GRASS), under trees and cleared land alike. */
   private grassAt: Uint8Array;
   /** Seconds into each season before a cell shows it, so the map turns gradually. */
@@ -220,6 +241,7 @@ export class Renderer {
     this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
     this.drawCarryTags(s);
+    this.drawFx(s);
 
     if (ui.selected) {
       const d = BUILDINGS[ui.selected.kind];
@@ -294,12 +316,13 @@ export class Renderer {
     const s = world.state;
     const { tctx } = this;
     const entrances = roadEntrances(s, net);
+    const vision = visionRadius(s);
     for (let i = 0; i < s.tiles.length; i++) {
       const fog = world.fog[i];
       const v = this.grassAt[i];
       const season = this.seasonAt(s.time, i);
       const road = s.tiles[i] === Tile.Road ? roadMask(s, i, entrances) : -1;
-      const key = fog > CONFIG.fogRadius ? VOID_KEY
+      const key = fog > vision ? VOID_KEY
         : road >= 0 ? ROAD_KEY + (season * 2 + 1 - net[i]) * 16 + road
         : (season * FOG_LIGHT.length + fog) * GRASS.length + v;
       if (this.drawn[i] === key) continue;
@@ -339,6 +362,7 @@ export class Renderer {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const now = performance.now();
+    const vision = visionRadius(s);
     const props: { depth: number; draw: () => void }[] = [];
     const wellFed = wellFarms(s, linked);
     for (const b of s.buildings) {
@@ -356,7 +380,7 @@ export class Renderer {
       for (let x = x0; x <= x1; x++) {
         const i = y * s.w + x;
         const tile = s.tiles[i];
-        if ((tile !== Tile.Tree && tile !== Tile.Relic) || world.fog[i] > CONFIG.fogRadius) continue;
+        if ((tile !== Tile.Tree && tile !== Tile.Relic) || world.fog[i] > vision) continue;
         const [sx, sy] = cam.toScreen(x, y - OVERHANG);
         const w = k;
         const h = k * (1 + OVERHANG);
@@ -400,7 +424,8 @@ export class Renderer {
     const s = world.state;
     const { ctx, cam } = this;
     const px = cam.zoom / SPRITE_W; // screen px per art px
-    const visible = (i: number) => s.tiles[i] === Tile.Tree && world.fog[i] <= CONFIG.fogRadius;
+    const vision = visionRadius(s);
+    const visible = (i: number) => s.tiles[i] === Tile.Tree && world.fog[i] <= vision;
     const barTop = (x: number, y: number) => cam.toScreen(x + BAR.x / SPRITE_W, y + BAR.y / SPRITE_W);
 
     const { x0, x1, y0, y1 } = this.visibleTiles(s);
@@ -442,6 +467,34 @@ export class Renderer {
     ctx.strokeText(label, cx, ty - 2);
     ctx.fillStyle = '#f6dca0';
     ctx.fillText(label, cx, ty - 2);
+  }
+
+  /** Shows a skill effect (combo, Heartwood, Timber!, jackpots, grazing, blasts) as text rising from its tile. */
+  addFx(fx: Fx, now: number): void {
+    this.floaters.push({ fx, born: now });
+  }
+
+  private drawFx(s: GameState): void {
+    const { ctx, cam } = this;
+    const now = performance.now();
+    this.floaters = this.floaters.filter((f) => now - f.born < FX_MS);
+    if (!this.floaters.length) return;
+    ctx.font = FX_FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 4;
+    for (const { fx, born } of this.floaters) {
+      const t = (now - born) / FX_MS;
+      const [x, y] = cam.toScreen((fx.i % s.w) + 0.5, ((fx.i / s.w) | 0) - FX_RISE * t);
+      const text = FX_TEXT[fx.kind](fmt(fx.n), fx.n);
+      ctx.globalAlpha = 1 - t * t;
+      ctx.strokeStyle = 'rgba(27,26,16,.9)';
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = FX_COLOR[fx.kind] ?? '#ffd75e';
+      ctx.fillText(text, x, y);
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Zoomed in: a tag over each villager's head with the resource it carries and how much. Empty hands show none. */

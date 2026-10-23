@@ -22,17 +22,18 @@ No linter or formatter is configured.
 - **`GameState` vs `World`.** `GameState` (`types.ts`) is the persistent, JSON-serializable state.
   Its typed arrays are converted to plain arrays in `save.ts`. `World` (`world.ts`) wraps it with
   derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
-  It also holds `gathered`, per-source counters (each job, hand, tax) since load that only the HUD reads.
+  It also holds `gathered`, per-source counters (each job, hand, tax, skill bonus) since load that only the HUD reads,
+  and `fx`, moments for the UI (floating text, the festival toast) that `main.ts` drains every frame, and Dynamite's `blastReady` cooldowns.
   Change tiles through `claimTile`/`clearTree`. After placing, moving or removing any building or changing
   roads, call `onBuildingsChanged` so the fields are rebuilt (villagers walk around buildings).
-- **Roads** (`roads.ts`). `Tile.Road` is territory. `roadNetwork` marks roads joined edge to edge to the
-  Town Center; `linkedBuildings` lists buildings that work (touching that network or the Town Center, or
-  `road: false` in `BUILDINGS`). Both are derived on demand. Isolated buildings count for nothing:
+- **Roads** (`roads.ts`). `Tile.Road` is territory. `roadNetwork` marks roads joined edge to edge to a
+  hub (`HUB_KINDS`: the Town Center and the Frontier Outpost); `linkedBuildings` lists buildings that work
+  (touching that network or a hub, or `road: false` in `BUILDINGS`). Both are derived on demand. Isolated buildings count for nothing:
   `isActive` takes the linked set (also `Stats.linked`), drop-off fields, pop cap, tax and trading skip them.
   Pathing steps between connected road tiles cost `CONFIG.roads.pathCost` × normal, and `smooth` keeps
   villagers on the road. Tests can call `pave(w)` (`tests/helpers.ts`) to connect every building.
-- **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`,
-  then `villagerSystem`. `tick` splits its step at season boundaries (`seasons.ts`; the season is
+- **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`, `villagerSystem`,
+  then `grazingSystem`. `tick` splits its step at season boundaries, where Harvest Festival and Shearing Day pay out (`seasons.ts`; the season is
   derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps
   (`CONFIG.sim`). Villager updaters must be **dt-independent**: they spend their whole time budget
   across state transitions inside one call. Tests assert identical results at both step sizes.
@@ -110,13 +111,16 @@ must be handled:
   sprite also gets a `ROOFS` entry, seasonal crops get `BUILDING_SEASONS` entries, and a door or fence gap
   on the bottom edge gets a `BUILDING_ENTRANCES` column so roads join there.
   To lock it until a skill is learned, set its `unlock` to a one-level skill placed in a track;
-  the build menu hides it and `canPlace` refuses it until then.
+  the build menu hides it and `canPlace` refuses it until then. A `limit` caps how many may stand (the Outpost: 1).
+- **Guild Contracts and caravan deals** live in `guild.ts` and are saved in `GameState.contracts` / `caravan`;
+  `tick` tops the board up and brings the caravan at season boundaries, and the Market panel (`ui/market.ts`) shows both.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up
   automatically. Then add a save migration.
 - **Workplace job:** extend `Job`, then add entries to `WORK` (`workplace.ts`), `UPDATERS`
   (`villagers.ts`), and `VILLAGER_CLOTH`/`VILLAGER_GEAR` (`render/sprites.ts`).
-- **Skill:** add it to `SKILLS` and to its place in a `TRACKS` list (`skills.ts`; the skill before it
-  is its prerequisite), apply its effect in
+- **Skill:** add it to `SKILLS`, to a `TRACKS` list after its parent, and its parent to `PARENT`
+  (`skills.ts`; each track is a tree, laid out by `ui/skillGraph.ts`). A track's capstone goes in `MASTERY`
+  instead of `PARENT` and is offered at `CONFIG.skills.masteryLevels` levels in the track. Apply its effect in
   `stats.ts` or `economy.ts`, and add its text and icon (a `UI_ICONS` name) to `SKILL_TEXT`.
 - **Legacy perk:** add it to `PERK_IDS` and `LEGACY` (`legacy.ts`; `requires` places it in the tree), its numbers
   to `CONFIG.legacy.perks`, its effect in `stats.ts`, `economy.ts` or `state.ts` (via `perk`/`perkMult`), and its

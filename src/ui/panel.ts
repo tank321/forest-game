@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, buildingById, isUnlocked, type BuildingKind } from '../core/buildings';
+import { atLimit, BUILDINGS, buildingById, isUnlocked, type BuildingKind } from '../core/buildings';
 import { removeBuilding, removeRoad } from '../core/commands';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
@@ -150,10 +150,10 @@ export class Panel {
     return {
       title: 'Build',
       sub: 'Tap a building to select it.',
-      // Kinds still locked behind a skill stay out of the menu.
+      // Kinds still locked behind a skill, or at their limit (the Outpost), stay out of the menu.
       actions: [
         { label: `Road (${Math.max(0, roadStock(s) - roadsBuilt(s))} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const },
-        ...BUILDABLE.filter((k) => isUnlocked(s, k)).map((k) => {
+        ...BUILDABLE.filter((k) => isUnlocked(s, k) && !atLimit(s, k)).map((k) => {
           const cost = buildingCost(s, k);
           return {
             label: BUILDING_TEXT[k].name,

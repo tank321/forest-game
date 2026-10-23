@@ -44,7 +44,7 @@ describe('skill journal previews', () => {
     s.hires.wood = 0;
     s.skills.recruiters = 2;
     expect(skillBonus('recruiters', 2)).toBe('27.8% lower villager costs');
-    expect(skillBonus('masons', 3)).toBe('38.6% lower stone costs');
+    expect(skillBonus('masons', 3)).toBe('Buildings and upgrades need 38.6% less stone');
     expect(villagerCost(s).wood).toBe(7);
   });
 

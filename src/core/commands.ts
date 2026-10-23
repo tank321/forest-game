@@ -1,9 +1,10 @@
 import { CONFIG } from '../config';
-import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, isUnlocked, type BuildingKind } from './buildings';
+import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, type BuildingKind } from './buildings';
 import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
-import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
+import { inBounds, isChoppable, isCollectable, neighbors4, neighbors8 } from './grid';
+import { contractDone, newContract } from './guild';
 import { availablePerks, canPrestige, perk, type PerkId } from './legacy';
 import { rand } from './rng';
 import { linkedBuildings, roadsBuilt, roadStock } from './roads';
@@ -12,37 +13,106 @@ import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
 import { Tile, type Building, type GameState, type HireResource, type ResourceKey } from './types';
 import { goHome } from './systems/movement';
-import { jobResource } from './systems/workplace';
-import { claimTile, clearTree, onBuildingsChanged, type World } from './world';
+import { burst, jobResource } from './systems/workplace';
+import { claimTile, clearTree, gainBonus, onBuildingsChanged, visionRadius, type World } from './world';
 
 /** Player actions. The UI mutates game state only through these; each validates itself. */
 
+/** A tap: Momentum chains quick taps into a combo, and Sweeping Strike also hits the choppable trees around it. */
 export function chopTree(w: World, i: number): boolean {
   const s = w.state;
   if (!isChoppable(s, i)) return false;
-  const amt = Math.min(getStats(s).manualChop * w.dev.manualMult, s.wood[i]);
+  const k = CONFIG.skills;
+  let mult = 1;
+  const momentum = lvl(s, 'momentum');
+  if (momentum) {
+    const c = w.combo;
+    c.n = s.time - c.at <= k.combo.window ? c.n + 1 : 0;
+    c.at = s.time;
+    mult = 1 + Math.min(k.combo.step * c.n, k.combo.capPerLevel * momentum);
+    if (c.n) w.fx.push({ kind: 'combo', i, n: mult });
+  }
+  const hit = getStats(s).manualChop * w.dev.manualMult * mult;
+  const around = lvl(s, 'sweepingStrike') ? neighbors8(s, i) : [];
+  hitTree(w, i, hit);
+  for (const n of around) if (isChoppable(s, n)) hitTree(w, n, hit * k.sweep);
+  return true;
+}
+
+function hitTree(w: World, i: number, hit: number, source: 'hand' | 'bonus' = 'hand'): void {
+  const s = w.state;
+  const amt = Math.min(hit, s.wood[i]);
   s.wood[i] -= amt;
   gain(s, 'wood', amt);
-  w.gathered.hand.wood += amt;
+  w.gathered[source].wood += amt;
   if (s.wood[i] === 0) clearTree(w, i);
+}
+
+/** Seconds until this Quarry can blast again (0 = ready). */
+export const blastWait = (w: World, id: number) => Math.max(0, (w.blastReady.get(id) ?? 0) - w.state.time);
+
+/**
+ * Dynamite: a connected Quarry pays a burst of its miners' stone and hits every tree within reach as
+ * hard as many taps. Damage, not felling, so the big outer trees still take their full wood.
+ */
+export function blast(w: World, id: number): boolean {
+  const s = w.state;
+  const b = buildingById(s, id);
+  const st = getStats(s);
+  if (!lvl(s, 'dynamite') || b?.kind !== 'quarry' || !st.linked.has(b.id) || blastWait(w, id) > 0) return false;
+  const k = CONFIG.skills.dynamite;
+  w.blastReady.set(id, s.time + k.cooldown);
+  const stone = burst(w, st, ['mine'], k.stoneSeconds).get(id) ?? 0;
+  if (stone) gainBonus(w, 'stone', stone);
+  const { w: bw, h: bh } = BUILDINGS[b.kind];
+  w.fx.push({ kind: 'blast', i: (b.y + (bh >> 1)) * s.w + b.x + (bw >> 1), n: stone });
+  const hit = st.manualChop * k.taps;
+  for (let y = Math.max(0, b.y - k.radius); y <= Math.min(s.h - 1, b.y + bh - 1 + k.radius); y++) {
+    for (let x = Math.max(0, b.x - k.radius); x <= Math.min(s.w - 1, b.x + bw - 1 + k.radius); x++) {
+      const i = y * s.w + x;
+      if (s.tiles[i] === Tile.Tree) hitTree(w, i, hit, 'bonus');
+    }
+  }
   return true;
 }
 
 export function toggleMark(w: World, i: number): boolean {
   const s = w.state;
-  if (s.tiles[i] !== Tile.Tree || w.fog[i] > CONFIG.fogRadius) return false;
+  if (s.tiles[i] !== Tile.Tree || w.fog[i] > visionRadius(s)) return false;
   const m = s.marked.indexOf(i);
   if (m === -1) s.marked.push(i);
   else s.marked.splice(m, 1);
   return true;
 }
 
-/** Hire a villager paid in wood, food or cloth (separate price tracks, shared population cap). */
-export function hireVillager(w: World, res: HireResource = 'wood'): boolean {
+/** Hire a villager paid in wood, food or cloth (separate price tracks, shared population cap), at a hub (default: the Town Center). */
+export function hireVillager(w: World, res: HireResource = 'wood', at?: number): boolean {
   const s = w.state;
+  const hub = at === undefined ? undefined : buildingById(s, at);
+  if (at !== undefined && !(hub && HUB_KINDS.includes(hub.kind))) return false;
   if (s.villagers.length >= popCap(s) || !pay(s, villagerCost(s, res))) return false;
   s.hires[res]++;
-  spawnVillager(s);
+  spawnVillager(s, hub);
+  return true;
+}
+
+/** Guild Contracts: claim a finished contract's gold at a connected Market; a new contract takes its place. */
+export function claimContract(w: World, k: number): boolean {
+  const s = w.state;
+  const c = s.contracts[k];
+  if (!c || !lvl(s, 'guildContracts') || !hasMarket(s) || !contractDone(s, c)) return false;
+  gainBonus(w, 'gold', c.reward);
+  s.contracts[k] = newContract(s);
+  return true;
+}
+
+/** Merchant Caravans: take one of the caravan's deals at a connected Market; the caravan then moves on. */
+export function takeDeal(w: World, k: number): boolean {
+  const s = w.state;
+  const d = s.caravan?.[k];
+  if (!d || !hasMarket(s) || !pay(s, d.give)) return false;
+  for (const [r, n] of Object.entries(d.get) as [ResourceKey, number][]) s.resources[r] += n; // an exchange, like Market trades
+  s.caravan = null;
   return true;
 }
 
@@ -92,7 +162,7 @@ export function togglePause(w: World, id: number): boolean {
 
 /** New buildings need their kind unlocked; moving one that already stands does not. */
 export function canPlace(w: World, kind: BuildingKind, x: number, y: number): boolean {
-  return isUnlocked(w.state, kind) && canPlaceAt(w, kind, x, y);
+  return isUnlocked(w.state, kind) && !atLimit(w.state, kind) && canPlaceAt(w, kind, x, y);
 }
 
 function canPlaceAt(w: World, kind: BuildingKind, x: number, y: number, moving?: Building): boolean {

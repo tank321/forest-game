@@ -1,10 +1,10 @@
 import { CONFIG } from '../config';
-import { buildingGap, type BuildingKind } from './buildings';
+import { BUILDINGS, buildingGap, type BuildingKind } from './buildings';
 import { perk, perkMult, startVillagers } from './legacy';
 import { linkedBuildings } from './roads';
-import { seasonOf, WINTER } from './seasons';
+import { seasonOf, SUMMER, WINTER } from './seasons';
 import { lvl } from './skills';
-import type { GameState, Job } from './types';
+import { Tile, type GameState, type Job } from './types';
 
 export interface Stats {
   speed: number; // villager tiles/s
@@ -29,6 +29,15 @@ export interface Stats {
   cottonCarry: number;
   wellRadius: number; // Chebyshev reach of a Well
   wellFarms: ReadonlySet<number>; // ids of farms boosted by a Well
+  cropBonus: ReadonlyMap<number, number>; // farm id -> Crop Rotation harvest multiplier (absent = ×1)
+  farmSeason: readonly number[]; // farm and orchard harvest multiplier per season (Greenhouses included)
+  pastureBonus: ReadonlyMap<number, number>; // Sheep Farm id -> Open Pastures wool multiplier (absent = ×1)
+  veinBonus: ReadonlyMap<number, number>; // Quarry id -> Rich Veins stone multiplier (absent = ×1)
+  roadWalk: number; // walk speed multiplier along roads (Cobblestone)
+  emptyWalk: number; // walk speed multiplier while carrying nothing (Errand Runners)
+  toll: number; // gold per road tile walked (Toll Roads)
+  wellFed: boolean; // food surplus: gathering faster (Well Fed)
+  fair: boolean; // summer with Midsummer Fair: no market commission, Trading Posts pay more
   wellHarvest: number; // farm rate multiplier from a Well
   wellCarry: number; // farm carry multiplier from a Well
   linked: ReadonlySet<number>; // ids of buildings that work: connected by road (see roads.ts)
@@ -57,9 +66,11 @@ export function getStats(s: GameState): Stats {
   const u = CONFIG.upkeep;
   const season = seasonOf(s.time);
   const extra = Math.max(0, s.villagers.length - Math.max(u.freeVillagers, startVillagers(s)));
-  const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2');
+  // Well Fed: a food surplus (per villager) speeds up every gatherer.
+  const wellFed = lvl(s, 'wellFed') > 0 && s.resources.food >= CONFIG.skills.wellFed.perVillager * Math.max(1, s.villagers.length);
+  const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2') * (wellFed ? CONFIG.skills.wellFed.gather : 1);
   const guild = guildBonus(s);
-  const eat = extra * u.food;
+  const eat = extra * u.food * CONFIG.skills.rootCellars ** lvl(s, 'rootCellars');
   const winterBurn = extra * u.wood * (1 - CONFIG.coats.burnCut * s.upgrades.coats);
   const burn = season === WINTER ? winterBurn : 0;
   const hungry = eat > 0 && s.resources.food <= 0;
@@ -69,10 +80,17 @@ export function getStats(s: GameState): Stats {
   const warm = cold ? u.cold : 1;
   const linked = linkedBuildings(s);
   const taxedHouses = inRange(s, linked, 'house', 'taxOffice', CONFIG.tax.radius);
-  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed);
-  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm * gather * guild.farm;
+  const festive = season === WINTER && lvl(s, 'harvestFestival') ? CONFIG.skills.festival.winterWalk : 1;
+  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive;
+  // Greenhouses: farms and orchards keep part of their harvest in winter.
+  const farmSeason = CONFIG.seasons.farm.map((m, i) => (i === WINTER && lvl(s, 'greenhouses') ? CONFIG.skills.greenhouse : m));
+  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;
   const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
-  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm * gather * guild.herd; // Barn upgrades cover herders too
+  const k = CONFIG.skills;
+  const weave = 1 + k.weavers * lvl(s, 'weavers') * (shoes + backpack + s.upgrades.coats);
+  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm * gather * guild.herd * weave; // Barn upgrades cover herders too
+  // Deep Shafts: miners work faster in winter and are never slowed by cold.
+  const shafts = lvl(s, 'deepShafts') ? (season === WINTER ? k.deepShafts : 1) : warm;
   const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
   return {
     speed: walk,
@@ -88,7 +106,7 @@ export function getStats(s: GameState): Stats {
     orchardSpeed: walk * CONFIG.orchard.speedMult,
     orchardRate: farmRate * CONFIG.orchard.rateMult,
     orchardCarry: farmLoad * CONFIG.orchard.carryMult + carryBonus,
-    mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * warm * gather * guild.mine,
+    mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * shafts * gather * guild.mine,
     mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick * haul + carryBonus,
     herdRate,
     herdCarry: herdLoad + carryBonus,
@@ -97,6 +115,15 @@ export function getStats(s: GameState): Stats {
     cottonCarry: herdLoad * CONFIG.cotton.carryMult + carryBonus,
     wellRadius,
     wellFarms: wellFarms(s, linked),
+    cropBonus: cropBonus(s, linked),
+    farmSeason,
+    pastureBonus: pastureBonus(s, linked),
+    veinBonus: veinBonus(s),
+    roadWalk: 1 + k.cobblestone * lvl(s, 'cobblestone'),
+    emptyWalk: 1 + k.errandRunners * lvl(s, 'errandRunners'),
+    toll: k.toll * lvl(s, 'tollRoads'),
+    wellFed,
+    fair: isFair(s),
     wellHarvest: CONFIG.well.harvestMult,
     wellCarry: CONFIG.well.carryMult,
     linked,
@@ -128,6 +155,48 @@ function guildBonus(s: GameState): Record<'lumber' | 'farm' | 'mine' | 'herd', n
   return out;
 }
 
+/** Crop Rotation: harvest multiplier of each connected farm touching other connected farms. */
+function cropBonus(s: GameState, linked: ReadonlySet<number>): Map<number, number> {
+  const out = new Map<number, number>();
+  if (!lvl(s, 'cropRotation')) return out;
+  const { perFarm, max } = CONFIG.skills.cropRotation;
+  const farms = s.buildings.filter((b) => b.kind === 'farm' && linked.has(b.id));
+  for (const f of farms) {
+    const n = farms.filter((o) => o !== f && buildingGap(f, o) <= 1).length;
+    if (n) out.set(f.id, 1 + perFarm * Math.min(n, max));
+  }
+  return out;
+}
+
+/** Open Pastures: wool multiplier of each connected Sheep Farm, from the open grass around it. */
+function pastureBonus(s: GameState, linked: ReadonlySet<number>): Map<number, number> {
+  const out = new Map<number, number>();
+  const level = lvl(s, 'openPastures');
+  if (!level) return out;
+  const { radius: r, perTile } = CONFIG.skills.openPastures;
+  for (const b of s.buildings) {
+    if (b.kind !== 'sheepFarm' || !linked.has(b.id)) continue;
+    const { w, h } = BUILDINGS[b.kind];
+    let n = 0;
+    for (let y = Math.max(0, b.y - r); y <= Math.min(s.h - 1, b.y + h - 1 + r); y++) {
+      for (let x = Math.max(0, b.x - r); x <= Math.min(s.w - 1, b.x + w - 1 + r); x++) if (s.tiles[y * s.w + x] === Tile.Grass) n++;
+    }
+    if (n) out.set(b.id, 1 + perTile * level * n);
+  }
+  return out;
+}
+
+/** Rich Veins: stone multiplier of each Quarry, from its distance to the Town Center. */
+function veinBonus(s: GameState): Map<number, number> {
+  const out = new Map<number, number>();
+  const level = lvl(s, 'richVeins');
+  const tc = s.buildings.find((b) => b.kind === 'townCenter');
+  if (!level || !tc) return out;
+  const { perTile, maxTiles } = CONFIG.skills.richVeins;
+  for (const b of s.buildings) if (b.kind === 'quarry') out.set(b.id, 1 + perTile * level * Math.min(buildingGap(b, tc), maxTiles));
+  return out;
+}
+
 /** Chebyshev reach of a Well. */
 export const wellReach = (s: GameState) => CONFIG.well.radius + lvl(s, 'deepWells');
 
@@ -151,7 +220,8 @@ function tradeLoads(s: GameState, linked: ReadonlySet<number>): Map<number, numb
   const out = new Map<number, number>();
   if (!markets.length) return out;
   const { goldAtRef, refGap, exponent } = CONFIG.trade;
-  const mules = (1 + 0.25 * lvl(s, 'packMules')) * perkMult(s, 'royalBank', CONFIG.legacy.perks.royalBank.gold);
+  const mules = (1 + 0.25 * lvl(s, 'packMules')) * perkMult(s, 'royalBank', CONFIG.legacy.perks.royalBank.gold) *
+    (isFair(s) ? CONFIG.skills.fair.tradeMult : 1);
   for (const b of s.buildings) {
     if (b.kind !== 'tradingPost') continue;
     const gap = Math.min(...markets.map((m) => buildingGap(b, m)));
@@ -159,3 +229,6 @@ function tradeLoads(s: GameState, linked: ReadonlySet<number>): Map<number, numb
   }
   return out;
 }
+
+/** Midsummer Fair: all summer, once learned. */
+export const isFair = (s: Pick<GameState, 'skills' | 'time'>) => lvl(s, 'midsummerFair') > 0 && seasonOf(s.time) === SUMMER;

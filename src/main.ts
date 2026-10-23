@@ -136,6 +136,7 @@ function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
   simulate(world, t, catchUpDt);
+  world.fx.length = 0; // effects from time away are summed up below, not replayed
   const change = (r: 'wood' | 'food' | 'gold') => {
     const d = s.resources[r] - before[r];
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
@@ -174,6 +175,15 @@ function frame(now: number): void {
     }
   }
   if (panToNewRelic()) hud.message(NEW_RELIC);
+  let wool = 0;
+  for (const fx of world.fx.splice(0)) {
+    if (fx.kind === 'festival') hud.message(`Harvest Festival! Farms and orchards bring in ${fmt(fx.n)} food.`, 6000);
+    else if (fx.kind === 'fair') hud.message('The Midsummer Fair is open! No market commission and Trading Posts pay more all summer.', 6000);
+    else if (fx.kind === 'caravan') hud.message('A merchant caravan has come to the Market. Take one deal before spring.', 6000);
+    else renderer.addFx(fx, now);
+    if (fx.kind === 'shearing') wool += fx.n;
+  }
+  if (wool) hud.message(`Shearing Day! Sheep Farms bring in ${fmt(wool)} cloth.`, 6000);
   cam.step(elapsed * 1000);
   renderer.draw(world, ui);
   hud.update();
