@@ -12,7 +12,6 @@ export class SkillModal {
   private pending = 0;
   private view: SkillView = 'all';
   private selected: SkillId | null = null;
-  private upgraded: SkillId | null = null;
   private gallery: HTMLElement;
   private detailSlot: HTMLElement;
   private filters: HTMLElement;
@@ -28,6 +27,7 @@ export class SkillModal {
     private dlg: HTMLDialogElement,
     private reopen: HTMLButtonElement,
     private world: () => World,
+    private notify: (message: string) => void,
   ) {
     const el = <T extends HTMLElement>(selector: string) => dlg.querySelector<T>(selector)!;
     this.gallery = el('.skill-gallery');
@@ -43,20 +43,23 @@ export class SkillModal {
       document.getElementById('skillsBtn')!.setAttribute('aria-expanded', 'false');
       this.feedback.textContent = '';
       window.clearTimeout(this.feedbackTimer);
-      this.upgraded = null;
     });
     for (const tab of this.tabs) tab.onclick = () => this.open(tab.dataset.skillView as SkillView);
     this.status.onchange = this.group.onchange = () => this.render();
     this.mobile.addEventListener('change', () => { if (dlg.open) this.render(); });
+    const cardOf = (event: Event) => (event.target as HTMLElement).closest<HTMLButtonElement>('[data-skill]')?.dataset.skill as SkillId | undefined;
+    // While choosing, a click on a card picks it; the journal only inspects.
     this.gallery.onclick = (event) => {
-      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-skill]');
-      if (!button) return;
-      this.inspect(button.dataset.skill as SkillId);
+      const id = cardOf(event);
+      if (id) (this.view === 'choose' ? this.choose(id) : this.inspect(id));
     };
     this.gallery.addEventListener('pointerover', (event) => {
-      if (this.mobile.matches || event.pointerType !== 'mouse') return;
-      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-skill]');
-      if (button) this.inspect(button.dataset.skill as SkillId);
+      const id = cardOf(event);
+      if (id && !this.mobile.matches && event.pointerType === 'mouse') this.inspect(id);
+    });
+    this.gallery.addEventListener('focusin', (event) => {
+      const id = cardOf(event);
+      if (id && this.view === 'choose' && !this.mobile.matches) this.inspect(id);
     });
     reopen.onclick = () => this.open('choose');
   }
@@ -75,6 +78,24 @@ export class SkillModal {
       button.setAttribute('aria-pressed', String(selected));
     }
     this.detailSlot.replaceChildren(this.details(id));
+  }
+
+  /** Learns an offered skill. Returns to the game, or shows the next choice while picks remain. */
+  private choose(id: SkillId): void {
+    const w = this.world();
+    if (!pickSkill(w, id)) return;
+    const s = w.state;
+    const message = `${SKILL_TEXT[id].name} upgraded to level ${lvl(s, id)}!`;
+    if (!s.cards.length) {
+      this.dlg.close();
+      this.notify(message);
+      return;
+    }
+    this.feedback.textContent = message;
+    window.clearTimeout(this.feedbackTimer);
+    this.feedbackTimer = window.setTimeout(() => { this.feedback.textContent = ''; }, 3500);
+    this.selected = s.cards[0];
+    this.render();
   }
 
   open(view: SkillView = 'all'): void {
@@ -119,7 +140,7 @@ export class SkillModal {
     }
     const learned = SKILL_IDS.filter((id) => lvl(s, id) > 0).length;
     this.summary.textContent = choosing
-      ? `${s.picksPending} pick${s.picksPending === 1 ? '' : 's'} waiting. Inspect a card, then choose your upgrade.`
+      ? `${s.picksPending} pick${s.picksPending === 1 ? '' : 's'} waiting. Pick a skill to learn it.`
       : `${learned} of ${SKILL_IDS.length} skills learned · ${s.relicsSpawned - s.relics.length} relics collected`;
     this.filters.hidden = choosing;
     const ids = choosing ? s.cards : SKILL_IDS.filter((id) =>
@@ -137,14 +158,18 @@ export class SkillModal {
       const entry = document.createElement('div');
       entry.className = 'skill-entry';
       const b = document.createElement('button');
-      b.className = `skill-card parchment ${status.toLowerCase()}${s.cards.includes(id) ? ' is-offered' : ''}${this.selected === id ? ' is-selected' : ''}${this.upgraded === id ? ' just-upgraded' : ''}`;
+      b.className = `skill-card parchment ${status.toLowerCase()}${s.cards.includes(id) ? ' is-offered' : ''}${this.selected === id ? ' is-selected' : ''}`;
       b.dataset.skill = id;
       b.dataset.focus = id;
       b.setAttribute('aria-pressed', String(this.selected === id));
       b.setAttribute('aria-label', `${text.name}, level ${level} of ${SKILLS[id].max}, ${status}${s.cards.includes(id) ? ', offered by relic' : ''}`);
-      b.innerHTML = `${icon(text.icon)}<span class="skill-card-copy"><b>${text.name}</b><span class="skill-card-meta">${status} · ${level}/${SKILLS[id].max}</span><span class="skill-pips" aria-hidden="true">${Array.from({ length: SKILLS[id].max }, (_, i) => `<i class="${i < level ? 'filled' : ''}${i === level - 1 ? ' latest' : ''}"></i>`).join('')}</span>${s.cards.includes(id) ? '<span class="skill-offer">Relic choice</span>' : ''}</span>`;
+      // A choice card shows its next level, so it can be picked without opening the details.
+      const extra = choosing
+        ? `<span class="skill-next">Next: ${skillBonus(id, level + 1)}</span>`
+        : s.cards.includes(id) ? '<span class="skill-offer">Relic choice</span>' : '';
+      b.innerHTML = `${icon(text.icon)}<span class="skill-card-copy"><b>${text.name}</b><span class="skill-card-meta">${status} · ${level}/${SKILLS[id].max}</span><span class="skill-pips" aria-hidden="true">${Array.from({ length: SKILLS[id].max }, (_, i) => `<i class="${i < level ? 'filled' : ''}"></i>`).join('')}</span>${extra}</span>`;
       entry.append(b);
-      if (this.mobile.matches && this.selected === id) entry.append(this.details(id));
+      if (this.mobile.matches && !choosing && this.selected === id) entry.append(this.details(id));
       return entry;
     }));
     if (!ids.length) {
@@ -196,16 +221,7 @@ export class SkillModal {
       choose.className = 'gold skill-choose';
       choose.dataset.focus = 'choose';
       choose.textContent = `Choose ${text.name} · level ${level + 1}`;
-      choose.onclick = () => {
-        if (!pickSkill(this.world(), id)) return;
-        this.upgraded = id;
-        this.feedback.textContent = `${text.name} upgraded to level ${lvl(s, id)}!`;
-        window.clearTimeout(this.feedbackTimer);
-        this.feedbackTimer = window.setTimeout(() => { this.feedback.textContent = ''; }, 3500);
-        if (s.cards.length) this.selected = s.cards[0];
-        else { this.view = 'all'; this.status.value = this.group.value = 'all'; this.selected = id; }
-        this.render();
-      };
+      choose.onclick = () => this.choose(id);
       detail.append(choose);
     } else {
       const p = document.createElement('p');

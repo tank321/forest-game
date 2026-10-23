@@ -125,15 +125,17 @@ button.danger { color: #ffb6a3; }
 .market-confirm button { min-height: 46px; font-weight: 700; }
 .market-note { min-height: 20px; color: #d7edac; font-size: 13px; line-height: 20px; text-shadow: var(--outline); }
 
-#menu { display: flex; gap: 6px; padding: 8px 12px 12px; }
+#menu { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 12px; }
 #menu button { padding: 0 4px; }
-#devTap { margin-left: auto; color: #e9b8ff; }
+#menu .dev { color: #e9b8ff; }
+#devTap { margin-left: auto; }
 
 /* Skill journal: cards to browse, a detail panel, and a deliberate relic reward action. */
 #skillModal { margin: auto; width: 960px; max-width: calc(100% - 32px); height: min(800px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); flex-direction: column; gap: 12px; overflow: hidden; padding: 16px; color: var(--cream); background: #3a2616 var(--wood) 0 0 / 64px 16px; box-shadow: 0 16px 64px #0009; }
 #skillModal[open] { display: flex; }
-#skillModal.is-choosing { height: fit-content; }
-#skillModal.is-choosing .skill-layout { flex: 0 1 auto; }
+#skillModal.is-choosing { width: 620px; height: fit-content; }
+#skillModal.is-choosing .skill-layout { flex: 0 1 auto; grid-template-columns: minmax(0, 1fr) 300px; }
+.skill-next { font-size: 12px; font-weight: 600; color: #365b29; }
 #skillModal::backdrop { background: rgb(7 10 7 / .75); }
 #skillModal .close { flex: none; padding: 0 8px; font-size: 24px; }
 .skill-header { display: flex; align-items: center; gap: 16px; flex: none; }
@@ -181,11 +183,8 @@ button.danger { color: #ffb6a3; }
 .skill-feedback { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; width: max-content; max-width: calc(100% - 32px); padding: 10px 16px; border: 1px solid #8b9b54; background: #23301b; box-shadow: 0 4px 16px #0008; color: #d7edac; font-size: 14px; font-weight: 600; text-align: center; pointer-events: none; z-index: 3; }
 .skill-feedback:empty { display: none; }
 #skillModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
-@keyframes skill-level-up { from { transform: scale(1.7); background: #e5bd49; } to { transform: scale(1); } }
-.just-upgraded .skill-pips .latest { animation: skill-level-up .6s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   .skill-card { transition: none; }
-  .just-upgraded .skill-pips .filled { animation: none; }
 }
 @media (max-width: 800px) {
   .skill-gallery { grid-template-columns: 1fr; }

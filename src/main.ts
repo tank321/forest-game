@@ -39,6 +39,7 @@ const skillModal = new SkillModal(
   document.getElementById('skillModal') as HTMLDialogElement,
   document.getElementById('pickSkillBtn') as HTMLButtonElement,
   () => world,
+  (message) => hud.message(message),
 );
 
 attachInput(canvas, cam, {
@@ -102,7 +103,7 @@ function frame(now: number): void {
   last = now;
   if (elapsed > maxFrameSeconds) catchUp(elapsed);
   else {
-    acc += elapsed;
+    acc += elapsed * world.dev.speed;
     while (acc >= dt) {
       tick(world, dt);
       acc -= dt;
@@ -119,7 +120,7 @@ requestAnimationFrame(frame);
 let resetting = false;
 const save = () => !resetting && saveGame(s);
 
-// Menu: skills popup, save export/import, dev tap multiplier.
+// Menu: skills popup, save export/import, dev tap multiplier, game speed and reset.
 const $ = (id: string) => document.getElementById(id)!;
 $('skillsBtn').onclick = () => skillModal.open();
 $('exportBtn').onclick = () => {
@@ -145,29 +146,47 @@ file.onchange = async () => {
   localStorage.setItem(CONFIG.save.key, serialize(imported)); // stamped now: no offline catch-up
   location.reload();
 };
+const reset = () => {
+  resetting = true;
+  clearSave();
+  location.reload();
+};
 if (import.meta.env.DEV) {
-  const dev = $('devTap');
-  const label = () => (dev.textContent = `DEV tap ×${world.dev.manualMult}`);
-  dev.hidden = false;
-  dev.onclick = () => {
+  const tap = $('devTap');
+  const tapLabel = () => (tap.textContent = `DEV tap ×${world.dev.manualMult}`);
+  tap.hidden = false;
+  tap.onclick = () => {
     world.dev.manualMult = world.dev.manualMult >= 1000 ? 1 : world.dev.manualMult * 10;
-    label();
+    tapLabel();
   };
-  label();
+  tapLabel();
+
+  const SPEEDS = [1, 2, 5, 10];
+  const speed = $('devSpeed');
+  const speedLabel = () => (speed.textContent = `DEV speed ×${world.dev.speed}`);
+  speed.hidden = false;
+  speed.onclick = () => {
+    world.dev.speed = SPEEDS[(SPEEDS.indexOf(world.dev.speed) + 1) % SPEEDS.length];
+    speedLabel();
+  };
+  speedLabel();
+
+  // Two clicks within a few seconds, so a stray click can't wipe the game.
+  const wipe = $('devReset');
+  let armed = 0;
+  wipe.hidden = false;
+  wipe.onclick = () => {
+    if (armed) return reset();
+    wipe.textContent = 'DEV reset: sure?';
+    armed = window.setTimeout(() => {
+      armed = 0;
+      wipe.textContent = 'DEV reset';
+    }, 3000);
+  };
 }
 setInterval(save, CONFIG.save.intervalMs);
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
 // Dev console helpers: `world`, `cam`, `reset()`.
-if (import.meta.env.DEV) {
-  Object.assign(window, {
-    world,
-    cam,
-    reset: () => {
-      resetting = true;
-      clearSave();
-      location.reload();
-    },
-  });
-}
+if (import.meta.env.DEV) Object.assign(window, { world, cam, reset });

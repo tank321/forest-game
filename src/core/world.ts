@@ -12,7 +12,7 @@ export interface World {
   fields: Record<ResourceKey, Field>; // drop-off distance field per resource
   fog: Uint8Array; // Chebyshev distance to territory, capped at fogRadius + 1
   maxWood: Float64Array; // full-grown wood per tile (static)
-  dev: { manualMult: number }; // dev-only testing aids (never saved)
+  dev: { manualMult: number; speed: number }; // dev-only testing aids (never saved); speed scales the live loop
 }
 
 export function createWorld(state: GameState): World {
@@ -21,7 +21,7 @@ export function createWorld(state: GameState): World {
     fields: buildFields(state),
     fog: new Uint8Array(state.w * state.h).fill(CONFIG.fogRadius + 1),
     maxWood: maxWoodTable(state),
-    dev: { manualMult: 1 },
+    dev: { manualMult: 1, speed: 1 },
   };
   for (let i = 0; i < state.tiles.length; i++) if (isTerritory(state, i)) stampFog(w, i);
   return w;

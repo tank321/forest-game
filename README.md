@@ -72,7 +72,8 @@ of the offered cards and press **Choose** to upgrade it. Close with × or Escape
 with **Pick skill** in the sidebar. **Skills** opens a popup journal: filter by status or group,
 hover over a card to compare current and next-level bonuses in the right-hand panel, and follow prerequisite links.
 On phones, tap a card to show details beneath it. Keyboard users can select cards with Enter or Space. **Export/Import** move
-saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000.
+saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000,
+**DEV speed** runs the game ×1/×2/×5/×10, and **DEV reset** (click twice) wipes the save and starts over.
 
 ## Layout
 - `src/config.ts` – all tunables
@@ -96,6 +97,8 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - Trees change with the seasons: fresh greens in spring with lime blossom, russet oaks and golden limes and birches in autumn, bare snowy branches in winter. Pines stay green and gather snow on their tiers, and stumps get a cap of snow. Each tile turns at its own moment over the first 15 s of a season.
 - Ground changes with the seasons: brighter grass and flowers in spring, olive and straw grass with fallen leaves in autumn, snow in winter with the flowers buried and pebbles poking through.
 - Buildings change with the seasons: farms sprout in spring, ripen gold in autumn and lie under snow in winter; orchards blossom in spring, turn orange in autumn and stand bare in winter; cotton buds in spring and bursts white in autumn; sheep-farm tufts follow the grass. In winter snow covers the roofs and caps the relic stones, whose moss browns in autumn.
+- Relic skill choice: a narrower popup; click (or tap) a skill to learn it, with each choice card showing its next-level bonus. After the last pick the game resumes with a confirmation, instead of opening the skill journal.
+- Dev build: **DEV speed** button (×1/×2/×5/×10) and a two-click **DEV reset** button next to DEV tap.
 
 **v10** – Cotton, cloth and orchards.
 - Leather is now **cloth**, made by sheep farms and cotton plantations. Saves migrate from v9 automatically, including stock, totals, hires and recorded building costs.
