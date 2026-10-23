@@ -106,7 +106,7 @@ describe('food economy', () => {
     expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200 });
     expect(upgradeCost(s, 'farm', 10)).toBeNull();
     expect(buildingCost(s, 'house')).toEqual({ wood: 100 });
-    for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k });
+    for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
     expect(buildingCost(s, 'house')).toEqual({ wood: 338, food: 50 });
   });
 

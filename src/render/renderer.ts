@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
-import { canPlace } from '../core/commands';
+import { canMoveBuilding, canPlace } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import type { Building, GameState, Job, Villager } from '../core/types';
 import { Tile } from '../core/types';
@@ -56,7 +56,7 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
 /** Health bar over a chopped tree, in art pixels from the tile's top-left (outline included). */
 const BAR = { x: 2, y: 3, w: 12, h: 4 };
 const BAR_COLOR = { outline: '#1b1a10', health: '#3fae4a', lost: '#8e2a2a' };
-const HOVER_FONT = 'bold 16px Silkscreen, monospace';
+const HOVER_FONT = '600 16px system-ui, "Segoe UI", sans-serif';
 const WALK_MS = 140; // per walk frame
 const SWING_MS = 260; // per tool-swing frame
 
@@ -153,10 +153,12 @@ export class Renderer {
       ctx.strokeRect(sx, sy, d.w * k, d.h * k);
     }
 
-    if (ui.placing && ui.hover) {
-      const { x, y } = placementAt(ui.placing, ui.hover.x, ui.hover.y);
-      const d = BUILDINGS[ui.placing];
-      ctx.fillStyle = canPlace(world, ui.placing, x, y) ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+    const placing = ui.moving?.kind ?? ui.placing;
+    if (placing && ui.hover) {
+      const { x, y } = placementAt(placing, ui.hover.x, ui.hover.y);
+      const d = BUILDINGS[placing];
+      const valid = ui.moving ? canMoveBuilding(world, ui.moving.id, x, y) : canPlace(world, placing, x, y);
+      ctx.fillStyle = valid ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
       rect(x, y, d.w, d.h);
     }
   }
@@ -287,7 +289,7 @@ export class Renderer {
       }
     }
 
-    if (ui.placing || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
+    if (ui.placing || ui.moving || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
     const i = tileAt(s, ui.hover.x, ui.hover.y);
     if (!visible(i)) return;
     const x = i % s.w;

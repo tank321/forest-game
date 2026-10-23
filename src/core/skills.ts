@@ -26,7 +26,7 @@ export const SKILLS = {
 export type SkillId = keyof typeof SKILLS;
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
 
-export const lvl = (s: GameState, id: SkillId) => s.skills[id] ?? 0;
+export const lvl = (s: Pick<GameState, 'skills'>, id: SkillId) => s.skills[id] ?? 0;
 
 export function availableSkills(s: GameState): SkillId[] {
   return SKILL_IDS.filter((id) => {

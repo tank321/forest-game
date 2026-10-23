@@ -66,7 +66,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         if (v.target === -1 || s.tiles[v.target] !== Tile.Tree || markWaiting(w, v, st)) {
           v.target = -1;
           v.state = 'idle';
-        } else returnToWork(v, 'toTree');
+        } else returnToWork(w, v, 'toTree');
         break;
       default: // a state from another job (just reassigned)
         v.state = 'idle';

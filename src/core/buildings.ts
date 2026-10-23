@@ -43,7 +43,7 @@ export type BuildingKind = keyof typeof BUILDINGS;
 
 export const CITY_KINDS: readonly BuildingKind[] = ['townCenter', 'house'];
 
-export const countOf = (s: GameState, kind: BuildingKind) =>
+export const countOf = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) =>
   s.buildings.reduce((n, b) => n + (b.kind === kind ? 1 : 0), 0);
 
 export function footprint(s: GameState, b: Pick<Building, 'kind' | 'x' | 'y'>): number[] {
@@ -63,8 +63,8 @@ export function buildingAt(s: GameState, i: number): Building | undefined {
 }
 
 /** Low-level placement, no validation or payment (see commands.placeBuilding). */
-export function addBuilding(s: GameState, kind: BuildingKind, x: number, y: number): Building {
-  const b: Building = { id: s.nextId++, kind, x, y };
+export function addBuilding(s: GameState, kind: BuildingKind, x: number, y: number, paidCost: Cost = {}): Building {
+  const b: Building = { id: s.nextId++, kind, x, y, paidCost: { ...paidCost } };
   for (const i of footprint(s, b)) s.tiles[i] = Tile.Building;
   s.buildings.push(b);
   return b;

@@ -60,6 +60,8 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
           v.state = 'idle';
           break;
         }
+        // Moving/removing a Well can reduce capacity below an already gathered load.
+        if (v.carry >= carry) { goHome(w, v, res); break; }
         const need = (carry - v.carry) / rate;
         if (need > t) {
           v.carry += rate * t;
@@ -75,7 +77,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
         if (!arrived(v)) return;
         gain(s, res, v.carry);
         v.carry = 0;
-        if (active) returnToWork(v, 'toWork');
+        if (active) returnToWork(w, v, 'toWork');
         else v.state = 'idle';
         break;
       default: // a state from another job (just reassigned)

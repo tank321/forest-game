@@ -1,5 +1,7 @@
 import { expect, it } from 'vitest';
 import { toggleMark } from '../src/core/commands';
+import { addBuilding } from '../src/core/buildings';
+import { buildingRefund } from '../src/core/economy';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { createWorld } from '../src/core/world';
@@ -21,6 +23,22 @@ it('round-trips mid-simulation state and continues identically', () => {
 
 it('rejects saves from an incompatible version', () => {
   expect(() => deserialize(JSON.stringify({ version: 1, savedAt: 0, state: {} }))).toThrow(/incompatible/);
+});
+
+it('migrates v5 building costs from build order and saved discounts, then preserves payments', () => {
+  const w = smallWorld();
+  w.state.skills = { masterBuilders: 1, masons: 1 };
+  addBuilding(w.state, 'well', 0, 0);
+  addBuilding(w.state, 'well', 1, 0);
+  const old = JSON.parse(serialize(w.state, 123));
+  old.version = 5;
+  for (const b of old.state.buildings) delete b.paidCost;
+  const { state, savedAt } = deserialize(JSON.stringify(old));
+  expect(savedAt).toBe(123);
+  expect(state.buildings.map((b) => b.paidCost)).toEqual([{}, { wood: 120, stone: 27 }, { wood: 180, stone: 41 }]);
+  state.skills = {};
+  expect(buildingRefund(state.buildings[1])).toEqual({ wood: 60, stone: 13 });
+  expect(deserialize(serialize(state)).state).toEqual(state);
 });
 
 it('migrates a v2 save to v3', () => {

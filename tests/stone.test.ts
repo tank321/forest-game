@@ -77,9 +77,9 @@ describe('quarries', () => {
     expect(upgradeCost(s, 'axe', 5)).toEqual({ wood: 1300, food: 500 });
     expect(upgradeCost(s, 'axe', 6)).toEqual({ wood: 2000, food: 800, stone: 100 });
     expect(upgradeCost(s, 'farm', 6)).toEqual({ wood: 4000, food: 1600, stone: 150 });
-    for (let k = 0; k < 5; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k });
+    for (let k = 0; k < 5; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
     expect(buildingCost(s, 'house').stone).toBeUndefined();
-    s.buildings.push({ id: 905, kind: 'house', x: 0, y: 5 });
+    s.buildings.push({ id: 905, kind: 'house', x: 0, y: 5, paidCost: {} });
     expect(buildingCost(s, 'house')).toEqual({ wood: 1139, food: 169, stone: 30 });
   });
 

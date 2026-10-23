@@ -1,8 +1,10 @@
 import { CONFIG } from '../config';
+import { buildingCost } from './economy';
+import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState } from './types';
 
-const VERSION = 5;
+const VERSION = 6;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -58,6 +60,22 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
         resources: { ...s.resources, stone: 0 },
         totals: { ...s.totals, stone: 0 },
         upgrades: { ...s.upgrades, pick: 0 },
+      },
+    };
+  },
+  5: (f) => {
+    const owned = new Map<BuildingKind, number>();
+    return {
+      ...f,
+      version: 6,
+      state: {
+        ...f.state,
+        // Old saves did not record payments. Estimate from build order and saved discounts.
+        buildings: f.state.buildings.map((b) => {
+          const count = owned.get(b.kind) ?? 0;
+          owned.set(b.kind, count + 1);
+          return { ...b, paidCost: b.paidCost ?? buildingCost(f.state, b.kind, count) };
+        }),
       },
     };
   },

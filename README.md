@@ -1,4 +1,4 @@
-# Forest Game (alpha v5)
+# Forest Game (alpha v6)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -19,6 +19,14 @@ yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood or food), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, a Quarry upgrades picks. Esc cancels.
 
+Select any building except the Town Center and choose **Move**, then tap a valid new location.
+Moves are free; a green footprint marks valid cleared land, and houses still need a neighboring
+house or Town Center. The original building stays until you place it; **Cancel move** or Escape cancels.
+**Remove…** shows the refund before **Remove permanently** confirms deletion. Removal returns 50%
+of the original construction materials, rounded down per resource; upgrade costs are excluded.
+Workers deliver carried resources before returning to lumberjacking. Removing houses reduces the
+population cap but keeps existing villagers. The Town Center cannot be moved or removed.
+
 **Food:** a Farm (3×3) takes one empty-handed lumberjack as its farmer; farmers deliver food to
 the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. Food pays for
 food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
@@ -29,8 +37,11 @@ levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) 
 within 1 tile harvest ×3 and carry ×2 (wells don't stack).
 
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
-touches it, tap it, and pick one of three skills in the popup (the game keeps running). Close it
-to pick later with **Pick skill** in the sidebar. **Skills** (or **View skills** in the popup) lists levels; **Export/Import** move
+touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
+of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
+with **Pick skill** in the sidebar. **Skills** opens a popup journal: filter by status or group,
+hover over a card to compare current and next-level bonuses in the right-hand panel, and follow prerequisite links.
+On phones, tap a card to show details beneath it. Keyboard users can select cards with Enter or Space. **Export/Import** move
 saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000.
 
 ## Layout
@@ -45,15 +56,18 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` relic skill popup, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
-- `src/assets/fonts/` – Silkscreen regular and bold (SIL Open Font License, `OFL.txt`)
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
 **Unreleased** – Art.
-- Skill popup: a relic's three skill cards open in a window over the map, with an icon per skill. Close it to pick later (**Pick skill** in the sidebar reopens it); **View skills** shows the skills list.
+- Readable system fonts throughout the UI and tree hover labels, with lighter text shadows. Top stats stay in one row; scroll horizontally on narrow screens to see all six counters.
+- Skills journal popup: cards with level pips, learned/locked/maxed states, status and group filters, prerequisite navigation, and current/next-level bonus previews on hover (tap on phones). A separate relic-choice tab requires an explicit **Choose** action; closing preserves pending choices. Upgrade messages and animated pips confirm each pick.
+- Compact skills layout: title and progress share a header, tabs and filters share a toolbar, and shorter cards fill the remaining window height. Upgrade notifications disappear after a few seconds without taking space from the grid.
+- Building upgrades use readable parchment cards: separate current/next stat columns with resource units, a level badge, a labeled cost, and a dedicated upgrade button. Worker status and pause explanations appear on separate lines.
 - Tree health: a chopped tree shows a health bar (green left, red lost); hovering a tree shows its wood left / full-grown wood.
-- Pixel-art UI: Silkscreen pixel font (bold numbers), sized in multiples of 8 px so it stays on its pixel grid; wooden plank buttons that press down, gold for the active tool and skill picks, parchment for build cards; a wooden sidebar.
+- Pixel-art UI: wooden plank buttons that press down, gold for the active tool and skill picks, parchment for build cards; a wooden sidebar.
 - Icons for resources, stats, tools and menu buttons. Costs are icon chips, red where you are short.
 - Build cards show the building's sprite.
 - Stats float over the top of the map on a parchment plaque; messages pop up over the map. Tools moved into the sidebar; Export/Import are icon buttons.
@@ -70,6 +84,12 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - Marked trees carry a flag: red when villagers can reach the tree, yellow until the land touches it.
 - Villager sprites: outfit and tool by job (lumberjack, farmer, miner); they walk, swing tools, carry their load home, and face where they are going.
 - Trees shrink through three growth stages to a stump as they are chopped (replaces the light/dark shading).
+
+**v6** – Building management.
+- Move any building except the Town Center for free, with placement validation and cancellation.
+- Remove buildings with a refund preview and explicit confirmation; receive half their original construction materials, rounded down. Upgrades remain unlocked.
+- Worker loads, job assignments, drop-off routes, well bonuses and population capacity update after moves and removals.
+- Save v6 records each building's actual construction payment. Older saves migrate automatically using build order and saved discounts to estimate missing payments; their historical skill discounts cannot be recovered exactly.
 
 **v5** – Stone.
 - Quarry building with a miner job; stone resource delivered to the Town Center.

@@ -14,6 +14,7 @@ export const CONFIG = {
     foodHireOffset: 1, // food villagers start one step into the table
     basePop: 5,
     popPerHouse: 3,
+    buildingRefund: 0.5, // fraction of original construction cost returned on removal
   },
   axe: {
     // per-level cost by resource; every row has one entry per level (0 = not charged)

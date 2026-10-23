@@ -10,7 +10,7 @@
       <main id="map">
         <canvas id="world"></canvas>
         <header id="hud">
-          <div class="stats frame parchment">
+          <div class="stats frame parchment" tabindex="0" role="region" aria-label="Resources and population; scroll horizontally for more stats">
             <span title="Population"><i class="ico ico-pop"></i><b id="pop">0/5</b></span>
             <span title="Land"><i class="ico ico-land"></i><b id="land">0</b></span>
             <span title="Trees left"><i class="ico ico-trees"></i><b id="trees">0</b></span>
@@ -28,7 +28,7 @@
         </div>
         <section id="panel"></section>
         <nav id="menu">
-          <button id="skillsBtn"><i class="ico ico-skills"></i>Skills</button>
+          <button id="skillsBtn" aria-haspopup="dialog" aria-controls="skillModal" aria-expanded="false"><i class="ico ico-skills"></i>Skills</button>
           <button id="exportBtn" title="Export save" aria-label="Export save"><i class="ico ico-export"></i></button>
           <button id="importBtn" title="Import save" aria-label="Import save"><i class="ico ico-import"></i></button>
           <button id="devTap" hidden></button>
@@ -37,11 +37,26 @@
       </aside>
     </div>
     <dialog id="skillModal" class="frame dark" aria-labelledby="skillTitle">
-      <button class="close" aria-label="Close">×</button>
-      <h2 id="skillTitle">Choose a skill</h2>
-      <p class="sub"></p>
-      <div class="cards"></div>
-      <button class="view"><i class="ico ico-skills"></i>View skills</button>
+      <div class="skill-header">
+        <h2 id="skillTitle">Skills</h2>
+        <p class="skill-summary"></p>
+        <button class="close" aria-label="Close">×</button>
+      </div>
+      <div class="skill-controls">
+        <div class="skill-tabs" role="group" aria-label="Skill views">
+          <button data-skill-view="all" aria-pressed="true">All skills</button>
+          <button data-skill-view="choose" aria-pressed="false" disabled>Choose a skill (0)</button>
+        </div>
+        <div class="skill-filters">
+          <label>Show <select id="skillStatus"><option value="all">All skills</option><option value="learned">Learned</option><option value="locked">Locked</option><option value="maxed">Maxed</option></select></label>
+          <label>Group <select id="skillGroup"><option value="all">All groups</option><option>Gathering</option><option>Village</option><option>Building</option></select></label>
+        </div>
+      </div>
+      <div class="skill-layout">
+        <div class="skill-gallery" role="group" aria-label="Skills to inspect"></div>
+        <div class="skill-detail-slot"></div>
+      </div>
+      <p class="skill-feedback" role="status" aria-live="polite"></p>
     </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>

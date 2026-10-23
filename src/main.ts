@@ -1,6 +1,6 @@
 import { CONFIG } from './config';
 import { buildingAt } from './core/buildings';
-import { chopTree, collectRelic, placeBuilding, toggleMark } from './core/commands';
+import { chopTree, collectRelic, moveBuilding, placeBuilding, toggleMark } from './core/commands';
 import { inBounds, tileAt } from './core/grid';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
 import { simulate, tick } from './core/sim';
@@ -16,7 +16,7 @@ import { placementAt } from './ui/placement';
 import { SkillModal } from './ui/skillModal';
 import { createUiState } from './ui/state';
 import { applySkin } from './ui/skin';
-import { duration, fmt } from './ui/text';
+import { BUILDING_TEXT, duration, fmt } from './ui/text';
 import './style.css';
 
 const { dt, catchUpDt, maxFrameSeconds, maxOfflineSeconds } = CONFIG.sim;
@@ -39,7 +39,6 @@ const skillModal = new SkillModal(
   document.getElementById('skillModal') as HTMLDialogElement,
   document.getElementById('pickSkillBtn') as HTMLButtonElement,
   () => world,
-  ui,
 );
 
 attachInput(canvas, cam, {
@@ -47,6 +46,15 @@ attachInput(canvas, cam, {
   leave: () => (ui.hover = null),
   tap(wx, wy, alt) {
     ui.hover = { x: wx, y: wy };
+    if (ui.moving) {
+      const b = ui.moving;
+      const { x, y } = placementAt(b.kind, wx, wy);
+      if (moveBuilding(world, b.id, x, y)) {
+        ui.moving = null;
+        hud.message(`${BUILDING_TEXT[b.kind].name} moved.`);
+      } else hud.message('Cannot move there. Choose clear land; houses must touch the Town Center or another house.');
+      return;
+    }
     if (ui.placing) {
       const { x, y } = placementAt(ui.placing, wx, wy);
       if (placeBuilding(world, ui.placing, x, y)) ui.placing = null;
@@ -54,6 +62,7 @@ attachInput(canvas, cam, {
       return;
     }
     if (!inBounds(s, wx, wy)) return;
+    ui.removing = null;
     const i = tileAt(s, wx, wy);
     ui.selected = s.tiles[i] === Tile.Building ? (buildingAt(s, i) ?? null) : null;
     if (s.tiles[i] === Tile.Relic) {
@@ -66,7 +75,10 @@ attachInput(canvas, cam, {
   },
 });
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') ui.placing = ui.selected = null;
+  if (e.key !== 'Escape' || document.getElementById('skillModal')!.matches('[open]')) return;
+  if (ui.moving) ui.moving = null;
+  else if (ui.removing !== null) ui.removing = null;
+  else ui.placing = ui.selected = null;
 });
 
 function catchUp(seconds: number): void {
@@ -102,12 +114,9 @@ requestAnimationFrame(frame);
 let resetting = false;
 const save = () => !resetting && saveGame(s);
 
-// Menu: skills view, save export/import, dev tap multiplier.
+// Menu: skills popup, save export/import, dev tap multiplier.
 const $ = (id: string) => document.getElementById(id)!;
-$('skillsBtn').onclick = () => {
-  ui.selected = ui.placing = null;
-  ui.view = ui.view === 'skills' ? 'build' : 'skills';
-};
+$('skillsBtn').onclick = () => skillModal.open();
 $('exportBtn').onclick = () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([serialize(s)], { type: 'application/json' }));

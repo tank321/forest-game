@@ -6,10 +6,10 @@ import type { UiIcon } from '../render/sprites';
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
   house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a house.' },
-  lumberCamp: { name: 'Lumber Camp', desc: 'Extra wood drop-off. Axe upgrades.' },
-  barn: { name: 'Barn', desc: 'Food drop-off. Farm upgrades.' },
-  farm: { name: 'Farm', desc: 'Takes one villager as a farmer. Never runs out.' },
-  quarry: { name: 'Quarry', desc: 'Takes villagers as miners; stone goes to the Town Center. Pick upgrades.' },
+  lumberCamp: { name: 'Lumber Camp', desc: 'Stores wood. Upgrade all lumberjacks here.' },
+  barn: { name: 'Barn', desc: 'Stores food. Upgrade all farms here.' },
+  farm: { name: 'Farm', desc: 'Assigns a villager to grow food.' },
+  quarry: { name: 'Quarry', desc: 'Miners gather stone and deliver it to the Town Center.' },
   well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
 };
 

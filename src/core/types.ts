@@ -31,6 +31,7 @@ export interface Building {
   kind: BuildingKind;
   x: number; // top-left tile
   y: number;
+  paidCost: Cost; // original materials paid; moving and later discounts do not change this
 }
 
 export interface Rect {

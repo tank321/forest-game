@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest';
+import { villagerCost } from '../src/core/economy';
+import { availableSkills, SKILL_IDS, SKILLS } from '../src/core/skills';
+import { getStats } from '../src/core/stats';
+import { skillBonus, skillStatus } from '../src/ui/skillInfo';
+import { smallWorld } from './helpers';
+
+describe('skill journal previews', () => {
+  it('distinguishes prerequisites, unlearned, learned, and maxed skills consistently with eligibility', () => {
+    const s = smallWorld().state;
+    expect(skillStatus(s, 'recruiters')).toBe('Locked');
+    expect(skillStatus(s, 'roomyHouses')).toBe('Unlearned');
+    s.skills.roomyHouses = 1;
+    expect(skillStatus(s, 'roomyHouses')).toBe('Learned');
+    expect(skillStatus(s, 'recruiters')).toBe('Unlearned');
+    s.skills.powerSwing = SKILLS.powerSwing.max;
+    expect(skillStatus(s, 'powerSwing')).toBe('Maxed');
+    const eligible = availableSkills(s);
+    for (const id of SKILL_IDS) {
+      expect(eligible.includes(id)).toBe(['Unlearned', 'Learned'].includes(skillStatus(s, id)));
+    }
+  });
+
+  it('shows exponential tap gains and additive production bonuses', () => {
+    const s = smallWorld().state;
+    s.skills = { powerSwing: 2, sharpAxes: 3 };
+    const st = getStats(s);
+    expect(skillBonus('powerSwing', 0)).toBe('×1 wood per tap');
+    expect(skillBonus('powerSwing', 2)).toBe(`×${st.manualChop} wood per tap`);
+    expect(skillBonus('sharpAxes', 3)).toBe('+60% villager chop speed');
+    expect(st.chopRate / getStats({ ...s, skills: {} }).chopRate).toBeCloseTo(1.6);
+  });
+
+  it('previews compounding discounts rather than adding the percentages', () => {
+    const s = smallWorld().state;
+    s.hires.wood = 0;
+    s.skills.recruiters = 2;
+    expect(skillBonus('recruiters', 2)).toBe('27.8% lower villager costs');
+    expect(skillBonus('masons', 3)).toBe('38.6% lower stone costs');
+    expect(villagerCost(s).wood).toBe(7);
+  });
+
+  it('shows the base and upgraded well reach used by the simulation', () => {
+    const s = smallWorld().state;
+    expect(skillBonus('deepWells', 0)).toBe(`Wells reach farms within ${getStats(s).wellRadius} tile`);
+    s.skills.deepWells = 1;
+    expect(skillBonus('deepWells', 1)).toBe(`Wells reach farms within ${getStats(s).wellRadius} tiles`);
+  });
+});

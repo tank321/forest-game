@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, countOf, type BuildingKind } from './buildings';
 import { lvl } from './skills';
-import type { Cost, GameState, ResourceKey } from './types';
+import type { Building, Cost, GameState, ResourceKey } from './types';
 
 const { villagerCosts, villagerCostGrowth, foodHireOffset, basePop, popPerHouse } = CONFIG.economy;
 
@@ -22,11 +22,20 @@ export function villagerCost(s: GameState, res: 'wood' | 'food' = 'wood'): Cost 
 }
 
 /** Masons: the stone part of any cost is discounted. */
-const masonry = (s: GameState, c: Cost): Cost =>
+const masonry = (s: Pick<GameState, 'skills'>, c: Cost): Cost =>
   c.stone ? { ...c, ...scale({ stone: c.stone }, 0.85 ** lvl(s, 'masons')) } : c;
 
-export const buildingCost = (s: GameState, kind: BuildingKind): Cost =>
-  masonry(s, scale(BUILDINGS[kind].cost(countOf(s, kind)), lvl(s, 'masterBuilders') ? 0.8 : 1));
+export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings'>, kind: BuildingKind, owned = countOf(s, kind)): Cost =>
+  masonry(s, scale(BUILDINGS[kind].cost(owned), lvl(s, 'masterBuilders') ? 0.8 : 1));
+
+/** Refund original construction materials only, rounded down per resource. */
+export const buildingRefund = (b: Building): Cost =>
+  b.kind === 'townCenter' ? {} : Object.fromEntries(
+    entries(b.paidCost).flatMap(([r, n]) => {
+      const amount = Math.floor(n * CONFIG.economy.buildingRefund);
+      return amount > 0 ? [[r, amount]] : [];
+    }),
+  );
 
 export const popCap = (s: GameState) => basePop + (popPerHouse + lvl(s, 'roomyHouses')) * countOf(s, 'house');
 
