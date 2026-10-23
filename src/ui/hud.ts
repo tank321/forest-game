@@ -6,7 +6,6 @@ import { jobResource } from '../core/systems/workplace';
 import { RESOURCES, type ResourceKey, type Resources } from '../core/types';
 import { SOURCES, type Source, type World } from '../core/world';
 import { seasonEffects, seasonName } from './seasonInfo';
-import type { UiState } from './state';
 import { duration, fmt, icon } from './text';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -60,7 +59,6 @@ export class Hud {
     pop: $('pop'),
     land: $('land'),
     relicCountdown: $('relicCountdown'),
-    relic: $('relic'),
     msg: $('msg'),
     season: $('season'),
   };
@@ -72,8 +70,6 @@ export class Hud {
   private seasonHover = false; // mouse over the chip
   private seasonPinned = false; // opened by a click, tap or key; closed by another or a click elsewhere
   private lastShort = { hungry: -Infinity, cold: -Infinity }; // sim time each was last seen
-  private find = $('findRelic') as HTMLButtonElement;
-  private tools = [...document.querySelectorAll<HTMLButtonElement>('[data-tool]')];
   private cache = new Map<HTMLElement, string>();
   private msgUntil = 0;
   private samples: [number, Flows][] = []; // [sim time, gathered so far per source]
@@ -84,11 +80,7 @@ export class Hud {
   private resHover: ResourceKey | null = null; // resource under the mouse
   private resPinned: ResourceKey | null = null; // opened by a click, tap or key
 
-  constructor(
-    private world: () => World,
-    private ui: UiState,
-    onFindRelic: () => void,
-  ) {
+  constructor(private world: () => World) {
     $('hud').querySelector('.stats')!.prepend(...this.res.map((e) => e.span));
     for (const { r, span } of this.res) {
       span.onpointerenter = (e) => e.pointerType === 'mouse' && (this.resHover = r);
@@ -105,8 +97,6 @@ export class Hud {
       if (!this.res.some(({ span }) => span.contains(t)) && !this.resourceInfo.contains(t)) this.resPinned = null;
     });
     addEventListener('keydown', (e) => e.key === 'Escape' && (this.resPinned = null));
-    for (const b of this.tools) b.onclick = () => (ui.tool = b.dataset.tool as UiState['tool']);
-    this.find.onclick = onFindRelic;
     const chip = this.seasonChip;
     chip.onpointerenter = (e) => e.pointerType === 'mouse' && (this.seasonHover = true);
     chip.onpointerleave = (e) => e.pointerType === 'mouse' && (this.seasonHover = false);
@@ -157,12 +147,6 @@ export class Hud {
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
     // Zero only while a due relic finds no spot to appear; it retries on the next fell.
     this.set(this.els.relicCountdown, `relic in ${fmt(Math.max(0, s.nextRelicAt - s.treesChopped))}`);
-    this.set(
-      this.els.relic,
-      s.relics.length ? `${s.relics.length} relic${s.relics.length > 1 ? 's' : ''} in the forest` : `Next relic: ${s.nextRelicAt - s.treesChopped} trees`,
-    );
-    this.find.hidden = !s.relics.length;
-    for (const b of this.tools) b.classList.toggle('active', b.dataset.tool === this.ui.tool);
     if (s.treesLeft === 0) this.message(`Forest cleared in ${duration(s.time)}!`);
     else if (this.msgUntil && performance.now() > this.msgUntil) this.message('', 0);
   }

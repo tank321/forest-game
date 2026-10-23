@@ -70,9 +70,7 @@ button:disabled { filter: saturate(.35) brightness(.7); cursor: default; }
 /* Sidebar on wooden boards: tools, panel, menu. */
 #side { display: flex; flex-direction: column; min-height: 0; background: #3a2616 var(--wood) 0 0 / 64px 16px; border-top: 4px solid var(--ink); }
 #tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 12px 4px; }
-/* Relic status on its own row: count on the left, Find relic on the right. */
-#relicRow { flex: 1 1 100%; display: flex; justify-content: space-between; align-items: center; gap: 6px; min-height: 40px; }
-#relicInfo { display: flex; align-items: center; gap: 4px; min-width: 0; color: var(--gold); text-shadow: var(--outline); }
+#tools:not(:has(> :not([hidden]))) { display: none; }
 #panel { padding: 8px 12px; display: grid; gap: 8px; align-content: start; max-height: 45dvh; overflow-y: auto; }
 #panel h2 { font-size: var(--t2); line-height: 32px; color: var(--gold); text-shadow: var(--outline); }
 #panel .sub { color: var(--cream); font-size: 15px; line-height: 1.5; text-shadow: var(--outline); }

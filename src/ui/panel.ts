@@ -33,10 +33,11 @@ export class Panel {
       const cost = a.cost && !a.upgrade ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
       // Build card: icon and name share a fixed top row, costs run full width below.
       if (a.thumb) return `<i class="thumb thumb-${a.thumb}"></i><span class="name">${a.label}</span>${cost}`;
-      const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'}</span>` : '';
+      const lost = `${Math.round(100 * (1 - CONFIG.economy.buildingRefund))}% lost`;
+      const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'} · ${lost}</span>` : '';
       return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom, tally !== undefined,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) {
@@ -131,28 +132,16 @@ export class Panel {
     if (ui.selected) {
       const b = ui.selected;
       const k = b.kind;
-      if (ui.removing === b.id && k !== 'townCenter') {
-        const consequence = k === 'house' ? 'Population capacity decreases; existing villagers stay.'
-          : BUILDINGS[k].workers ? 'Workers deliver any carried resources, then return to lumberjacking.' : '';
-        return {
-          title: `Remove ${BUILDING_TEXT[k].name}?`,
-          sub: `This permanently removes the building. You get 50% of its original construction materials back, rounded down. Upgrades stay unlocked. ${consequence}`,
-          actions: [
-            { label: 'Remove permanently', cost: null, refund: buildingRefund(b), danger: true, enabled: true, run: () => {
-              if (removeBuilding(w, b.id)) { ui.selected = null; ui.removing = null; }
-            } },
-            { label: 'Keep building', cost: null, enabled: true, run: () => (ui.removing = null) },
-          ],
-        };
-      }
       const actions = ACTIONS[k]?.(w, ui.selected) ?? [];
       if (k !== 'townCenter') {
         actions.push(
-          { label: 'Move', cost: null, secondary: true, enabled: true, run: () => { ui.moving = b; ui.removing = null; } },
-          { label: 'Remove…', cost: null, secondary: true, danger: true, enabled: true, run: () => (ui.removing = b.id) },
+          { label: 'Move', cost: null, secondary: true, enabled: true, run: () => (ui.moving = b) },
+          { label: 'Remove', cost: null, refund: buildingRefund(b), secondary: true, danger: true, enabled: true, run: () => {
+            if (removeBuilding(w, b.id)) ui.selected = null;
+          } },
         );
       }
-      actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => { ui.selected = null; ui.removing = null; } });
+      actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.selected = null) });
       const isolated = BUILDINGS[k].road && !linkedBuildings(s).has(b.id);
       const info = isolated ? 'Isolated: not connected to the Town Center, so it does nothing. Lay a road from it to the Town Center.' : INFO[k]?.(w, ui.selected);
       const custom = k === 'market' ? this.market : undefined;

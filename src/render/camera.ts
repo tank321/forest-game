@@ -7,6 +7,7 @@ export class Camera {
   zoom: number = CONFIG.camera.startZoom;
   vw = 1; // viewport size, CSS px
   vh = 1;
+  private glide: { fx: number; fy: number; tx: number; ty: number; t: number } | null = null; // t runs 0 → 1
 
   constructor(
     private worldW: number,
@@ -30,7 +31,25 @@ export class Camera {
     return [(sx - this.vw / 2) / this.zoom + this.x, (sy - this.vh / 2) / this.zoom + this.y];
   }
 
+  /** Smoothly center on (wx, wy) over `CONFIG.camera.glideMs`. Any pan or zoom by the player stops it. */
+  glideTo(wx: number, wy: number): void {
+    this.glide = { fx: this.x, fy: this.y, tx: wx, ty: wy, t: 0 };
+  }
+
+  /** Advance a glide by `ms` of wall-clock time, easing in and out. */
+  step(ms: number): void {
+    const g = this.glide;
+    if (!g) return;
+    g.t = Math.min(1, g.t + ms / CONFIG.camera.glideMs);
+    const e = g.t < 0.5 ? 4 * g.t ** 3 : 1 - (2 - 2 * g.t) ** 3 / 2;
+    this.x = g.fx + (g.tx - g.fx) * e;
+    this.y = g.fy + (g.ty - g.fy) * e;
+    this.clamp();
+    if (g.t === 1) this.glide = null;
+  }
+
   panBy(dxPx: number, dyPx: number): void {
+    this.glide = null;
     this.x -= dxPx / this.zoom;
     this.y -= dyPx / this.zoom;
     this.clamp();
@@ -38,6 +57,7 @@ export class Camera {
 
   /** Zoom by `factor`, keeping the world point under (sx, sy) fixed. */
   zoomAt(sx: number, sy: number, factor: number): void {
+    this.glide = null;
     const [wx, wy] = this.toWorld(sx, sy);
     this.zoom = Math.min(CONFIG.camera.maxZoom, Math.max(this.minZoom(), this.zoom * factor));
     const [nx, ny] = this.toWorld(sx, sy);

@@ -11,10 +11,10 @@ npm run build   # typecheck + production build to dist/
 ```
 
 ## Controls
-Drag to pan, wheel or pinch to zoom. In **Chop** mode, tap a tree next to your land for +1 wood.
+Drag to pan, wheel or pinch to zoom. Tap a tree next to your land for +1 wood.
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
 shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
-In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
+Right-clicking a tree flags it as a priority: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth) and upgrades the wheelbarrow and coats, a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
@@ -36,7 +36,7 @@ stand there but needs a road. Villagers prefer connected roads when walking (at 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
 Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
-**Remove…** shows the refund before **Remove permanently** confirms deletion. Removal returns 50%
+**Remove** shows its refund and the share lost, and removes the building in one click. Removal returns 50%
 of the original construction materials, rounded down per resource; upgrade costs are excluded.
 Workers deliver carried resources before returning to lumberjacking. Removing houses reduces the
 population cap but keeps existing villagers. The Town Center cannot be moved or removed.
@@ -84,7 +84,7 @@ from the Market. Without a Market the post stands idle. Gold pays for houses fro
 **Tax Collectors** (+20% tax per level), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
 
-Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it); the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
+Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it) and the map pans over to it; the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
 with **Pick skill** in the sidebar. Skills come in six tracks (Forestry, Villagers, Buildings, Farming, Mining,
@@ -109,7 +109,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
@@ -127,6 +127,9 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - Villagers walk around buildings instead of over them: they only step onto the building they are in or the one they are heading to, so routes keep to roads and open ground.
 - A road running past a building's door or fence gap joins the building there, instead of at the first road tile beside it.
 - Road mode ends by itself once the last road in the stock is laid.
+- Sidebar: the Chop and Mark buttons, the relic count and **Find relic** are gone; right-click a tree to mark it.
+- Removing a building no longer asks for confirmation: the **Remove** button shows the refund and the 50% lost.
+- When a relic appears, the map pans smoothly over to it and says **New relic discovered!** Dragging or zooming stops the pan.
 
 **v13** – Skill tracks.
 - Skills are grouped into six tracks, each unlocking in order, easier skills first:

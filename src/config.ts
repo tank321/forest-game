@@ -90,6 +90,6 @@ export const CONFIG = {
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
-  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48 }, // zoom = CSS px per tile; carry tags show from carryZoom
+  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900 }, // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic
   save: { key: 'forest-game-save', intervalMs: 10_000 },
 } as const;

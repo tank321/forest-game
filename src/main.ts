@@ -30,11 +30,7 @@ const ui = createUiState();
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const cam = new Camera(s.w, s.h);
 const renderer = new Renderer(canvas, cam, s.w, s.h);
-const hud = new Hud(() => world, ui, () => {
-  const r = s.relics[0];
-  cam.x = (r % s.w) + 0.5;
-  cam.y = ((r / s.w) | 0) + 0.5;
-});
+const hud = new Hud(() => world);
 const panel = new Panel(document.getElementById('panel')!, () => world, ui);
 const skillModal = new SkillModal(
   document.getElementById('skillModal') as HTMLDialogElement,
@@ -97,7 +93,6 @@ attachInput(canvas, cam, {
       return;
     }
     if (!inBounds(s, wx, wy)) return;
-    ui.removing = null;
     const i = tileAt(s, wx, wy);
     ui.selected = s.tiles[i] === Tile.Building ? (buildingAt(s, i) ?? null) : null;
     ui.road = s.tiles[i] === Tile.Road ? i : null;
@@ -106,7 +101,7 @@ attachInput(canvas, cam, {
       return;
     }
     if (s.tiles[i] !== Tile.Tree) return;
-    if (alt || ui.tool === 'mark') toggleMark(world, i);
+    if (alt) toggleMark(world, i);
     else chopTree(world, i);
   },
 });
@@ -115,7 +110,6 @@ addEventListener('keydown', (e) => {
   if (ui.moving) ui.moving = null;
   else if (ui.movingRoad) ui.movingRoad = false;
   else if (ui.paving) ui.paving = false;
-  else if (ui.removing !== null) ui.removing = null;
   else ui.placing = ui.selected = ui.road = null;
 });
 // Right click anywhere (map or sidebar, even after a right-drag) cancels placing a building or ends road mode.
@@ -135,7 +129,21 @@ function catchUp(seconds: number): void {
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
   };
   const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}`, 8000);
+  const found = panToNewRelic();
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${found ? `. ${NEW_RELIC}` : ''}`, 8000);
+  else if (found) hud.message(NEW_RELIC);
+}
+
+const NEW_RELIC = 'New relic discovered!';
+let relicsSeen = s.relicsSpawned; // the camera glides to each relic spawned after this
+/** Glide to the newest relic if one has spawned since the last check; returns whether one had. */
+function panToNewRelic(): boolean {
+  if (s.relicsSpawned === relicsSeen) return false;
+  relicsSeen = s.relicsSpawned;
+  const r = s.relics.at(-1);
+  if (r === undefined) return false;
+  cam.glideTo((r % s.w) + 0.5, ((r / s.w) | 0) + 0.5);
+  return true;
 }
 if (loaded) catchUp((Date.now() - loaded.savedAt) / 1000);
 
@@ -153,6 +161,8 @@ function frame(now: number): void {
       acc -= dt;
     }
   }
+  if (panToNewRelic()) hud.message(NEW_RELIC);
+  cam.step(elapsed * 1000);
   renderer.draw(world, ui);
   hud.update();
   panel.update();

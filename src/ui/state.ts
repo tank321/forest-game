@@ -4,11 +4,9 @@ import type { Building } from '../core/types';
 
 /** Transient UI state (never saved). */
 export interface UiState {
-  tool: 'chop' | 'mark';
   placing: BuildingKind | null;
   moving: Building | null;
   paving: boolean; // laying or lifting roads
-  removing: number | null; // selected building awaiting removal confirmation
   selected: Building | null;
   road: number | null; // selected road tile
   movingRoad: boolean; // the selected road awaits its new tile
@@ -17,11 +15,9 @@ export interface UiState {
 }
 
 export const createUiState = (): UiState => ({
-  tool: 'chop',
   placing: null,
   moving: null,
   paving: false,
-  removing: null,
   selected: null,
   road: null,
   movingRoad: false,
