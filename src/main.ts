@@ -43,7 +43,7 @@ const skillModal = new SkillModal(
   (message) => hud.message(message),
 );
 
-// A road stroke lays road on open ground, or lifts it if it starts on a road (or with right-click).
+// A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
 let lifting = false;
 let lastRoadTile = -1;
 attachInput(canvas, cam, {
@@ -52,17 +52,23 @@ attachInput(canvas, cam, {
   brush: () => ui.paving,
   stroke(wx, wy, start, alt) {
     ui.hover = { x: wx, y: wy };
+    // Right-click is handled by the contextmenu listener below; the rest of a drag that used the last road does nothing.
+    if (alt || !ui.paving) return;
     const i = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
     if (start) {
-      lifting = alt || (i >= 0 && s.tiles[i] === Tile.Road);
+      lifting = i >= 0 && s.tiles[i] === Tile.Road;
       lastRoadTile = -1;
     }
     if (i < 0 || i === lastRoadTile) return;
     lastRoadTile = i;
+    const noneLeft = `No roads left. Each house adds ${CONFIG.roads.perHouse} more.`;
     if (lifting) removeRoad(world, i);
-    else if (!placeRoad(world, i) && s.tiles[i] === Tile.Grass && roadsBuilt(s) >= roadStock(s)) {
-      hud.message(`No roads left. Each house adds ${CONFIG.roads.perHouse} more.`);
-    }
+    else if (placeRoad(world, i)) {
+      if (roadsBuilt(s) >= roadStock(s)) {
+        ui.paving = false; // that was the last road: road mode ends
+        hud.message(noneLeft);
+      }
+    } else if (s.tiles[i] === Tile.Grass && roadsBuilt(s) >= roadStock(s)) hud.message(noneLeft);
   },
   tap(wx, wy, alt) {
     ui.hover = { x: wx, y: wy };
@@ -84,6 +90,7 @@ attachInput(canvas, cam, {
       return;
     }
     if (ui.placing) {
+      if (alt) return; // right click cancels placing (contextmenu listener below)
       const { x, y } = placementAt(ui.placing, wx, wy);
       if (placeBuilding(world, ui.placing, x, y)) ui.placing = null;
       else hud.message("Can't build there");
@@ -110,6 +117,13 @@ addEventListener('keydown', (e) => {
   else if (ui.paving) ui.paving = false;
   else if (ui.removing !== null) ui.removing = null;
   else ui.placing = ui.selected = ui.road = null;
+});
+// Right click anywhere (map or sidebar, even after a right-drag) cancels placing a building or ends road mode.
+addEventListener('contextmenu', (e) => {
+  if (!(ui.placing || ui.paving) || e.button !== 2) return;
+  e.preventDefault();
+  ui.placing = null;
+  ui.paving = false;
 });
 
 function catchUp(seconds: number): void {

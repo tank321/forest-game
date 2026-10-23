@@ -49,6 +49,13 @@ export function clearArea(w: World, x0: number, y0: number, x1: number, y1: numb
   w.dev.manualMult = mult;
 }
 
+/** Lays free roads (outside the stock) on the given tiles, for setups longer than the stock allows. */
+export function freeRoads(w: World, tiles: number[]): World {
+  for (const i of tiles) w.state.tiles[i] = Tile.Road;
+  onBuildingsChanged(w);
+  return w;
+}
+
 /**
  * Lays free roads (outside the stock) from every isolated building to the Town Center or a connected
  * road, by the shortest edge-to-edge route over open ground, so production tests need not lay them.

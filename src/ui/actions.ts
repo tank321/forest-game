@@ -69,7 +69,7 @@ function upgradeAction(w: World, kind: UpgradeKind, title: string, preview: (st:
 
 const SCOPE: Record<UpgradeKind, string> = {
   axe: 'Per lumberjack',
-  farm: 'Per farmer, orchardist, herder or picker · Well bonuses apply to farms only',
+  farm: 'Shown for a farmer · orchardists, herders and pickers improve too',
   pick: 'Per miner',
   coats: 'Whole town · firewood is burned in winter',
   barrow: 'Every villager walks faster · every gatherer carries the same extra amount',
@@ -102,27 +102,21 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   ],
   lumberCamp: (w) => [
     upgradeAction(w, 'axe', 'Axe upgrades', (st) => [
-      { label: 'Chopping', value: `${st.chopRate.toFixed(2)} wood/s` },
+      { label: 'Speed', value: perSec(st.chopRate, 'wood') },
       { label: 'Carry', value: `${Math.round(st.carry)} wood` },
     ]),
   ],
   barn: (w) => [
     upgradeAction(w, 'farm', 'Farm upgrades', (st) => [
-      { label: 'Harvest', value: `${st.farmRate.toFixed(2)} food/s` },
+      { label: 'Speed', value: perSec(st.farmRate, 'food') },
       { label: 'Carry', value: `${Math.round(st.farmCarry)} food` },
-      { label: 'Orchard harvest', value: perSec(st.orchardRate, 'food') },
-      { label: 'Orchardist carry', value: `${Math.round(st.orchardCarry)} food` },
-      { label: 'Herding', value: `${st.herdRate.toFixed(2)} cloth/s` },
-      { label: 'Herder carry', value: `${Math.round(st.herdCarry)} cloth` },
-      { label: 'Picking', value: perSec(st.cottonRate, 'cloth') },
-      { label: 'Picker carry', value: `${Math.round(st.cottonCarry)} cloth` },
     ]),
   ],
   farm: (w, b) => [pauseAction(w, b)],
   orchard: (w, b) => [pauseAction(w, b)],
   quarry: (w, b) => [
     upgradeAction(w, 'pick', 'Pick upgrades', (st) => [
-      { label: 'Mining', value: `${st.mineRate.toFixed(2)} stone/s` },
+      { label: 'Speed', value: perSec(st.mineRate, 'stone') },
       { label: 'Carry', value: `${Math.round(st.mineCarry)} stone` },
     ]),
     pauseAction(w, b),

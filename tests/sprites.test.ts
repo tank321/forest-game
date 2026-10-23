@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BUILDINGS, type BuildingKind } from '../src/core/buildings';
 import {
+  BUILDING_ENTRANCES,
   BUILDING_PALETTE,
   BUILDING_SEASONS,
   BUILDING_SPRITES,
@@ -41,6 +42,7 @@ import {
   VILLAGER_W,
   WINTER_RELIC,
   WINTER_STUMP,
+  WELL_FARM_TINTS,
   WINTER_TREES,
   composeFrame,
   composeVillager,
@@ -109,6 +111,22 @@ describe('sprites', () => {
         for (const ch of grid.join('')) expect(ch === '.' || ch in palette).toBe(true);
         for (const ch of Object.keys(BUILDING_SEASONS[season][kind as BuildingKind]?.tint ?? {})) expect(ch in BUILDING_PALETTE).toBe(true);
       }
+  });
+
+  it('well-fed farm tints recolor farm chars in every season', () => {
+    const farm = new Set(BUILDING_SPRITES.farm!.join(''));
+    for (const season of SEASONS) {
+      for (const ch of Object.keys(WELL_FARM_TINTS[season])) expect(farm.has(ch)).toBe(true);
+      expect(seasonalBuilding('farm', season, true)!.palette).not.toEqual(seasonalBuilding('farm', season)!.palette);
+    }
+  });
+
+  it('building entrances sit on the bottom row of a building with a sprite', () => {
+    for (const [kind, col] of Object.entries(BUILDING_ENTRANCES)) {
+      expect(BUILDING_SPRITES[kind as BuildingKind]).toBeDefined();
+      expect(col).toBeGreaterThanOrEqual(0);
+      expect(col).toBeLessThan(BUILDINGS[kind as BuildingKind].w);
+    }
   });
 
   it('winter snow lands on every roof section', () => {

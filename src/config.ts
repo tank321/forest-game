@@ -85,7 +85,7 @@ export const CONFIG = {
     lots: { wood: 100, food: 20, stone: 5, cloth: 5 }, // base trade lot, ×1/×10/×100 in the UI
   },
   // road stock = base + perHouse × houses; a step between connected road tiles costs pathCost × a step off-road
-  roads: { base: 30, perHouse: 10, pathCost: 0.5 },
+  roads: { base: 12, perHouse: 3, pathCost: 0.5 },
   tax: { perHouse: 0.2, radius: 4 }, // gold/s per house within radius (Chebyshev) of a Tax Office
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip

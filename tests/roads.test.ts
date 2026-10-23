@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { CONFIG } from '../src/config';
 import { moveRoad, placeBuilding, placeRoad, removeRoad } from '../src/core/commands';
 import { pathToAny } from '../src/core/pathing';
 import { linkedBuildings, roadNetwork } from '../src/core/roads';
 import { simulate } from '../src/core/sim';
 import { Tile } from '../src/core/types';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, freeRoads, smallWorld } from './helpers';
 
 /** 30×30 world, cleared from 3 to 26: the Town Center covers 13..16 on both axes. */
 function open(villagers = 0): World {
@@ -30,6 +31,16 @@ describe('roads', () => {
     expect(roadNetwork(w.state)[at(8, 14)]).toBe(1);
     removeRoad(w, at(10, 14));
     expect(roadNetwork(w.state)[at(8, 14)]).toBe(0);
+  });
+
+  it('come from a stock that grows with each house', () => {
+    const w = open();
+    const { base, perHouse } = CONFIG.roads;
+    lay(w, 3, 3 + base - 1, 20);
+    expect(placeRoad(w, at(3 + base, 20))).toBe(false);
+    expect(placeBuilding(w, 'house', 17, 13)).toBe(true); // touches the TC
+    lay(w, 3, 3 + perHouse - 1, 21);
+    expect(placeRoad(w, at(3 + perHouse, 21))).toBe(false);
   });
 
   it('put a workplace to work only while it touches a connected road', () => {
@@ -59,7 +70,7 @@ describe('roads', () => {
 
   it('carry villagers along them', () => {
     const w = open();
-    lay(w, 6, 23, 17); // under the TC, so connected
+    freeRoads(w, Array.from({ length: 18 }, (_, k) => at(6 + k, 17))); // under the TC, so connected; longer than the stock
     const path = pathToAny(w.state, at(6, 19), new Set([at(23, 19)]))!;
     const inner = path.slice(1, -1);
     expect(inner.length).toBeGreaterThanOrEqual(2);

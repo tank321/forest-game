@@ -5,6 +5,7 @@ import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { availableSkills } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
+import { carried } from '../src/core/systems/workplace';
 import type { World } from '../src/core/world';
 import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
@@ -47,6 +48,17 @@ describe('sheep farms', () => {
     simulate(w, 120, 1 / 30);
     expect(s.totals.cloth).toBeGreaterThan(0);
     expect(s.totals.food).toBe(s.totals.cloth);
+  });
+
+  it('a herder carrying cloth also carries its Fertile Herding food', () => {
+    const { w } = withSheepFarm(1);
+    const s = w.state;
+    const herder = s.villagers[0];
+    herder.job = 'herd';
+    herder.carry = 6;
+    expect(carried(getStats(s), herder)).toEqual([{ res: 'cloth', n: 6 }]);
+    s.skills = { fertileHerding: 1 };
+    expect(carried(getStats(s), herder)).toEqual([{ res: 'cloth', n: 6 }, { res: 'food', n: 6 }]);
   });
 
   it('pausing or removal returns the herder without losing carried cloth', () => {

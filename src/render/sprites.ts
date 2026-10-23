@@ -908,6 +908,21 @@ export const ROAD_ARMS: readonly (readonly string[])[] = [
   ],
 ];
 
+/**
+ * The footprint column, on its bottom row, where a building's art has its way in (a door or a gap in
+ * the fence). A road just below it joins the building there. Kinds without one join at any side.
+ */
+export const BUILDING_ENTRANCES: Partial<Record<BuildingKind, number>> = {
+  house: 0,
+  lumberCamp: 0,
+  barn: 0,
+  taxOffice: 0,
+  tradingPost: 0,
+  farm: 1,
+  sheepFarm: 1,
+  cottonPlantation: 3,
+};
+
 /** A road tile: the pad plus an arm for each set bit of `mask` (1 north, 2 east, 4 south, 8 west). */
 export function composeRoad(mask: number): string[] {
   const g = ROAD_CENTER.map((r) => [...r]);
@@ -1725,6 +1740,21 @@ export const BUILDING_SEASONS: Record<Season, Partial<Record<BuildingKind, { tin
   },
 };
 
+const WATER: Rgba = [86, 156, 214, 255];
+const DAMP: Rgba = [84, 56, 30, 255]; // wet soil
+const DAMP_SHADE: Rgba = [60, 38, 20, 255];
+
+/**
+ * Per season, recolors over a farm's seasonal palette when a Well boosts it: damp soil, lusher crops,
+ * and the ridges between the beds (m) turned to water channels, frozen to ice in winter.
+ */
+export const WELL_FARM_TINTS: Record<Season, Record<string, Rgba>> = {
+  spring: { n: DAMP, N: DAMP_SHADE, m: WATER, Y: DAMP, y: DAMP, g: [92, 178, 58, 255] },
+  summer: { n: DAMP, N: DAMP_SHADE, m: WATER, Y: [250, 214, 84, 255], y: [214, 160, 44, 255], g: [112, 168, 58, 255] },
+  autumn: { n: DAMP, N: DAMP_SHADE, m: WATER, Y: [255, 228, 70, 255], y: [228, 172, 40, 255], g: [196, 170, 56, 255] },
+  winter: { m: [176, 214, 236, 255] },
+};
+
 interface RoofSection {
   rows: readonly [number, number]; // first and last row
   snow: string; // chars that turn to snow (z)
@@ -1746,8 +1776,11 @@ export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
   tradingPost: [{ rows: [4, 9], snow: 'ur', shade: 'R' }],
 };
 
-/** A building's grid and palette in a season: its seasonal grid and tint over the summer art, and in winter snow on its roof. */
-export function seasonalBuilding(kind: BuildingKind, season: Season): { grid: readonly string[]; palette: Record<string, Rgba> } | undefined {
+/**
+ * A building's grid and palette in a season: its seasonal grid and tint over the summer art, and in winter snow on its roof.
+ * `wellFed` adds the farm's `WELL_FARM_TINTS`.
+ */
+export function seasonalBuilding(kind: BuildingKind, season: Season, wellFed = false): { grid: readonly string[]; palette: Record<string, Rgba> } | undefined {
   const art = BUILDING_SPRITES[kind];
   if (!art) return undefined;
   const { grid = art, tint } = BUILDING_SEASONS[season][kind] ?? {};
@@ -1756,7 +1789,7 @@ export function seasonalBuilding(kind: BuildingKind, season: Season): { grid: re
     const r = roof.find(({ rows }) => y >= rows[0] && y <= rows[1]);
     return r ? row.replace(/./g, (ch) => (r.snow.includes(ch) ? 'z' : r.shade.includes(ch) ? 'A' : ch)) : row;
   };
-  return { grid: grid.map(snowy), palette: { ...BUILDING_PALETTE, ...tint } };
+  return { grid: grid.map(snowy), palette: { ...BUILDING_PALETTE, ...tint, ...(wellFed ? WELL_FARM_TINTS[season] : {}) } };
 }
 
 /** RGBA per relic grid char. */

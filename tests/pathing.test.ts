@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { buildingAt } from '../src/core/buildings';
 import { placeBuilding } from '../src/core/commands';
 import { isWalkable, neighbors4 } from '../src/core/grid';
 import { clearLine, DIAG, nearestTree, pathHome, pathToAny } from '../src/core/pathing';
@@ -35,10 +34,11 @@ describe('pathing', () => {
     expect(neighbors4(s, nearestTree(s, w.fields.wood, byTc, () => false)!.tree)).toContain(byTc);
     const byCamp = y * s.w + x - 4;
     const r = nearestTree(s, w.fields.wood, byCamp, () => false)!;
-    expect(neighbors4(s, r.tree).some((i) => buildingAt(s, i) === camp)).toBe(true);
+    expect(r.tree % s.w).toBeLessThan(x); // west of the clearing, on the camp's side
+    expect(Math.abs((r.tree % s.w) - camp.x)).toBeLessThanOrEqual(2);
   });
 
-  it('marked trees win over nearer ones, along a straight walkable path', () => {
+  it('marked trees win over nearer ones, along straight legs around the Town Center', () => {
     const w = createWorld(createInitialState(1, 20, 6));
     const s = w.state;
     const from = s.origin.y * s.w + s.origin.x;
@@ -46,10 +46,25 @@ describe('pathing', () => {
     s.marked.push(far);
     const r = nearestTree(s, w.fields.wood, from, () => false)!;
     expect(r.tree).toBe(far);
-    expect(r.path).toHaveLength(2); // open ground: one straight line
     expect(r.path[0]).toBe(from);
     expect(neighbors4(s, r.path[r.path.length - 1])).toContain(far);
-    for (let k = 1; k < r.path.length; k++) expect(clearLine(s, r.path[k - 1], r.path[k])).toBe(true);
+    const off = (i: number) => s.tiles[i] !== Tile.Building; // the walk goes around the TC, not over it
+    for (let k = 1; k < r.path.length; k++) expect(clearLine(s, r.path[k - 1], r.path[k], off)).toBe(true);
+  });
+
+  it('walks around buildings it is neither leaving nor entering', () => {
+    const w = smallWorld(30); // the Town Center covers 13..16 on both axes
+    const s = w.state;
+    s.nextRelicAt = Infinity;
+    clearArea(w, 3, 3, 26, 26);
+    s.resources = { wood: 1e7, food: 1e7, stone: 1e7, cloth: 1e7, gold: 1e7 };
+    for (const y of [13, 14, 15, 16, 12, 17]) expect(placeBuilding(w, 'house', 12, y)).toBe(true); // a wall west of the TC
+    const houses = new Set(s.buildings.filter((b) => b.kind === 'house').map((b) => b.y * s.w + b.x));
+    const from = 14 * s.w + 8;
+    const p = pathHome(s, w.fields.wood, from);
+    expect(s.tiles[p[p.length - 1]]).toBe(Tile.Building); // reached the TC
+    for (let k = 1; k < p.length; k++) expect(clearLine(s, p[k - 1], p[k], (i) => !houses.has(i))).toBe(true);
+    expect(w.fields.wood.dist[from]).toBeGreaterThan(4 * 10); // longer than the straight 4 tiles over the houses
   });
 
   it('never stands on or walks through a relic', () => {

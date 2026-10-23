@@ -18,16 +18,17 @@ In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once 
 yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth) and upgrades the wheelbarrow and coats, a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
+While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Cotton Fields, Markets,
 Tax Offices, Trading Posts) and joins the build menu once learned.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
-Town Center; the Well needs no road. An isolated building is tinted red and counts for nothing: no
+Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
 workers, no deliveries, no population or tax, no trading. Choose **Road** in the build menu, then tap or
-drag over cleared land to lay road; start a drag on a road (or right-click) to lift it. **Done** or
-Escape ends road mode. Roads come from a stock of 30 plus 10 per house, and lifted roads return to it.
+drag over cleared land to lay road; start a drag on a road to lift it. **Done**, Escape or
+a right-click ends road mode. Roads come from a stock of 12 plus 3 per house, and lifted roads return to it.
 Tap a road to select it: **Move** it to another cleared tile, or **Sell** it back to the road stock.
 Roads not yet joined to the Town Center are drawn darker. While placing a building, yellow means it can
 stand there but needs a road. Villagers prefer connected roads when walking (at the same speed).
@@ -49,7 +50,8 @@ food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
 **Stone:** a Quarry (2×2) takes two empty-handed lumberjacks as miners; they mine on site and
 carry stone to the Town Center. Pause a quarry to give its miners back. Stone pays for axe/farm
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
-within 1 tile harvest ×3 and carry ×2 (wells don't stack).
+within 1 tile harvest ×3 and carry ×2 (wells don't stack). A boosted farm looks irrigated: damp soil, lusher crops
+and water channels between the beds, frozen in winter. A Well that is selected, being placed or being moved shows its reach as a dashed blue square, and while placing it the farms it would boost are outlined in blue.
 
 **Cloth:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
 gathers cloth and carries it to the Town Center or the nearest Barn. A **Cotton Plantation** (6×6,
@@ -113,11 +115,18 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 
 ## Changelog
 **v14** – Roads.
-- Roads are laid from the build menu by tapping or dragging over cleared land, from a stock of 30 plus 10 per house.
+- Roads are laid from the build menu by tapping or dragging over cleared land, from a stock of 12 plus 3 per house.
 - Tap a road to select it, then move it to another cleared tile or sell it back to the stock.
-- A building works only while it touches the Town Center or a road joined to it; the Well needs no road. Isolated buildings are tinted red and do nothing, and their status line says so.
+- A building works only while it touches the Town Center or a road joined to it; the Well needs no road. Isolated buildings are tinted grey and do nothing, and their status line says so.
 - Villagers keep to connected roads where that is the cheaper route.
 - Saves migrate from v13; existing buildings stand isolated until roads reach them.
+- Right-clicking anywhere cancels placing a building or ends road mode.
+- Farms boosted by a Well look irrigated. A Well shows its reach while selected, being placed or being moved, and placing one outlines the farms it would boost.
+- Upgrade cards are condensed to two rows, Speed and Carry. The Barn card shows a farmer's numbers and notes that orchardists, herders and pickers improve too.
+- A herder's carry tag shows the food its load will deliver (Fertile Herding) next to the cloth.
+- Villagers walk around buildings instead of over them: they only step onto the building they are in or the one they are heading to, so routes keep to roads and open ground.
+- A road running past a building's door or fence gap joins the building there, instead of at the first road tile beside it.
+- Road mode ends by itself once the last road in the stock is laid.
 
 **v13** – Skill tracks.
 - Skills are grouped into six tracks, each unlocking in order, easier skills first:

@@ -23,8 +23,8 @@ No linter or formatter is configured.
   Its typed arrays are converted to plain arrays in `save.ts`. `World` (`world.ts`) wraps it with
   derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
   It also holds `gathered`, per-source counters (each job, hand, tax) since load that only the HUD reads.
-  Change tiles through `claimTile`/`clearTree`. After placing a drop-off building or changing roads, call
-  `onBuildingsChanged` so the fields are rebuilt.
+  Change tiles through `claimTile`/`clearTree`. After placing, moving or removing any building or changing
+  roads, call `onBuildingsChanged` so the fields are rebuilt (villagers walk around buildings).
 - **Roads** (`roads.ts`). `Tile.Road` is territory. `roadNetwork` marks roads joined edge to edge to the
   Town Center; `linkedBuildings` lists buildings that work (touching that network or the Town Center, or
   `road: false` in `BUILDINGS`). Both are derived on demand. Isolated buildings count for nothing:
@@ -60,7 +60,9 @@ No linter or formatter is configured.
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and
   `maxLevel(kind)`. Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
 - **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or
-  building), with integer costs (`STEP` 10, `DIAG` 14 per tile). Diagonals never cut past a tree
+  building), with integer costs (`STEP` 10, `DIAG` 14 per tile). A walk steps onto a building's tiles
+  only within the building it starts in or the one it is heading to (the `enter` set; drop-offs for a
+  field), so villagers go around other buildings. Diagonals never cut past a tree or building
   corner; trees and relics are never walked through. Paths are straightened (`smooth`/`clearLine`)
   so villagers cross open ground in straight lines. Each resource has a multi-source distance field
   from its drop-off buildings.
@@ -105,7 +107,8 @@ must be handled:
   and `BUILDING_TEXT` (`ui/text.ts`). Selection actions and info lines go in `ACTIONS`/`INFO`
   (`ui/actions.ts`). An optional pixel-art sprite (`w·16 × h·16 + 4`) goes in `BUILDING_SPRITES`
   (`render/sprites.ts`). Without one, the building is drawn as a `BUILDING_COLOR` rectangle. A roofed
-  sprite also gets a `ROOFS` entry, and seasonal crops get `BUILDING_SEASONS` entries.
+  sprite also gets a `ROOFS` entry, seasonal crops get `BUILDING_SEASONS` entries, and a door or fence gap
+  on the bottom edge gets a `BUILDING_ENTRANCES` column so roads join there.
   To lock it until a skill is learned, set its `unlock` to a one-level skill placed in a track;
   the build menu hides it and `canPlace` refuses it until then.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up

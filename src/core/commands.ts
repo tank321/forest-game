@@ -116,7 +116,7 @@ export function placeBuilding(w: World, kind: BuildingKind, x: number, y: number
   const cost = buildingCost(s, kind);
   if (!pay(s, cost)) return false;
   addBuilding(s, kind, x, y, cost);
-  if (BUILDINGS[kind].dropoff.length) onBuildingsChanged(w);
+  refreshRoadRoutes(w); // villagers walk around buildings, so any building can change the way home
   return true;
 }
 
@@ -152,9 +152,9 @@ export function removeBuilding(w: World, id: number): boolean {
   return true;
 }
 
+/** Villagers walk around buildings, so any building change can change the way home: deliveries under way re-route. */
 function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
-  const dropoff = BUILDINGS[b.kind].dropoff.length > 0;
-  if (dropoff) onBuildingsChanged(w);
+  onBuildingsChanged(w);
   for (const v of w.state.villagers) {
     const assigned = v.workplace === b.id;
     if (assigned && (v.carry > 0 || v.state === 'toHome')) {
@@ -164,7 +164,7 @@ function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
       v.pathI = 0;
       v.state = 'idle';
       if (removed) { v.job = 'lumber'; v.workplace = -1; v.target = -1; }
-    } else if (dropoff && v.state === 'toHome') {
+    } else if (v.state === 'toHome') {
       goHome(w, v, jobResource(v.job));
     }
   }

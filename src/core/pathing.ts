@@ -23,16 +23,43 @@ export interface Field {
   parent: Int32Array;
 }
 
+/** Building id per tile, -1 off buildings. */
+function owners(s: GameState): Int32Array {
+  const owner = new Int32Array(s.w * s.h).fill(-1);
+  for (const b of s.buildings) for (const i of footprint(s, b)) owner[i] = b.id;
+  return owner;
+}
+
 /**
  * Dijkstra from `sources`. `visit(u, d)` runs as each tile's distance becomes final and may stop
  * the search by returning true. Ties pop in tile order, so results never depend on timing.
+ *
+ * A walk steps onto a building's tiles only within the building it is in or into one of `enter`
+ * (its destination): villagers walk out of buildings and around the others, not over them.
+ * `reverse` searches from the destinations back (a drop-off field), so each step is walked v → u.
  */
-function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: number) => boolean): Field {
+function search(
+  s: GameState,
+  sources: Iterable<number>,
+  visit?: (u: number, d: number) => boolean,
+  enter: ReadonlySet<number> = new Set(),
+  reverse = false,
+): Field {
   const n = s.w * s.h;
   const dist = new Int32Array(n).fill(-1);
   const parent = new Int32Array(n).fill(-1);
   const heap: number[] = []; // keys d * n + tile
   const net = roadNetwork(s);
+  const owner = owners(s);
+  // Per tile: 0 not walkable, 1 anyone may step onto it, 2 only from within its own building.
+  const kind = new Uint8Array(n);
+  for (let i = 0; i < n; i++) kind[i] = !isWalkable(s, i) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
+  // May the walk step between u and v (walked v → u when `reverse`)?
+  const onto = (from: number, to: number) => kind[to] === 1 || (kind[to] === 2 && owner[to] === owner[from]);
+  const open = reverse ? (u: number, v: number) => kind[v] !== 0 && onto(v, u) : onto;
+  // A diagonal also needs both tiles beside it passable: no cutting past a tree's or another building's corner.
+  const beside = (i: number, u: number, v: number) => kind[i] === 1 || (kind[i] === 2 && (owner[i] === owner[u] || owner[i] === owner[v]));
+  const corner = (u: number, v: number, a: number, b: number) => open(u, v) && beside(a, u, v) && beside(b, u, v);
   const relax = (v: number, d: number, from: number) => {
     if (dist[v] !== -1 && dist[v] <= d) return;
     dist[v] = d;
@@ -47,20 +74,20 @@ function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: 
     if (d > dist[u]) continue; // stale entry
     if (visit?.(u, d)) break;
     const x = u % s.w;
-    const left = x > 0 && isWalkable(s, u - 1);
-    const right = x < s.w - 1 && isWalkable(s, u + 1);
-    const up = u >= s.w && isWalkable(s, u - s.w);
-    const down = u < n - s.w && isWalkable(s, u + s.w);
     const step = (v: number) => relax(v, d + (net[u] && net[v] ? ROAD_STEP : STEP), u);
     const diag = (v: number) => relax(v, d + (net[u] && net[v] ? ROAD_DIAG : DIAG), u);
-    if (left) step(u - 1);
-    if (right) step(u + 1);
-    if (up) step(u - s.w);
-    if (down) step(u + s.w);
-    if (up && left && isWalkable(s, u - s.w - 1)) diag(u - s.w - 1);
-    if (up && right && isWalkable(s, u - s.w + 1)) diag(u - s.w + 1);
-    if (down && left && isWalkable(s, u + s.w - 1)) diag(u + s.w - 1);
-    if (down && right && isWalkable(s, u + s.w + 1)) diag(u + s.w + 1);
+    const l = x > 0;
+    const r = x < s.w - 1;
+    const t = u >= s.w;
+    const b = u < n - s.w;
+    if (l && open(u, u - 1)) step(u - 1);
+    if (r && open(u, u + 1)) step(u + 1);
+    if (t && open(u, u - s.w)) step(u - s.w);
+    if (b && open(u, u + s.w)) step(u + s.w);
+    if (t && l && corner(u, u - s.w - 1, u - s.w, u - 1)) diag(u - s.w - 1);
+    if (t && r && corner(u, u - s.w + 1, u - s.w, u + 1)) diag(u - s.w + 1);
+    if (b && l && corner(u, u + s.w - 1, u + s.w, u - 1)) diag(u + s.w - 1);
+    if (b && r && corner(u, u + s.w + 1, u + s.w, u + 1)) diag(u + s.w + 1);
   }
   return { dist, parent };
 }
@@ -68,10 +95,14 @@ function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: 
 /** Walking distance from every tile to the nearest connected drop-off accepting `res` (0 on the drop-off). */
 export function buildField(s: GameState, res: ResourceKey, linked = linkedBuildings(s)): Field {
   const sources: number[] = [];
+  const dropoffs = new Set<number>();
   for (const b of s.buildings) {
-    if (linked.has(b.id) && (BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) sources.push(...footprint(s, b));
+    if (linked.has(b.id) && (BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) {
+      sources.push(...footprint(s, b));
+      dropoffs.add(b.id);
+    }
   }
-  return search(s, sources);
+  return search(s, sources, undefined, dropoffs, true);
 }
 
 /** Walk from `from` to the nearest drop-off, inclusive. */
@@ -116,11 +147,13 @@ export function nearestTree(
 /** Walk from `from` to the nearest of `goals` (walkable tiles), or null. */
 export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>): number[] | null {
   let goal = -1;
+  const owner = owners(s);
+  const into = new Set([...goals].map((g) => owner[g]).filter((id) => id !== -1));
   const walk = search(s, [from], (u) => {
     if (!goals.has(u)) return false;
     goal = u;
     return true;
-  });
+  }, into);
   return goal === -1 ? null : trace(s, walk, goal);
 }
 
@@ -134,26 +167,30 @@ function trace(s: GameState, f: Field, to: number): number[] {
 /**
  * Drops waypoints that a straight walk can skip: villagers cross open ground in straight lines.
  * A waypoint stays where the path joins or leaves a connected road, and a stretch along the road
- * is only straightened where the line stays on it, so villagers keep to the road.
+ * is only straightened where the line stays on it, so villagers keep to the road. A line crosses no
+ * building but the ones the walk starts and ends in.
  */
 export function smooth(s: GameState, path: number[]): number[] {
   if (path.length < 3) return path;
   const net = roadNetwork(s);
+  const owner = owners(s);
+  const ends = new Set([owner[path[0]], owner[path[path.length - 1]]]);
   const onRoad = (k: number) => net[path[k]] === 1 && net[path[k + 1]] === 1; // step k → k + 1
   const out = [path[0]];
   for (let k = 2; k < path.length; k++) {
     const road = onRoad(k - 1);
-    if (road !== onRoad(k - 2) || !clearLine(s, out[out.length - 1], path[k], road ? net : undefined)) out.push(path[k - 1]);
+    const clear = road ? clearLine(s, out[out.length - 1], path[k], (i) => net[i] === 1) : clearLine(s, out[out.length - 1], path[k], (i) => owner[i] === -1 || ends.has(owner[i]));
+    if (road !== onRoad(k - 2) || !clear) out.push(path[k - 1]);
   }
   out.push(path[path.length - 1]);
   return out;
 }
 
 /**
- * A straight walk between two tile centers stays on walkable tiles (on connected road, given `net`):
- * every tile the line passes through, and both tiles beside any corner it passes exactly through.
+ * A straight walk between two tile centers stays on walkable tiles that pass `allow`: every tile
+ * the line passes through, and both tiles beside any corner it passes exactly through.
  */
-export function clearLine(s: GameState, a: number, b: number, net?: Uint8Array): boolean {
+export function clearLine(s: GameState, a: number, b: number, allow: (i: number) => boolean = () => true): boolean {
   let x = a % s.w;
   let y = (a / s.w) | 0;
   const dx = (b % s.w) - x;
@@ -162,7 +199,7 @@ export function clearLine(s: GameState, a: number, b: number, net?: Uint8Array):
   const ny = Math.abs(dy);
   const sx = Math.sign(dx);
   const sy = Math.sign(dy);
-  const ok = (cx: number, cy: number) => (net ? net[cy * s.w + cx] === 1 : isWalkable(s, cy * s.w + cx));
+  const ok = (cx: number, cy: number) => isWalkable(s, cy * s.w + cx) && allow(cy * s.w + cx);
   for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
     const side = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
     if (side === 0) {

@@ -1,10 +1,11 @@
 import { CONFIG } from '../config';
-import { border, BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
+import { border, BUILDINGS, type BuildingKind, buildingAt, buildingGap } from '../core/buildings';
 import { canMoveBuilding, canPlace, canPlaceRoad } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
-import { jobResource } from '../core/systems/workplace';
+import { getStats, wellFarms, wellReach } from '../core/stats';
+import { carried } from '../core/systems/workplace';
 import type { Building, GameState, Job, ResourceKey, Villager } from '../core/types';
 import { RESOURCES, Tile } from '../core/types';
 import type { World } from '../core/world';
@@ -14,6 +15,7 @@ import { fmt } from '../ui/text';
 import { bake } from './bake';
 import type { Camera } from './camera';
 import {
+  BUILDING_ENTRANCES,
   BUILDING_SPRITES,
   composeRoad,
   composeVillager,
@@ -117,6 +119,11 @@ export class Renderer {
       }),
     ) as Partial<Record<BuildingKind, HTMLCanvasElement>>;
   });
+  /** Baked farm sprite per season for a farm a Well boosts: irrigated fields. */
+  private wellFarmSprites = SEASONS.map((season) => {
+    const { grid, palette } = seasonalBuilding('farm', season, true)!;
+    return bake(grid, palette, 1);
+  });
   /** Baked relic stone: [season][fog]; and its glow (only drawn in territory, so never fogged). */
   private relics = SEASONS.map((season) => {
     const palette = { ...RELIC_PALETTE, ...RELIC_TINTS[season] };
@@ -190,6 +197,16 @@ export class Renderer {
       const [sx, sy] = cam.toScreen(x, y);
       ctx.fillRect(sx, sy, w * k, h * k);
     };
+    /** A Well's reach around its tile at (x, y): a dashed water-blue square. */
+    const wellSquare = (x: number, y: number) => {
+      const r = wellReach(s);
+      const [sx, sy] = cam.toScreen(x - r, y - r);
+      ctx.strokeStyle = 'rgb(110,190,255)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(sx, sy, (BUILDINGS.well.w + 2 * r) * k, (BUILDINGS.well.h + 2 * r) * k);
+      ctx.setLineDash([]);
+    };
 
     const net = roadNetwork(s);
     this.drawTerrain(world, net);
@@ -209,6 +226,7 @@ export class Renderer {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
       ctx.strokeRect(sx, sy, d.w * k, d.h * k);
+      if (ui.selected.kind === 'well') wellSquare(ui.selected.x, ui.selected.y);
     }
     if (ui.road !== null) {
       const [sx, sy] = cam.toScreen(ui.road % s.w, (ui.road / s.w) | 0);
@@ -226,6 +244,17 @@ export class Renderer {
       const linked = !d.road || touchesNetwork(s, { kind: placing, x, y }, net);
       ctx.fillStyle = !valid ? 'rgba(230,60,60,.55)' : linked ? 'rgba(80,220,100,.55)' : 'rgba(240,200,60,.55)';
       rect(x, y, d.w, d.h);
+      if (placing === 'well') wellSquare(x, y);
+      // Outline in water blue the connected farms a Well here would boost.
+      if (placing === 'well' && valid) {
+        const reach = wellReach(s);
+        const links = linkedBuildings(s, net);
+        for (const f of s.buildings) {
+          if (f.kind !== 'farm' || !links.has(f.id) || buildingGap(f, { kind: 'well', x, y }) > reach) continue;
+          const [sx, sy] = cam.toScreen(f.x, f.y);
+          ctx.strokeRect(sx, sy, BUILDINGS.farm.w * k, BUILDINGS.farm.h * k);
+        }
+      }
     }
 
     if (ui.paving && ui.hover && inBounds(s, ui.hover.x, ui.hover.y)) {
@@ -310,7 +339,10 @@ export class Renderer {
     const k = cam.zoom;
     const now = performance.now();
     const props: { depth: number; draw: () => void }[] = [];
-    for (const b of s.buildings) props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id)) });
+    const wellFed = wellFarms(s, linked);
+    for (const b of s.buildings) {
+      props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id)) });
+    }
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     props.sort((a, b) => a.depth - b.depth);
 
@@ -419,26 +451,34 @@ export class Renderer {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     const h = UI_ICON_W + 2 * TAG.pad;
+    const st = getStats(s);
     for (const v of s.villagers) {
-      const n = Math.floor(v.carry);
-      if (n < 1) continue;
+      if (v.carry < 1) continue;
       const [cx, head] = cam.toScreen(v.x, v.y - VILLAGER_FEET.y / SPRITE_W);
       if (cx < -cam.zoom || cx > cam.vw + cam.zoom || head < 0 || head > cam.vh + cam.zoom) continue;
-      const label = fmt(n);
-      const w = 2 * TAG.pad + UI_ICON_W + TAG.gap + Math.ceil(ctx.measureText(label).width);
+      // One icon and count per resource the load delivers (a herder's cloth and food).
+      const items = carried(st, v)
+        .map(({ res, n }) => ({ res, label: fmt(Math.floor(n)), n }))
+        .filter(({ n }) => n >= 1)
+        .map((it) => ({ ...it, w: UI_ICON_W + TAG.gap + Math.ceil(ctx.measureText(it.label).width) }));
+      const w = 2 * TAG.pad + items.reduce((sum, it) => sum + it.w, 0) + 2 * TAG.gap * (items.length - 1);
       // Whole screen pixels keep the icon crisp.
       const l = Math.round(cx - w / 2);
       const t = Math.round(head - TAG.lift - h);
       ctx.fillStyle = TAG.bg;
       ctx.fillRect(l, t, w, h);
-      ctx.drawImage(this.resourceIcons[jobResource(v.job)], l + TAG.pad, t + TAG.pad, UI_ICON_W, UI_ICON_W);
-      ctx.fillStyle = TAG.text;
-      ctx.fillText(label, l + TAG.pad + UI_ICON_W + TAG.gap, t + h / 2 + 1);
+      let x = l + TAG.pad;
+      for (const it of items) {
+        ctx.drawImage(this.resourceIcons[it.res], x, t + TAG.pad, UI_ICON_W, UI_ICON_W);
+        ctx.fillStyle = TAG.text;
+        ctx.fillText(it.label, x + UI_ICON_W + TAG.gap, t + h / 2 + 1);
+        x += it.w + 2 * TAG.gap;
+      }
     }
   }
 
-  /** `isolated`: not connected by road, so tinted red until it is. */
-  private drawBuilding(s: GameState, b: Building, isolated: boolean): void {
+  /** `isolated`: not connected by road, so tinted grey until it is. `wellFed`: a farm a Well boosts, drawn irrigated. */
+  private drawBuilding(s: GameState, b: Building, isolated: boolean, wellFed: boolean): void {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const d = BUILDINGS[b.kind];
@@ -446,7 +486,8 @@ export class Renderer {
       const [sx, sy] = cam.toScreen(b.x + 0.05, b.y + 0.05);
       ctx.fillRect(sx, sy, (d.w - 0.1) * k, (d.h - 0.1) * k);
     };
-    const sprite = this.buildingSprites[this.seasonAt(s.time, b.y * s.w + b.x)][b.kind];
+    const season = this.seasonAt(s.time, b.y * s.w + b.x);
+    const sprite = wellFed ? this.wellFarmSprites[season] : this.buildingSprites[season][b.kind];
     if (sprite) {
       const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
       ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);
@@ -459,7 +500,7 @@ export class Renderer {
       footprint();
     }
     if (isolated) {
-      ctx.fillStyle = 'rgba(170,30,20,.35)';
+      ctx.fillStyle = 'rgba(150,150,150,.5)';
       footprint();
     }
   }
@@ -495,14 +536,17 @@ function roadMask(s: GameState, i: number, entrances: ReadonlyMap<number, number
 }
 
 /**
- * Each building's entrance: the first road beside it (a connected one if any), mapped to the arm
- * bit pointing into the building. So a building ringed by road shows one way in, not many.
+ * Each building's entrance: the road just below its door or fence gap (`BUILDING_ENTRANCES`) if there
+ * is one, else the first road beside it (a connected one if any), mapped to the arm bit pointing into
+ * the building. So a building ringed by road shows one way in, not many.
  */
 function roadEntrances(s: GameState, net: Uint8Array): Map<number, number> {
   const out = new Map<number, number>();
   for (const b of s.buildings) {
     const roads = border(s, b).filter((i) => s.tiles[i] === Tile.Road);
-    const door = roads.find((i) => net[i]) ?? roads[0];
+    const col = BUILDING_ENTRANCES[b.kind];
+    const below = col === undefined ? -1 : (b.y + BUILDINGS[b.kind].h) * s.w + b.x + col;
+    const door = roads.includes(below) ? below : (roads.find((i) => net[i]) ?? roads[0]);
     if (door === undefined) continue;
     const x = door % s.w;
     const y = (door / s.w) | 0;

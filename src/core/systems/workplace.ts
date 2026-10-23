@@ -41,6 +41,14 @@ const WORK: Record<WorkplaceJob, Work> = {
 /** Resource a villager with this job carries. */
 export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : WORK[job].res);
 
+/** What a villager's load delivers, by resource: the load itself, plus any resource delivered alongside it (herders' food). */
+export function carried(st: Stats, v: Villager): { res: ResourceKey; n: number }[] {
+  const out = [{ res: jobResource(v.job), n: v.carry }];
+  const also = v.job === 'lumber' ? undefined : WORK[v.job].also;
+  if (also && st[also.per] > 0) out.push({ res: also.res, n: v.carry * st[also.per] });
+  return out;
+}
+
 /**
  * Workplace worker (farmer, orchardist, miner, herder, picker, trader): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
  * Workplaces never run out. If the workplace is paused or cut off from the roads the worker delivers what it carries and goes

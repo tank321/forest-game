@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildingById, footprint, type BuildingKind } from '../src/core/buildings';
-import { canMoveBuilding, hireVillager, moveBuilding, placeBuilding, placeRoad, removeBuilding, togglePause } from '../src/core/commands';
+import { canMoveBuilding, hireVillager, moveBuilding, placeBuilding, removeBuilding, togglePause } from '../src/core/commands';
 import { buildingRefund, popCap } from '../src/core/economy';
 import { neighbors4, tileAt } from '../src/core/grid';
 import { deserialize, serialize } from '../src/core/save';
@@ -8,7 +8,7 @@ import { simulate, tick } from '../src/core/sim';
 import { goHome } from '../src/core/systems/movement';
 import { Tile } from '../src/core/types';
 import { createWorld } from '../src/core/world';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, freeRoads, smallWorld, unlockBuildings } from './helpers';
 
 function ready(villagers = 0) {
   const w = unlockBuildings(smallWorld(30, villagers));
@@ -20,8 +20,10 @@ function ready(villagers = 0) {
 
 /** A road along row 4 (x 3..12), then down column 12 to the Town Center's west side. */
 function mainRoad(w: ReturnType<typeof ready>) {
-  for (let x = 3; x <= 12; x++) expect(placeRoad(w, 4 * 30 + x)).toBe(true);
-  for (let y = 5; y <= 13; y++) expect(placeRoad(w, y * 30 + 12)).toBe(true);
+  const tiles: number[] = [];
+  for (let x = 3; x <= 12; x++) tiles.push(4 * 30 + x);
+  for (let y = 5; y <= 13; y++) tiles.push(y * 30 + 12);
+  freeRoads(w, tiles); // longer than the road stock
 }
 
 function build(w: ReturnType<typeof ready>, kind: BuildingKind, x: number, y: number) {

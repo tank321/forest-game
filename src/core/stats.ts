@@ -47,7 +47,7 @@ export function getStats(s: GameState): Stats {
   const { axe, farm, pick, barrow } = s.upgrades;
   const f = CONFIG.farm;
   const p = CONFIG.pick;
-  const wellRadius = CONFIG.well.radius + lvl(s, 'deepWells');
+  const wellRadius = wellReach(s);
   const { speed, chopRate, carry } = CONFIG.villager;
   const b = CONFIG.barrow;
   const carryBonus = b.carryPerLevel * barrow; // added after every job's own multipliers, so it is the same for all
@@ -92,7 +92,7 @@ export function getStats(s: GameState): Stats {
     cottonRate: herdRate * CONFIG.cotton.rateMult,
     cottonCarry: herdLoad * CONFIG.cotton.carryMult + carryBonus,
     wellRadius,
-    wellFarms: inRange(s, linked, 'farm', 'well', wellRadius),
+    wellFarms: wellFarms(s, linked),
     wellHarvest: CONFIG.well.harvestMult,
     wellCarry: CONFIG.well.carryMult,
     linked,
@@ -107,6 +107,12 @@ export function getStats(s: GameState): Stats {
     tradeLoads: tradeLoads(s, linked),
   };
 }
+
+/** Chebyshev reach of a Well. */
+export const wellReach = (s: GameState) => CONFIG.well.radius + lvl(s, 'deepWells');
+
+/** Ids of connected farms boosted by a Well. */
+export const wellFarms = (s: GameState, linked: ReadonlySet<number>) => inRange(s, linked, 'farm', 'well', wellReach(s));
 
 /** Ids of connected `kind` buildings within `r` (Chebyshev, tile to tile) of a connected `source` building. Recomputed on demand: sources × targets is small. */
 function inRange(s: GameState, linked: ReadonlySet<number>, kind: BuildingKind, source: BuildingKind, r: number): Set<number> {
