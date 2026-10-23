@@ -72,7 +72,13 @@ No linter or formatter is configured.
   sprite is `w·16 × h·16 + 4`. Villagers are composed from layers (`composeVillager`: pose + hat +
   tool or load) and anchored at `VILLAGER_FEET`.
 - **Ground.** Grass is drawn into an offscreen canvas at 16 px per tile, and only cells whose fog
-  level changed are redrawn. Variants are picked by a hash of the tile index.
+  level or shown season changed are redrawn. Variants are picked by a hash of the tile index.
+- **Seasons.** Seasonal looks are palette tints over the summer art (`TREE_TINTS`, `GROUND_TINTS`,
+  `RELIC_TINTS`, `BUILDING_SEASONS[season][kind].tint`), plus separate grids where the shape changes
+  (`WINTER_TREES`, `WINTER_RELIC`, `BUILDING_SEASONS[season][kind].grid`). In winter, `ROOFS` turns
+  roof chars to snow. `seasonalBuilding` composes a building's grid and palette. Each cell turns to
+  a new season at its own hashed moment within `SEASON_STAGGER` (`seasonAt` in `renderer.ts`), and a
+  building turns with its top-left tile.
 - **Draw order.** `drawScene` draws everything on the ground back to front by where it meets the
   ground: trees and relics by tile row, buildings by bottom edge, villagers by feet. A villager
   standing on a building's tiles is drawn over that building. Flags and the relic glow are drawn
@@ -91,7 +97,8 @@ must be handled:
 - **Building:** add it to `BUILDINGS` (`buildings.ts`), `BUILDING_COLOR` (`render/renderer.ts`)
   and `BUILDING_TEXT` (`ui/text.ts`). Selection actions and info lines go in `ACTIONS`/`INFO`
   (`ui/actions.ts`). An optional pixel-art sprite (`w·16 × h·16 + 4`) goes in `BUILDING_SPRITES`
-  (`render/sprites.ts`). Without one, the building is drawn as a `BUILDING_COLOR` rectangle.
+  (`render/sprites.ts`). Without one, the building is drawn as a `BUILDING_COLOR` rectangle. A roofed
+  sprite also gets a `ROOFS` entry, and seasonal crops get `BUILDING_SEASONS` entries.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up
   automatically. Then add a save migration.
 - **Workplace job:** extend `Job`, then add entries to `WORK` (`workplace.ts`), `UPDATERS`

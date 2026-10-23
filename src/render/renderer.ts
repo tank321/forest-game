@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
 import { canMoveBuilding, canPlace } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
-import { seasonLeft, seasonOf, WINTER } from '../core/seasons';
+import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import type { Building, GameState, Job, Villager } from '../core/types';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
@@ -12,7 +12,6 @@ import { fmt } from '../ui/text';
 import { bake } from './bake';
 import type { Camera } from './camera';
 import {
-  BUILDING_PALETTE,
   BUILDING_SPRITES,
   composeVillager,
   FLAG,
@@ -20,15 +19,19 @@ import {
   FLAG_PALETTE,
   GRASS,
   GROUND_PALETTE,
+  GROUND_TINTS,
   type GroundTile,
   OVERHANG_PX,
   RELIC,
   RELIC_GLOW,
   RELIC_PALETTE,
+  RELIC_TINTS,
+  seasonalBuilding,
   SPRITE_W,
   STUMP,
   TREE_PALETTE,
   TREE_SPECIES,
+  TREE_TINTS,
   TREES,
   VILLAGER_CLOTH,
   VILLAGER_FEET,
@@ -37,6 +40,9 @@ import {
   VILLAGER_PALETTE,
   VILLAGER_W,
   type VillagerFrame,
+  WINTER_RELIC,
+  WINTER_STUMP,
+  WINTER_TREES,
 } from './sprites';
 
 // Everything is a sprite except buildings that have none yet (colored rectangles).
@@ -44,6 +50,7 @@ const VOID = [0x07, 0x0a, 0x07]; // fog beyond the visible radius
 const VOID_KEY = -2; // terrain cache key for a fogged-out cell
 const FOG_LIGHT = [1, 1, 0.75, 0.5]; // brightness by fog distance 0..R
 const WINTER_FADE = 10; // s the winter tint takes to fade in or out
+const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at its own moment
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
 const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
 const BUILDING_COLOR: Record<BuildingKind, string> = {
@@ -76,23 +83,43 @@ export class Renderer {
   private drawn: Int16Array;
   /** Fixed grass variant per cell (index into GRASS), under trees and cleared land alike. */
   private grassAt: Uint8Array;
-  /** Baked grass tiles: [fog][variant]. */
-  private ground = FOG_LIGHT.map((light) => GRASS.map((t) => bake(t.grid, GROUND_PALETTE, light)));
-  /** Baked building sprites (buildings sit in territory, so never fogged). */
-  private buildingSprites = Object.fromEntries(
-    Object.entries(BUILDING_SPRITES).map(([kind, grid]) => [kind, bake(grid, BUILDING_PALETTE, 1)]),
-  ) as Partial<Record<BuildingKind, HTMLCanvasElement>>;
-  /** Baked relic stone per fog level, and its glow (only drawn in territory, so never fogged). */
-  private relics = FOG_LIGHT.map((light) => bake(RELIC, RELIC_PALETTE, light));
+  /** Seconds into each season before a cell shows it, so the map turns gradually. */
+  private turnAt: Float32Array;
+  /** Baked grass tiles: [season][fog][variant]. */
+  private ground = SEASONS.map((season) => {
+    const palette = { ...GROUND_PALETTE, ...GROUND_TINTS[season] };
+    return FOG_LIGHT.map((light) => GRASS.map((t) => bake(t.grid, palette, light)));
+  });
+  /** Baked building sprites per season (buildings sit in territory, so never fogged). */
+  private buildingSprites = SEASONS.map((season) => {
+    const kinds = Object.keys(BUILDING_SPRITES) as BuildingKind[];
+    return Object.fromEntries(
+      kinds.map((kind) => {
+        const { grid, palette } = seasonalBuilding(kind, season)!;
+        return [kind, bake(grid, palette, 1)];
+      }),
+    ) as Partial<Record<BuildingKind, HTMLCanvasElement>>;
+  });
+  /** Baked relic stone: [season][fog]; and its glow (only drawn in territory, so never fogged). */
+  private relics = SEASONS.map((season) => {
+    const palette = { ...RELIC_PALETTE, ...RELIC_TINTS[season] };
+    return FOG_LIGHT.map((light) => bake(season === 'winter' ? WINTER_RELIC : RELIC, palette, light));
+  });
   private relicGlow = bake(RELIC_GLOW, RELIC_PALETTE, 1);
   /** Baked mark flags: red where villagers can reach the tree, yellow until then. */
   private flags = {
     reachable: bake(FLAG, { ...FLAG_PALETTE, ...FLAG_CLOTH.reachable }, 1),
     unreachable: bake(FLAG, { ...FLAG_PALETTE, ...FLAG_CLOTH.unreachable }, 1),
   };
-  /** Baked tree sprites: [fog][species][stage], the last stage being the stump. */
-  private trees = FOG_LIGHT.map((light) =>
-    TREE_SPECIES.map((sp) => [...TREES[sp], STUMP].map((grid) => bake(grid, TREE_PALETTE, light))),
+  /** Baked tree sprites: [season][fog][species][stage], the last stage being the stump. */
+  private trees = SEASONS.map((season) =>
+    FOG_LIGHT.map((light) =>
+      TREE_SPECIES.map((sp) => {
+        const palette = { ...TREE_PALETTE, ...TREE_TINTS[season][sp] };
+        const grids = season === 'winter' ? [...WINTER_TREES[sp], WINTER_STUMP] : [...TREES[sp], STUMP];
+        return grids.map((grid) => bake(grid, palette, light));
+      }),
+    ),
   );
   /** Baked villager frames: [job][frame] = [facing right, facing left]. */
   private villagers = Object.fromEntries(
@@ -122,6 +149,7 @@ export class Renderer {
     this.tctx = this.terrain.getContext('2d')!;
     this.drawn = new Int16Array(w * h).fill(-1);
     this.grassAt = pickVariants(w * h, GRASS);
+    this.turnAt = Float32Array.from({ length: w * h }, (_, i) => (hash(i ^ 0x5bd1e995) / 2 ** 32) * SEASON_STAGGER);
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
   }
@@ -181,14 +209,20 @@ export class Renderer {
     this.ctx.fillRect(0, 0, this.cam.vw, this.cam.vh);
   }
 
-  /** Redraws the ground of cells whose fog level changed since the last frame. */
+  /** Season shown at cell `i`, which turns `turnAt[i]` seconds after the season starts. */
+  private seasonAt(time: number, i: number): number {
+    return seasonOf(Math.max(0, time - this.turnAt[i]));
+  }
+
+  /** Redraws the ground of cells whose fog level or shown season changed since the last frame. */
   private drawTerrain(world: World): void {
     const s = world.state;
     const { tctx } = this;
     for (let i = 0; i < s.tiles.length; i++) {
       const fog = world.fog[i];
       const v = this.grassAt[i];
-      const key = fog > CONFIG.fogRadius ? VOID_KEY : v * FOG_LIGHT.length + fog;
+      const season = this.seasonAt(s.time, i);
+      const key = fog > CONFIG.fogRadius ? VOID_KEY : (season * FOG_LIGHT.length + fog) * GRASS.length + v;
       if (this.drawn[i] === key) continue;
       this.drawn[i] = key;
       const x = (i % s.w) * SPRITE_W;
@@ -196,7 +230,7 @@ export class Renderer {
       if (key === VOID_KEY) {
         tctx.fillStyle = `rgb(${VOID})`;
         tctx.fillRect(x, y, SPRITE_W, SPRITE_W);
-      } else tctx.drawImage(this.ground[fog][v], x, y);
+      } else tctx.drawImage(this.ground[season][fog][v], x, y);
     }
   }
 
@@ -242,7 +276,7 @@ export class Renderer {
         const w = k;
         const h = k * (1 + OVERHANG);
         if (tile === Tile.Relic) {
-          ctx.drawImage(this.relics[world.fog[i]], sx, sy, w, h);
+          ctx.drawImage(this.relics[this.seasonAt(s.time, i)][world.fog[i]], sx, sy, w, h);
           if (isCollectable(s, i)) {
             ctx.globalAlpha = glow;
             ctx.drawImage(this.relicGlow, sx, sy, w, h);
@@ -254,7 +288,7 @@ export class Renderer {
         let stage = 0;
         while (stage < STAGE_AT.length && f <= STAGE_AT[stage]) stage++;
         const species = (Math.imul(i, 0x9e3779b1) >>> 16) % TREE_SPECIES.length; // fixed per tile
-        ctx.drawImage(this.trees[world.fog[i]][species][stage], sx, sy, w, h);
+        ctx.drawImage(this.trees[this.seasonAt(s.time, i)][world.fog[i]][species][stage], sx, sy, w, h);
         if (marked.has(i)) ctx.drawImage(isChoppable(s, i) ? this.flags.reachable : this.flags.unreachable, sx, sy, w, h);
       }
     }
@@ -333,7 +367,7 @@ export class Renderer {
       const [sx, sy] = cam.toScreen(b.x + 0.05, b.y + 0.05);
       ctx.fillRect(sx, sy, (d.w - 0.1) * k, (d.h - 0.1) * k);
     };
-    const sprite = this.buildingSprites[b.kind];
+    const sprite = this.buildingSprites[this.seasonAt(s.time, b.y * s.w + b.x)][b.kind];
     if (sprite) {
       const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
       ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);

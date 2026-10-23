@@ -1,4 +1,5 @@
 import type { BuildingKind } from '../core/buildings';
+import type { Season } from '../core/seasons';
 import type { Job } from '../core/types';
 
 /**
@@ -40,6 +41,8 @@ export const TREE_PALETTE: Record<string, Rgba> = {
   T: [69, 42, 23, 255], // #452a17
   R: [180, 138, 88, 255], // #b48a58
   s: [0, 0, 0, 90], // #000000
+  n: [244, 248, 252, 255], // #f4f8fc snow
+  N: [188, 203, 220, 255], // #bccbdc snow in shade
 };
 
 export const TREE_SPECIES = ['oak', 'lime', 'birch', 'pine'] as const;
@@ -345,6 +348,327 @@ export const STUMP: readonly string[] = [
   '.....ssssss.....',
 ];
 
+/**
+ * Leaf colors per season over TREE_PALETTE (summer is the base), by species. Winter trees use
+ * WINTER_TREES instead; pines keep their needles all year.
+ */
+export const TREE_TINTS: Record<Season, Partial<Record<TreeSpecies, Record<string, Rgba>>>> = {
+  spring: {
+    // fresh greens; lime highlights are its blossom
+    oak: { o: [26, 58, 28, 255], d: [47, 107, 44, 255], m: [70, 150, 58, 255], l: [111, 190, 74, 255], h: [168, 222, 106, 255] },
+    lime: { D: [74, 122, 36, 255], M: [116, 168, 52, 255], L: [162, 204, 72, 255], H: [226, 236, 138, 255] },
+    birch: { E: [60, 124, 52, 255], F: [98, 174, 72, 255], G: [150, 212, 98, 255], J: [210, 240, 160, 255] },
+  },
+  summer: {},
+  autumn: {
+    // russet oak, butter-yellow lime, golden birch
+    oak: { o: [58, 26, 14, 255], d: [110, 42, 20, 255], m: [156, 63, 26, 255], l: [200, 100, 42, 255], h: [232, 150, 74, 255] },
+    lime: { o: [62, 58, 18, 255], D: [126, 112, 24, 255], M: [184, 164, 40, 255], L: [224, 210, 74, 255], H: [244, 236, 138, 255] },
+    birch: { o: [74, 42, 10, 255], E: [160, 94, 16, 255], F: [208, 138, 26, 255], G: [238, 176, 44, 255], J: [248, 212, 104, 255] },
+  },
+  winter: {},
+};
+
+/** Winter trees, stage for stage like TREES: bare branches under snow; pines keep their needles. */
+export const WINTER_TREES: Record<TreeSpecies, readonly (readonly string[])[]> = {
+  oak: [
+    [
+      '..n..n......N...',
+      '..T..T...N..T...',
+      '..Tn.T...T.NT...',
+      '.n.T..T..T.T..N.',
+      '.T.T..T..T.T.NT.',
+      'n.T.T.T..T.TNTNN',
+      'TT.TTnT..T.TT.TT',
+      '.....TT.T.T.....',
+      '.nn...TnTT...NN.',
+      '.TT.nn.TT.NNNTT.',
+      '...TTT.tTNTTT...',
+      '......TTTT......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '....ssstTssss...',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '......n.........',
+      '....n.T....N....',
+      '....T.T..N.T....',
+      '...nT.T..T.T....',
+      '...TT.T..T.TT...',
+      '....TnTn.T.T....',
+      '.....TnTT.T.....',
+      '..nn..TTTT..NN..',
+      '..TTnn.TT.N.TT..',
+      '....TT.tTNTT....',
+      '......TTTT......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '......n.........',
+      '....n.T..N.N....',
+      '....T.T..T.T....',
+      '....TnTn.T.T....',
+      '.....TnTT.T.....',
+      '....nnTTTT.N....',
+      '....TTnTT.TT....',
+      '......TTTT......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '......sssss.....',
+    ],
+  ],
+  lime: [
+    [
+      '....n.T...N.....',
+      '....T.T...T.N...',
+      '...nT..T..TTTN..',
+      '...TT..T..T..T..',
+      '..n.Tn.T..T..T..',
+      '..T..T.T..T.T...',
+      '..Tn.T.T.T.NT.N.',
+      '.n.T.TnTnTNT..T.',
+      '.T.T.nTTTNT..NT.',
+      '.Tn.TTTTTT.NNT..',
+      '..TT.nTTTN.TT...',
+      '....TTnTTTT.....',
+      '......TTT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '....ssstTssss...',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '.......n..N.....',
+      '.....n.T..T.....',
+      '.....T.T..T.N...',
+      '.....T.T..T.T...',
+      '...n.T.T..T.T...',
+      '...T.T.T.T.NT...',
+      '...Tn.TTnTTT....',
+      '...TTnTTTT.NN...',
+      '.....TTTT.NTT...',
+      '.......TTTT.....',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '.........N......',
+      '......n..T......',
+      '......T..T......',
+      '....n.T..T.N....',
+      '....T.T..T.T....',
+      '....T.T.T.NT....',
+      '.....TTTTTT.....',
+      '.......TT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '......sssss.....',
+    ],
+  ],
+  birch: [
+    [
+      '....n..n...N....',
+      '....t..b...t....',
+      '.....t.b...t....',
+      '......tbB.t.....',
+      '....n..tBt......',
+      '....t.nbt..N....',
+      '...t.ttbBN.t....',
+      '...t...tBtt.t...',
+      '....nn.kt...t...',
+      '....ttnbB.NN....',
+      '...t..ttBNtt....',
+      '.......btt..t...',
+      '.......bB.......',
+      '.......bB.......',
+      '.......kB.......',
+      '.......bB.......',
+      '.......bB.......',
+      '.......bk.......',
+      '....sssbBssss...',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '.......n........',
+      '....nn.b...N....',
+      '....tt.b...t....',
+      '......tbB.t.....',
+      '.......tBt......',
+      '.....nnkt.......',
+      '.....ttbB.......',
+      '....t..tB.N.....',
+      '.......bkttN....',
+      '.......bt..t....',
+      '.......bB.......',
+      '.......bB.......',
+      '.......kB.......',
+      '.......bB.......',
+      '.......bB.......',
+      '.......bk.......',
+      '.....ssbBsss....',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '.......n........',
+      '.....n.b........',
+      '.....t.b..N.....',
+      '......tbB.t.....',
+      '.......tBt......',
+      '.......bt.N.....',
+      '.......bktt.....',
+      '.......bt.......',
+      '.......bB.......',
+      '.......kB.......',
+      '.......bB.......',
+      '.......bk.......',
+      '.....ssbBsss....',
+      '......sssss.....',
+    ],
+  ],
+  pine: [
+    [
+      '.......nN.......',
+      '......nwrN......',
+      '......prro......',
+      '.....nwrrqN.....',
+      '....nwrrqqpN....',
+      '....oooooooo....',
+      '.....pwrrqo.....',
+      '....nwrrrqqN....',
+      '...nwrrrqqqpN...',
+      '..oooooooooooo..',
+      '....pwrrrqqo....',
+      '...nwrrrrqqpN...',
+      '..nwrrrrqqqqpN..',
+      '.nwrrrrrqqqqppN.',
+      'oooooooooooooooo',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '....ssstTssss...',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '.......nN.......',
+      '.......po.......',
+      '......nrrN......',
+      '.....nwrqqN.....',
+      '.....oooooo.....',
+      '.....pwrrqo.....',
+      '.....prrqqo.....',
+      '....nwrrqqpN....',
+      '...oooooooooo...',
+      '....pwrrqqqo....',
+      '...nwrrrqqqpN...',
+      '..oooooooooooo..',
+      '.......tT.......',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '......sssss.....',
+    ],
+    [
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '................',
+      '.......nN.......',
+      '......nrqN......',
+      '......prqo......',
+      '.....oooooo.....',
+      '.....pwrqqo.....',
+      '.....oooooo.....',
+      '.....pwrqqo.....',
+      '....nwrrqqpN....',
+      '...oooooooooo...',
+      '.......tT.......',
+      '.......tT.......',
+      '.....sstTsss....',
+      '.......sss......',
+    ],
+  ],
+};
+
+/** STUMP under a cap of snow. */
+export const WINTER_STUMP: readonly string[] = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '.....nnnnN......',
+  '.....tnnNNT.....',
+  '.....ttttTT.....',
+  '....sttttTTs....',
+  '.....ssssss.....',
+];
+
 /** RGBA per ground grid char. */
 export const GROUND_PALETTE: Record<string, Rgba> = {
   g: [111, 158, 79, 255], // #6f9e4f
@@ -360,6 +684,26 @@ export const GROUND_PALETTE: Record<string, Rgba> = {
   P: [205, 201, 184, 255], // #cdc9b8
   Q: [156, 152, 139, 255], // #9c988b
   z: [85, 127, 64, 255], // #557f40
+};
+
+/** Ground colors per season over GROUND_PALETTE (summer is the base). */
+export const GROUND_TINTS: Record<Season, Record<string, Rgba>> = {
+  spring: {
+    // brighter grass, livelier flowers
+    g: [116, 170, 82, 255], a: [100, 154, 74, 255], A: [140, 190, 98, 255], d: [79, 138, 60, 255], l: [164, 210, 108, 255], z: [90, 140, 66, 255],
+    w: [255, 255, 255, 255], y: [255, 216, 58, 255], Y: [243, 154, 44, 255], p: [242, 122, 158, 255], v: [156, 108, 234, 255],
+  },
+  summer: {},
+  autumn: {
+    // olive and straw grass; flowers become fallen leaves
+    g: [140, 154, 82, 255], a: [124, 138, 72, 255], A: [163, 173, 98, 255], d: [104, 120, 58, 255], l: [192, 180, 106, 255], z: [108, 122, 62, 255],
+    w: [216, 116, 42, 255], y: [168, 68, 30, 255], Y: [140, 76, 34, 255], p: [188, 58, 32, 255], v: [124, 70, 38, 255],
+  },
+  winter: {
+    // snow, shaded at the tufts; flowers buried, pebbles poke through
+    g: [228, 235, 242, 255], a: [210, 220, 231, 255], A: [245, 248, 251, 255], d: [174, 188, 205, 255], l: [198, 210, 223, 255], z: [188, 200, 214, 255],
+    w: [228, 235, 242, 255], y: [228, 235, 242, 255], Y: [228, 235, 242, 255], p: [228, 235, 242, 255], v: [228, 235, 242, 255], P: [127, 123, 114, 255], Q: [87, 84, 77, 255],
+  },
 };
 
 /** A 16×16 ground tile; each tile picks one variant, in proportion to weight. */
@@ -521,6 +865,8 @@ export const BUILDING_PALETTE: Record<string, Rgba> = {
   H: [127, 174, 88, 255], // #7fae58
   I: [214, 208, 192, 255], // #d6d0c0
   T: [46, 92, 42, 255], // #2e5c2a
+  z: [242, 246, 250, 255], // #f2f6fa snow
+  A: [190, 204, 220, 255], // #becddc snow in shade
 };
 
 /**
@@ -1168,6 +1514,155 @@ export const BUILDING_SPRITES: Partial<Record<BuildingKind, readonly string[]>> 
   ],
 };
 
+/** The orchard in winter: bare fruit trees with snow on their branches. */
+const WINTER_ORCHARD: readonly string[] = [
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '.....z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A.......z.z..A....',
+    '...zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N.....zzN.N..N....',
+    '...NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN....NNN.N..NN...',
+    '...z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N.....z.NzN..N....',
+    '...N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A....N.zNN.N.A...',
+    '....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN.....NNzLl.NN...',
+    '......NLlN.........NLlN.........NLlN.........NLlN.........NLlN.........NLlN.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '......oLlo.........oLlo.........oLlo.........oLlo.........oLlo.........oLlo.....',
+    '.....xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox.......xoLlox....',
+    '......xxxx.........xxxx.........xxxx.........xxxx.........xxxx.........xxxx.....',
+    '................................................................................',
+    '................................................................................',
+    '................................................................................',
+    '................................................................................',
+    '................................................................................',
+    '................................................................................',
+    '................................................................................',
+];
+
+const SNOW: Rgba = [228, 235, 242, 255]; // the winter ground
+const SNOW_SHADE: Rgba = [196, 208, 222, 255];
+const SOIL: Rgba = [107, 74, 42, 255]; // n
+
+/** Per season, recolors over BUILDING_PALETTE and replacement grids where the shape changes; summer is the base art. */
+export const BUILDING_SEASONS: Record<Season, Partial<Record<BuildingKind, { tint?: Record<string, Rgba>; grid?: readonly string[] }>>> = {
+  spring: {
+    farm: { tint: { Y: SOIL, y: SOIL, g: [127, 191, 74, 255] } }, // sprouts, no grain yet
+    orchard: { tint: { F: [244, 184, 200, 255], f: [251, 238, 240, 255] } }, // blossom where the fruit hangs
+    cottonPlantation: { tint: { V: [168, 208, 112, 255] } }, // green buds, the odd early boll
+    sheepFarm: { tint: { G: [90, 154, 68, 255], H: [154, 208, 112, 255] } },
+  },
+  summer: {},
+  autumn: {
+    farm: { tint: { Y: [248, 216, 74, 255], y: [216, 160, 48, 255], g: [200, 164, 64, 255] } }, // ripe wheat
+    orchard: { tint: { H: [232, 176, 64, 255], G: [200, 122, 42, 255], T: [138, 74, 26, 255], F: [214, 48, 36, 255], f: [160, 30, 24, 255] } },
+    cottonPlantation: { tint: { H: [242, 239, 230, 255] } }, // bolls burst open
+    sheepFarm: { tint: { G: [138, 122, 58, 255], H: [192, 176, 96, 255] } },
+  },
+  winter: {
+    farm: { tint: { n: SNOW, m: SNOW_SHADE, Y: SNOW, y: SNOW, g: [138, 112, 72, 255] } }, // snow between bare furrows
+    orchard: { grid: WINTER_ORCHARD },
+    cottonPlantation: { tint: { m: SNOW, N: SNOW_SHADE, G: [122, 96, 64, 255], H: [184, 168, 136, 255] } }, // bolls on dead stalks, snow between the rows
+    sheepFarm: { tint: { G: SNOW_SHADE, H: SNOW } },
+  },
+};
+
+interface RoofSection {
+  rows: readonly [number, number]; // first and last row
+  snow: string; // chars that turn to snow (z)
+  shade: string; // chars that turn to snow in shade (A)
+}
+
+/** Roof sections per building that snow covers in winter; a ridge splits a roof whose slopes reuse chars. */
+export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
+  lumberCamp: [{ rows: [1, 12], snow: 'urj', shade: 'Rl' }],
+  townCenter: [{ rows: [3, 21], snow: 'urj', shade: 'Rl' }],
+  house: [{ rows: [2, 10], snow: 'Yy', shade: 'vm' }],
+  barn: [
+    { rows: [2, 7], snow: 'aS', shade: 'K' },
+    { rows: [8, 12], snow: 'K', shade: 'Z' },
+  ],
+  well: [{ rows: [2, 4], snow: 'Rr', shade: 'l' }],
+  market: [{ rows: [5, 6], snow: 'V', shade: 'F' }],
+  taxOffice: [{ rows: [1, 11], snow: 'K', shade: 'Z' }],
+  tradingPost: [{ rows: [4, 9], snow: 'ur', shade: 'R' }],
+};
+
+/** A building's grid and palette in a season: its seasonal grid and tint over the summer art, and in winter snow on its roof. */
+export function seasonalBuilding(kind: BuildingKind, season: Season): { grid: readonly string[]; palette: Record<string, Rgba> } | undefined {
+  const art = BUILDING_SPRITES[kind];
+  if (!art) return undefined;
+  const { grid = art, tint } = BUILDING_SEASONS[season][kind] ?? {};
+  const roof = season === 'winter' ? (ROOFS[kind] ?? []) : [];
+  const snowy = (row: string, y: number) => {
+    const r = roof.find(({ rows }) => y >= rows[0] && y <= rows[1]);
+    return r ? row.replace(/./g, (ch) => (r.snow.includes(ch) ? 'z' : r.shade.includes(ch) ? 'A' : ch)) : row;
+  };
+  return { grid: grid.map(snowy), palette: { ...BUILDING_PALETTE, ...tint } };
+}
+
 /** RGBA per relic grid char. */
 export const RELIC_PALETTE: Record<string, Rgba> = {
   o: [30, 35, 41, 255], // #1e2329
@@ -1184,12 +1679,46 @@ export const RELIC_PALETTE: Record<string, Rgba> = {
   H: [255, 215, 64, 110], // #ffd740 at 43%
   h: [255, 215, 64, 50], // #ffd740 at 20%
   x: [0, 0, 0, 70], // #000000 at 27%
+  n: [244, 248, 252, 255], // #f4f8fc snow
+  N: [188, 203, 220, 255], // #bccbdc snow in shade
 };
 
 /** A relic: a mossy rune stone, SPRITE_W × TREE_H like a tree. */
 export const RELIC: readonly string[] = [
   '................',
   '.......ooo......',
+  '.......oaaox....',
+  '......oSaaoxx...',
+  '......oSaasox...',
+  '.....MSSaasoxx..',
+  '......oSassoxx..',
+  '.....mSayssoxx..',
+  '.....oSyaysoxx..',
+  '.....oSayssoxx..',
+  '....oSSyaysoxx..',
+  '....oSayayssox..',
+  '....oSaaassoxxx.',
+  '....oSaaMsssox..',
+  '.F.oMmamaMmsoxF.',
+  '..fFoMmamsMoFfx.',
+  '...omoMmomoMox..',
+  '....xasxxxxxaxx.',
+  '................',
+  '................',
+];
+
+/** Relic recolors per season over RELIC_PALETTE: its moss browns in autumn, and in winter the grass is buried. */
+export const RELIC_TINTS: Record<Season, Record<string, Rgba>> = {
+  spring: {},
+  summer: {},
+  autumn: { m: [122, 90, 44, 255], M: [160, 122, 60, 255], f: [106, 68, 34, 255], F: [154, 106, 52, 255] },
+  winter: { f: SNOW_SHADE, F: SNOW },
+};
+
+/** RELIC under a cap of snow. */
+export const WINTER_RELIC: readonly string[] = [
+  '.......nnN......',
+  '......nnnNN.....',
   '.......oaaox....',
   '......oSaaoxx...',
   '......oSaasox...',

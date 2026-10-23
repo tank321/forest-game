@@ -92,6 +92,11 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v11** – Seasonal sprites.
+- Trees change with the seasons: fresh greens in spring with lime blossom, russet oaks and golden limes and birches in autumn, bare snowy branches in winter. Pines stay green and gather snow on their tiers, and stumps get a cap of snow. Each tile turns at its own moment over the first 15 s of a season.
+- Ground changes with the seasons: brighter grass and flowers in spring, olive and straw grass with fallen leaves in autumn, snow in winter with the flowers buried and pebbles poking through.
+- Buildings change with the seasons: farms sprout in spring, ripen gold in autumn and lie under snow in winter; orchards blossom in spring, turn orange in autumn and stand bare in winter; cotton buds in spring and bursts white in autumn; sheep-farm tufts follow the grass. In winter snow covers the roofs and caps the relic stones, whose moss browns in autumn.
+
 **v10** – Cotton, cloth and orchards.
 - Leather is now **cloth**, made by sheep farms and cotton plantations. Saves migrate from v9 automatically, including stock, totals, hires and recorded building costs.
 - Cotton Plantation (6×6; 5000 wood, 500 stone, 250 gold, ×1.5 each): five pickers, each ×3 a herder's speed and carry. Barn upgrades apply to them too, and Cold slows them like herders.

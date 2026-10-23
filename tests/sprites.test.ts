@@ -2,21 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { BUILDINGS, type BuildingKind } from '../src/core/buildings';
 import {
   BUILDING_PALETTE,
+  BUILDING_SEASONS,
   BUILDING_SPRITES,
   FLAG,
   FLAG_CLOTH,
   FLAG_PALETTE,
   GRASS,
   GROUND_PALETTE,
+  GROUND_TINTS,
   OVERHANG_PX,
   RELIC,
   RELIC_GLOW,
   RELIC_PALETTE,
+  RELIC_TINTS,
+  ROOFS,
   SPRITE_W,
   STUMP,
   TREE_H,
   TREE_PALETTE,
   TREE_SPECIES,
+  TREE_TINTS,
   TREES,
   UI_FRAME_H,
   UI_FRAME_SLICE,
@@ -34,13 +39,18 @@ import {
   VILLAGER_H,
   VILLAGER_PALETTE,
   VILLAGER_W,
+  WINTER_RELIC,
+  WINTER_STUMP,
+  WINTER_TREES,
   composeFrame,
   composeVillager,
+  seasonalBuilding,
 } from '../src/render/sprites';
+import { SEASONS } from '../src/core/seasons';
 import type { Job } from '../src/core/types';
 
 describe('sprites', () => {
-  const trees = [...TREE_SPECIES.flatMap((sp) => TREES[sp]), STUMP];
+  const trees = [...TREE_SPECIES.flatMap((sp) => [...TREES[sp], ...WINTER_TREES[sp]]), STUMP, WINTER_STUMP];
   const ground = GRASS;
 
   it('tree grids are SPRITE_W × TREE_H', () => {
@@ -63,7 +73,22 @@ describe('sprites', () => {
   });
 
   it('every species has the same number of growth stages', () => {
-    for (const sp of TREE_SPECIES) expect(TREES[sp]).toHaveLength(TREES.oak.length);
+    for (const sp of TREE_SPECIES) {
+      expect(TREES[sp]).toHaveLength(TREES.oak.length);
+      expect(WINTER_TREES[sp]).toHaveLength(TREES.oak.length);
+    }
+  });
+
+  it('ground tints only recolor ground palette chars', () => {
+    for (const tints of Object.values(GROUND_TINTS)) for (const ch of Object.keys(tints)) expect(ch in GROUND_PALETTE).toBe(true);
+  });
+
+  it('seasonal tints only recolor chars their species uses', () => {
+    for (const tints of Object.values(TREE_TINTS))
+      for (const sp of TREE_SPECIES) {
+        const used = new Set(TREES[sp].join(''));
+        for (const ch of Object.keys(tints[sp] ?? {})) expect(used.has(ch) && ch in TREE_PALETTE).toBe(true);
+      }
   });
 
   it('building sprites match their footprint plus overhang and use their palette', () => {
@@ -75,8 +100,30 @@ describe('sprites', () => {
     }
   });
 
+  it('every season keeps each building sprite its size and in its palette', () => {
+    for (const season of SEASONS)
+      for (const [kind, art] of Object.entries(BUILDING_SPRITES)) {
+        const { grid, palette } = seasonalBuilding(kind as BuildingKind, season)!;
+        expect(grid).toHaveLength(art.length);
+        for (const row of grid) expect(row).toHaveLength(art[0].length);
+        for (const ch of grid.join('')) expect(ch === '.' || ch in palette).toBe(true);
+        for (const ch of Object.keys(BUILDING_SEASONS[season][kind as BuildingKind]?.tint ?? {})) expect(ch in BUILDING_PALETTE).toBe(true);
+      }
+  });
+
+  it('winter snow lands on every roof section', () => {
+    for (const [kind, sections] of Object.entries(ROOFS)) {
+      const winter = seasonalBuilding(kind as BuildingKind, 'winter')!.grid;
+      for (const { rows } of sections) expect(winter.slice(rows[0], rows[1] + 1).join('')).toMatch(/[zA]/);
+    }
+  });
+
+  it('relic tints recolor relic palette chars', () => {
+    for (const tints of Object.values(RELIC_TINTS)) for (const ch of Object.keys(tints)) expect(ch in RELIC_PALETTE).toBe(true);
+  });
+
   it('relic sprites are tree-sized and use their palette', () => {
-    for (const grid of [RELIC, RELIC_GLOW]) {
+    for (const grid of [RELIC, RELIC_GLOW, WINTER_RELIC]) {
       expect(grid).toHaveLength(TREE_H);
       for (const row of grid) expect(row).toHaveLength(SPRITE_W);
       for (const ch of grid.join('')) expect(ch === '.' || ch in RELIC_PALETTE).toBe(true);
