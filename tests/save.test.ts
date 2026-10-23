@@ -64,6 +64,14 @@ it('migrates a v13 save to v14 unchanged, its buildings isolated until roads rea
   expect(linkedBuildings(state).has(farm.id)).toBe(false);
 });
 
+it('migrates a v14 save to v15 with an empty Legacy', () => {
+  const w = smallWorld(30, 1);
+  const old = JSON.parse(serialize(w.state, 5));
+  old.version = 14;
+  delete old.state.legacy;
+  expect(deserialize(JSON.stringify(old)).state.legacy).toEqual({ runs: 0, perks: {} });
+});
+
 it('migrates a v12 save to v13, unlocking the building kinds it already has', () => {
   const w = smallWorld(30, 1);
   addBuilding(w.state, 'quarry', 0, 0);

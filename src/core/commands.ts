@@ -4,9 +4,11 @@ import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
+import { availablePerks, canPrestige, perk, type PerkId } from './legacy';
+import { rand } from './rng';
 import { linkedBuildings, roadsBuilt, roadStock } from './roads';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
-import { spawnVillager } from './state';
+import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
 import { Tile, type Building, type GameState, type HireResource, type ResourceKey } from './types';
 import { goHome } from './systems/movement';
@@ -216,7 +218,7 @@ export function collectRelic(w: World, i: number): boolean {
   s.relics = s.relics.filter((r) => r !== i);
   claimTile(w, i);
   s.picksPending++;
-  if (!s.cards.length) dealCards(s);
+  if (!s.cards.length) dealCards(s, cardsPerPick(s));
   if (!s.cards.length) s.picksPending = 0; // every skill maxed
   return true;
 }
@@ -226,8 +228,24 @@ export function pickSkill(w: World, id: SkillId): boolean {
   if (!s.cards.includes(id) || lvl(s, id) >= SKILLS[id].max) return false;
   s.skills[id] = lvl(s, id) + 1;
   s.picksPending--;
-  if (s.picksPending > 0) dealCards(s);
+  if (s.picksPending > 0) dealCards(s, cardsPerPick(s));
   else s.cards = [];
   if (!s.cards.length) s.picksPending = 0;
   return true;
+}
+
+const cardsPerPick = (s: GameState) => (perk(s, 'relicHunters') ? CONFIG.legacy.perks.relicHunters.cards : 3);
+
+/**
+ * Rebuild (prestige): a fresh run on a new map, keeping the Legacy plus one more level of `id`.
+ * Returns the new state for the caller to load, or null if the rebuild isn't allowed.
+ */
+export function prestige(w: World, id: PerkId): GameState | null {
+  const s = w.state;
+  if (!canPrestige(s) || !availablePerks(s).includes(id)) return null;
+  const seed = (rand(s) * 2 ** 32) >>> 0;
+  return createInitialState(seed, s.w, CONFIG.map.start, {
+    runs: s.legacy.runs + 1,
+    perks: { ...s.legacy.perks, [id]: perk(s, id) + 1 },
+  });
 }

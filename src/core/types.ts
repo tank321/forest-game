@@ -1,4 +1,5 @@
 import type { BuildingKind } from './buildings';
+import type { PerkId } from './legacy';
 import type { SkillId } from './skills';
 
 export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3, Road: 4 } as const;
@@ -71,4 +72,5 @@ export interface GameState {
   picksPending: number; // relics collected whose skill hasn't been picked yet
   nextId: number;
   time: number; // simulated seconds
+  legacy: { runs: number; perks: Partial<Record<PerkId, number>> }; // kept across rebuilds (prestige)
 }

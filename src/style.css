@@ -144,16 +144,18 @@ button.danger { color: #ffb6a3; }
 #menu .dev { color: #e9b8ff; }
 
 /* Skills: a tree of tracks to browse, a detail panel, and a deliberate relic reward action. */
-#skillModal { margin: auto; width: 960px; max-width: calc(100% - 32px); height: min(800px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); flex-direction: column; gap: 12px; overflow: hidden; padding: 16px; color: var(--cream); background: #3a2616 var(--wood) 0 0 / 64px 16px; box-shadow: 0 16px 64px #0009; }
-#skillModal[open] { display: flex; }
+#skillModal, #legacyModal { margin: auto; width: 960px; max-width: calc(100% - 32px); height: min(800px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); flex-direction: column; gap: 12px; overflow: hidden; padding: 16px; color: var(--cream); background: #3a2616 var(--wood) 0 0 / 64px 16px; box-shadow: 0 16px 64px #0009; }
+#skillModal[open], #legacyModal[open] { display: flex; }
+#legacyModal { width: 720px; height: fit-content; }
+#legacyModal .skill-layout { flex: 0 1 auto; }
 #skillModal.is-choosing { width: 620px; height: fit-content; }
 #skillModal.is-choosing .skill-layout { flex: 0 1 auto; grid-template-columns: minmax(0, 1fr) 300px; }
 .skill-next { font-size: 12px; font-weight: 600; color: #365b29; }
-#skillModal::backdrop { background: rgb(7 10 7 / .75); }
-#skillModal .close { flex: none; padding: 0 8px; font-size: 24px; }
+#skillModal::backdrop, #legacyModal::backdrop { background: rgb(7 10 7 / .75); }
+#skillModal .close, #legacyModal .close { flex: none; padding: 0 8px; font-size: 24px; }
 .skill-header { display: flex; align-items: center; gap: 16px; flex: none; }
 .skill-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-#skillTitle { flex: none; font-size: 26px; line-height: 1.2; color: var(--gold); text-shadow: var(--outline); }
+#skillTitle, #legacyTitle { flex: none; font-size: 26px; line-height: 1.2; color: var(--gold); text-shadow: var(--outline); }
 .skill-summary { flex: 1; min-width: 0; color: var(--tan); font-size: 14px; }
 .skill-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex: none; }
 .skill-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -219,16 +221,20 @@ button.danger { color: #ffb6a3; }
 .skill-choose { width: 100%; justify-content: center; min-height: 48px; font-weight: 700; text-align: center; }
 .skill-feedback { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; width: max-content; max-width: calc(100% - 32px); padding: 10px 16px; border: 1px solid #8b9b54; background: #23301b; box-shadow: 0 4px 16px #0008; color: #d7edac; font-size: 14px; font-weight: 600; text-align: center; pointer-events: none; z-index: 3; }
 .skill-feedback:empty { display: none; }
-#skillModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
+#skillModal :focus-visible, #legacyModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
+/* Legacy: the trunk spans both columns; the city and commerce branches run side by side. */
+.legacy-tree { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 8px; justify-items: center; padding: 4px 2px 8px; }
+.legacy-tree .skill-node { width: 112px; }
+.legacy-tree .skill-node.wide { grid-column: 1 / -1; }
 @media (prefers-reduced-motion: reduce) {
   .skill-card, .skill-node-tile { transition: none; }
   .skill-node.is-offered .skill-node-tile { animation: none; filter: drop-shadow(0 0 6px #f2d77a); }
 }
 @media (max-width: 640px) {
-  #skillModal { max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; gap: 8px; }
+  #skillModal, #legacyModal { max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; gap: 8px; }
   .skill-header { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
   .skill-summary { grid-column: 1; grid-row: 2; font-size: 12px; }
-  #skillModal .close { grid-column: 2; grid-row: 1 / 3; min-height: 44px; }
+  #skillModal .close, #legacyModal .close { grid-column: 2; grid-row: 1 / 3; min-height: 44px; }
   .skill-controls { width: 100%; }
   .skill-layout { display: block; overflow-y: auto; }
   .skill-gallery { overflow: visible; }

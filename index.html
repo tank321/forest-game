@@ -28,6 +28,7 @@
         <section id="panel"></section>
         <nav id="menu">
           <button id="skillsBtn" aria-haspopup="dialog" aria-controls="skillModal" aria-expanded="false"><i class="ico ico-skills"></i>Skills</button>
+          <button id="legacyBtn" aria-haspopup="dialog" aria-controls="legacyModal" aria-expanded="false"><i class="ico ico-relic"></i>Legacy</button>
           <button id="exportBtn" title="Export save" aria-label="Export save"><i class="ico ico-export"></i></button>
           <button id="importBtn" title="Import save" aria-label="Import save"><i class="ico ico-import"></i></button>
           <div id="devTools" role="group" aria-label="Developer tools" hidden>
@@ -57,6 +58,17 @@
         <div class="skill-detail-slot"></div>
       </div>
       <p class="skill-feedback" role="status" aria-live="polite"></p>
+    </dialog>
+    <dialog id="legacyModal" class="frame dark" aria-labelledby="legacyTitle">
+      <div class="skill-header">
+        <h2 id="legacyTitle">Legacy</h2>
+        <p class="skill-summary"></p>
+        <button class="close" aria-label="Close">×</button>
+      </div>
+      <div class="skill-layout">
+        <div class="skill-gallery" role="group" aria-label="Legacy perks"></div>
+        <div class="skill-detail-slot"></div>
+      </div>
     </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>

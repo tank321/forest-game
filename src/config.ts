@@ -89,6 +89,22 @@ export const CONFIG = {
   tax: { perHouse: 0.2, radius: 4 }, // gold/s per house within radius (Chebyshev) of a Tax Office
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
+  // Prestige: rebuild once base + step × runs skill levels are learned (capped at every skill maxed)
+  legacy: {
+    base: 15,
+    step: 5,
+    roadsPerRun: 10, // starting roads every rebuild adds
+    perks: {
+      masterHarvest: { gather: 3 }, // chop, farm, mine and herd rate ×
+      swiftAndStrong: { speed: 3, carry: 3 },
+      urbanCore: { basePop: 20, start: 10, hire: 0.5 }, // start: side of the starting clearing; hire: villager price ×
+      prosperousCity: { build: 0.5, villagers: 10 }, // build: building price ×; villagers start free of upkeep
+      tradeGuilds: { chop: 2, cap: 3, taper: 0.85 }, // each profession's rate × 1 + cap·(1 − taper^workers)
+      royalBank: { gold: 3, commission: 0.5 }, // tax and trade gold ×, market commission ×
+      relicHunters: { gap: 0.5, cards: 4 }, // trees between relics ×, skill cards per pick
+      legacyX2: { gather: 2 }, // every gather rate × per level
+    },
+  },
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900 }, // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic
   save: { key: 'forest-game-save', intervalMs: 10_000 },

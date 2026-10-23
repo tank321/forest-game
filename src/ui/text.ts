@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { unlocks, type BuildingKind } from '../core/buildings';
+import type { PerkId } from '../core/legacy';
 import type { SkillId, Track } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
 import type { UiIcon } from '../render/sprites';
@@ -72,6 +73,39 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   markets: { name: 'Markets', desc: 'Unlocks the Market', icon: 'gold' },
   taxOffices: { name: 'Tax Offices', desc: 'Unlocks the Tax Office', icon: 'gold' },
   tradingPosts: { name: 'Trading Posts', desc: 'Unlocks the Trading Post', icon: 'gold' },
+};
+
+const P = CONFIG.legacy.perks;
+const pct = (mult: number) => `${Math.round((1 - mult) * 100)}%`;
+export const LEGACY_TEXT: Record<PerkId, { name: string; desc: string; icon: UiIcon }> = {
+  masterHarvest: { name: 'Master Harvest', desc: `Villagers chop, farm, mine and herd ×${P.masterHarvest.gather} faster`, icon: 'chop' },
+  swiftAndStrong: {
+    name: 'Swift & Strong', desc: `Villagers walk ×${P.swiftAndStrong.speed} faster and carry ×${P.swiftAndStrong.carry} more`, icon: 'boot',
+  },
+  urbanCore: {
+    name: 'Urban Core',
+    desc: `Base population ${P.urbanCore.basePop} instead of ${CONFIG.economy.basePop}. Villagers cost ${pct(P.urbanCore.hire)} less. ${P.urbanCore.start}×${P.urbanCore.start} starting clearing`,
+    icon: 'house',
+  },
+  prosperousCity: {
+    name: 'Prosperous City',
+    desc: `All buildings cost ${pct(P.prosperousCity.build)} less. Start each run with ${P.prosperousCity.villagers} villagers, who need no food or firewood`,
+    icon: 'hammer',
+  },
+  tradeGuilds: {
+    name: 'Trade Guilds',
+    desc: `Lumberjacks chop ×${P.tradeGuilds.chop}. Every worker in a profession (lumberjack, farmer, miner, herder) speeds up that profession, tapering toward +${P.tradeGuilds.cap * 100}%`,
+    icon: 'pair',
+  },
+  royalBank: {
+    name: 'Royal Bank', desc: `Tax and trade gold ×${P.royalBank.gold}. Market commission ${pct(P.royalBank.commission)} lower`, icon: 'gold',
+  },
+  relicHunters: {
+    name: 'Relic Hunters',
+    desc: `Relics appear ×${1 / P.relicHunters.gap} as often and offer ${P.relicHunters.cards} skills to choose from`,
+    icon: 'relic',
+  },
+  legacyX2: { name: 'Legacy ×2', desc: `Every gather rate ×${P.legacyX2.gather}. Can be taken again at every rebuild`, icon: 'bolt' },
 };
 
 /** A skill's icon; a skill that unlocks a building shows that building's thumbnail instead. */

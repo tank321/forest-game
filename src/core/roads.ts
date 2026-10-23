@@ -40,8 +40,9 @@ export function linkedBuildings(s: GameState, net = roadNetwork(s)): Set<number>
   return out;
 }
 
-/** Road tiles the town may lay in all; each house adds to the stock. */
-export const roadStock = (s: GameState) => CONFIG.roads.base + CONFIG.roads.perHouse * countOf(s, 'house');
+/** Road tiles the town may lay in all; each house and each rebuild adds to the stock. */
+export const roadStock = (s: GameState) =>
+  CONFIG.roads.base + CONFIG.roads.perHouse * countOf(s, 'house') + CONFIG.legacy.roadsPerRun * s.legacy.runs;
 
 /** Road tiles laid. */
 export const roadsBuilt = (s: GameState) => s.tiles.reduce((n, t) => n + (t === Tile.Road ? 1 : 0), 0);

@@ -1,9 +1,10 @@
 import { CONFIG } from '../config';
 import { buildingGap, type BuildingKind } from './buildings';
+import { perk, perkMult, startVillagers } from './legacy';
 import { linkedBuildings } from './roads';
 import { seasonOf, WINTER } from './seasons';
 import { lvl } from './skills';
-import type { GameState } from './types';
+import type { GameState, Job } from './types';
 
 export interface Stats {
   speed: number; // villager tiles/s
@@ -42,7 +43,7 @@ export interface Stats {
   tradeLoads: ReadonlyMap<number, number>; // Trading Post id -> gold per trip (none without a Market)
 }
 
-/** Effective gameplay values: base config × upgrades × skills × season and upkeep (later: × legacy). */
+/** Effective gameplay values: base config × upgrades × skills × legacy perks × season and upkeep. */
 export function getStats(s: GameState): Stats {
   const { axe, farm, pick, barrow } = s.upgrades;
   const f = CONFIG.farm;
@@ -50,11 +51,15 @@ export function getStats(s: GameState): Stats {
   const wellRadius = wellReach(s);
   const { speed, chopRate, carry } = CONFIG.villager;
   const b = CONFIG.barrow;
-  const carryBonus = b.carryPerLevel * barrow; // added after every job's own multipliers, so it is the same for all
+  const L = CONFIG.legacy.perks;
+  const haul = perkMult(s, 'swiftAndStrong', L.swiftAndStrong.carry);
+  const carryBonus = b.carryPerLevel * barrow * haul; // added after every job's own multipliers, so it is the same for all
   const a = CONFIG.axe;
   const u = CONFIG.upkeep;
   const season = seasonOf(s.time);
-  const extra = Math.max(0, s.villagers.length - u.freeVillagers);
+  const extra = Math.max(0, s.villagers.length - Math.max(u.freeVillagers, startVillagers(s)));
+  const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2');
+  const guild = guildBonus(s);
   const eat = extra * u.food;
   const winterBurn = extra * u.wood * (1 - CONFIG.coats.burnCut * s.upgrades.coats);
   const burn = season === WINTER ? winterBurn : 0;
@@ -65,15 +70,15 @@ export function getStats(s: GameState): Stats {
   const warm = cold ? u.cold : 1;
   const linked = linkedBuildings(s);
   const taxedHouses = inRange(s, linked, 'house', 'taxOffice', CONFIG.tax.radius);
-  const walk = speed * b.speedGrowth ** barrow * (1 + 0.1 * lvl(s, 'swiftFeet'));
-  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm;
-  const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
-  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm; // Barn upgrades cover herders too
-  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
+  const walk = speed * b.speedGrowth ** barrow * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed);
+  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm * gather * guild.farm;
+  const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
+  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm * gather * guild.herd; // Barn upgrades cover herders too
+  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
   return {
     speed: walk,
-    chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed,
-    carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe + carryBonus,
+    chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed * gather * guild.lumber,
+    carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe * haul + carryBonus,
     carryBonus,
     manualChop: CONFIG.manualChop * 5 ** lvl(s, 'powerSwing'),
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
@@ -84,8 +89,8 @@ export function getStats(s: GameState): Stats {
     orchardSpeed: walk * CONFIG.orchard.speedMult,
     orchardRate: farmRate * CONFIG.orchard.rateMult,
     orchardCarry: farmLoad * CONFIG.orchard.carryMult + carryBonus,
-    mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * warm,
-    mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick + carryBonus,
+    mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * warm * gather * guild.mine,
+    mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick * haul + carryBonus,
     herdRate,
     herdCarry: herdLoad + carryBonus,
     herdFood: lvl(s, 'fertileHerding'),
@@ -103,9 +108,25 @@ export function getStats(s: GameState): Stats {
     hungry,
     cold,
     taxedHouses,
-    tax: taxedHouses.size * CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')),
+    tax: taxedHouses.size * CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold),
     tradeLoads: tradeLoads(s, linked),
   };
+}
+
+/** Trade Guilds: lumberjacks chop ×2, and each profession speeds up with its headcount, tapering toward +cap. */
+function guildBonus(s: GameState): Record<'lumber' | 'farm' | 'mine' | 'herd', number> {
+  const out = { lumber: 1, farm: 1, mine: 1, herd: 1 };
+  if (!perk(s, 'tradeGuilds')) return out;
+  const { chop, cap, taper } = CONFIG.legacy.perks.tradeGuilds;
+  const profession: Partial<Record<Job, keyof typeof out>> = { lumber: 'lumber', farm: 'farm', orchard: 'farm', mine: 'mine', herd: 'herd', cotton: 'herd' };
+  const count = { lumber: 0, farm: 0, mine: 0, herd: 0 };
+  for (const v of s.villagers) {
+    const p = profession[v.job];
+    if (p) count[p]++;
+  }
+  for (const p of Object.keys(out) as (keyof typeof out)[]) out[p] = 1 + cap * (1 - taper ** count[p]);
+  out.lumber *= chop;
+  return out;
 }
 
 /** Chebyshev reach of a Well. */
@@ -131,7 +152,7 @@ function tradeLoads(s: GameState, linked: ReadonlySet<number>): Map<number, numb
   const out = new Map<number, number>();
   if (!markets.length) return out;
   const { goldAtRef, refGap, exponent } = CONFIG.trade;
-  const mules = 1 + 0.25 * lvl(s, 'packMules');
+  const mules = (1 + 0.25 * lvl(s, 'packMules')) * perkMult(s, 'royalBank', CONFIG.legacy.perks.royalBank.gold);
   for (const b of s.buildings) {
     if (b.kind !== 'tradingPost') continue;
     const gap = Math.min(...markets.map((m) => buildingGap(b, m)));

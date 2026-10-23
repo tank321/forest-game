@@ -1,10 +1,12 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, countOf, type BuildingKind } from './buildings';
+import { perk, perkMult } from './legacy';
 import { linkedBuildings } from './roads';
 import { lvl } from './skills';
 import type { Building, Cost, GameState, HireResource, ResourceKey } from './types';
 
 const { villagerCosts, villagerCostGrowth, hireOffset, basePop, popPerHouse } = CONFIG.economy;
+const L = CONFIG.legacy.perks;
 
 /** Multiplies every non-zero amount (rounded, at least 1); zero entries are dropped. */
 const scale = (c: Cost, f: number): Cost =>
@@ -19,15 +21,15 @@ export function baseVillagerCost(owned: number): number {
 /** Next villager paid in `res`; each resource has its own price track. */
 export function villagerCost(s: GameState, res: HireResource = 'wood'): Cost {
   const n = s.hires[res] + hireOffset[res];
-  return scale({ [res]: baseVillagerCost(n) }, 0.85 ** lvl(s, 'recruiters'));
+  return scale({ [res]: baseVillagerCost(n) }, 0.85 ** lvl(s, 'recruiters') * perkMult(s, 'urbanCore', L.urbanCore.hire));
 }
 
 /** Masons: the stone part of any cost is discounted. */
 const masonry = (s: Pick<GameState, 'skills'>, c: Cost): Cost =>
   c.stone ? { ...c, ...scale({ stone: c.stone }, 0.85 ** lvl(s, 'masons')) } : c;
 
-export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings'>, kind: BuildingKind, owned = countOf(s, kind)): Cost =>
-  masonry(s, scale(BUILDINGS[kind].cost(owned), lvl(s, 'masterBuilders') ? 0.8 : 1));
+export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings' | 'legacy'>, kind: BuildingKind, owned = countOf(s, kind)): Cost =>
+  masonry(s, scale(BUILDINGS[kind].cost(owned), (lvl(s, 'masterBuilders') ? 0.8 : 1) * perkMult(s, 'prosperousCity', L.prosperousCity.build)));
 
 /** Refund original construction materials only, rounded down per resource. */
 export const buildingRefund = (b: Building): Cost =>
@@ -42,12 +44,12 @@ export const buildingRefund = (b: Building): Cost =>
 export type TradeResource = Exclude<ResourceKey, 'gold'>;
 export const TRADE_RESOURCES = Object.keys(CONFIG.market.prices) as TradeResource[];
 
-/** Market fee as a fraction of value (Shrewd Traders lowers it). */
-export const commission = (s: Pick<GameState, 'skills'>) =>
-  Math.max(0, CONFIG.market.commission - 0.05 * lvl(s, 'shrewdTraders'));
+/** Market fee as a fraction of value (Shrewd Traders and Royal Bank lower it). */
+export const commission = (s: Pick<GameState, 'skills' | 'legacy'>) =>
+  Math.max(0, CONFIG.market.commission - 0.05 * lvl(s, 'shrewdTraders')) * perkMult(s, 'royalBank', L.royalBank.commission);
 
 /** Gold received for selling `n` of `res`, or paid for buying it. */
-export function marketQuote(s: Pick<GameState, 'skills'>, res: TradeResource, n: number, side: 'sell' | 'buy'): number {
+export function marketQuote(s: Pick<GameState, 'skills' | 'legacy'>, res: TradeResource, n: number, side: 'sell' | 'buy'): number {
   const value = n * CONFIG.market.prices[res];
   const c = commission(s);
   // Round in the Market's favor; the small epsilon keeps 100 × 0.8 from flooring to 79.
@@ -58,7 +60,7 @@ export function marketQuote(s: Pick<GameState, 'skills'>, res: TradeResource, n:
 export function popCap(s: GameState): number {
   const linked = linkedBuildings(s);
   const houses = s.buildings.reduce((n, b) => n + (b.kind === 'house' && linked.has(b.id) ? 1 : 0), 0);
-  return basePop + (popPerHouse + lvl(s, 'roomyHouses')) * houses;
+  return (perk(s, 'urbanCore') ? L.urbanCore.basePop : basePop) + (popPerHouse + lvl(s, 'roomyHouses')) * houses;
 }
 
 export type UpgradeKind = keyof GameState['upgrades'];

@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { addBuilding, BUILDINGS } from './buildings';
-import { relicGap } from './relics';
+import { newLegacy, perk, startVillagers, type Legacy } from './legacy';
+import { relicSpacing } from './relics';
 import { maxWoodTable } from './trees';
 import type { GameState, Villager } from './types';
 import { Tile } from './types';
@@ -9,7 +10,9 @@ export function createInitialState(
   seed = (Math.random() * 2 ** 32) >>> 0,
   size: number = CONFIG.map.size,
   start: number = CONFIG.map.start,
+  legacy: Legacy = newLegacy(),
 ): GameState {
+  if (perk({ legacy }, 'urbanCore')) start = Math.max(start, CONFIG.legacy.perks.urbanCore.start);
   const n = size * size;
   const o = (size - start) >> 1;
   const s: GameState = {
@@ -33,17 +36,19 @@ export function createInitialState(
     treesChopped: 0,
     relics: [],
     relicsSpawned: 0,
-    nextRelicAt: relicGap(0),
+    nextRelicAt: relicSpacing({ legacy }, 0),
     cards: [],
     picksPending: 0,
     nextId: 1,
     time: 0,
+    legacy,
   };
   s.wood.set(maxWoodTable(s));
   for (let y = o; y < o + start; y++) s.tiles.fill(Tile.Grass, y * size + o, y * size + o + start);
 
   const tc = BUILDINGS.townCenter;
   addBuilding(s, 'townCenter', (size - tc.w) >> 1, (size - tc.h) >> 1);
+  for (let k = 0; k < startVillagers(s); k++) spawnVillager(s);
   return s;
 }
 

@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { unlocks } from '../core/buildings';
 import { commission } from '../core/economy';
+import { newLegacy } from '../core/legacy';
 import { lvl, prerequisite, SKILLS, type SkillId } from '../core/skills';
 import type { GameState } from '../core/types';
 import { BUILDING_TEXT } from './text';
@@ -36,7 +37,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'fertileHerding': return level ? 'Herders deliver 1 food per cloth' : 'Herders deliver cloth only';
     case 'taxCollectors': return `+${20 * level}% tax`;
     case 'packMules': return `+${25 * level}% gold per trade trip`;
-    case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level } }))}% market commission`;
+    case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level }, legacy: newLegacy() }))}% market commission`;
     case 'quarrying': case 'wells': case 'orchards': case 'sheepFarms': case 'cottonFields':
     case 'markets': case 'taxOffices': case 'tradingPosts':
       return `${BUILDING_TEXT[unlocks(id)!].name} ${level ? 'unlocked' : 'not yet buildable'}`;

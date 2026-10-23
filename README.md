@@ -92,7 +92,9 @@ Trade), and each skill is offered only once the one before it in its track has a
 from different tracks while it can. **Skills** opens the skill tree: one column per track, easier skills on top,
 with a solid link once a skill unlocks the next one. Hover over a skill to compare current and next-level bonuses
 in the right-hand panel; skills on offer from a relic glow, and clicking one learns it right there. On phones, tap a skill to show details beneath the tree,
-which scrolls sideways. Keyboard users can select skills with Enter or Space. **Export/Import** move
+which scrolls sideways. Keyboard users can select skills with Enter or Space. **Legacy** opens the Legacy perk tree;
+it turns gold once you have learned enough skill levels to rebuild. Pick an available perk and click **Rebuild** twice
+to start over on a new map with that perk kept forever. **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
 **Speed** runs the game ×1/×2/×5/×10, and **Reset** (click twice) wipes the save and starts over.
 
@@ -106,14 +108,24 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
   - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
+  - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `legacyModal.ts` Legacy perk tree and rebuild, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v15** – Legacy (prestige).
+- Learn 15 skill levels to unlock a **rebuild**. Rebuilding starts a new run on a new map and wipes buildings, villagers, resources and skills. You keep your Legacy perks. Each rebuild raises the requirement by 5 levels, up to every skill maxed.
+- Each rebuild takes one perk from the Legacy tree and adds 10 starting roads. The tree starts with Master Harvest (villagers gather ×3) and Swift & Strong (walk ×3, carry ×3), then forks:
+  - City: Urban Core (base population 20, villagers −50%, 10×10 starting clearing), then Prosperous City (buildings −50%, start with 10 villagers who need no food or firewood).
+  - Commerce: Trade Guilds (lumberjacks chop ×2, and each profession speeds up with its headcount, toward +300%), then Royal Bank (tax and trade gold ×3, half the market commission).
+- Both branches lead to Relic Hunters (relics twice as often, 4 skills per pick). After that, Legacy ×2 (every gather rate ×2) can be taken at every rebuild.
+- A **Legacy** button next to Skills opens the perk tree and turns gold when a rebuild is ready. Rebuilding takes two clicks.
+- Saves migrate from v14 with an empty Legacy. DEV Reset wipes the Legacy too.
+
 **v14** – Roads.
 - Roads are laid from the build menu by tapping or dragging over cleared land, from a stock of 12 plus 3 per house.
 - Tap a road to select it, then move it to another cleared tile or sell it back to the stock.

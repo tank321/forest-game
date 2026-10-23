@@ -1,10 +1,11 @@
 import { CONFIG } from '../config';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
+import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 14;
+const VERSION = 15;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -74,7 +75,7 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
         buildings: f.state.buildings.map((b) => {
           const count = owned.get(b.kind) ?? 0;
           owned.set(b.kind, count + 1);
-          return { ...b, paidCost: b.paidCost ?? buildingCost(f.state, b.kind, count) };
+          return { ...b, paidCost: b.paidCost ?? buildingCost({ ...f.state, legacy: newLegacy() }, b.kind, count) };
         }),
       },
     };
@@ -126,6 +127,7 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   },
   // v14 adds roads (a new tile kind). Old buildings have none, so they stand isolated until roads reach them.
   13: (f) => ({ ...f, version: 14 }),
+  14: (f) => ({ ...f, version: 15, state: { ...f.state, legacy: newLegacy() } }),
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */

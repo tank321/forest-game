@@ -13,6 +13,7 @@ import { Camera } from './render/camera';
 import { Renderer } from './render/renderer';
 import { Hud } from './ui/hud';
 import { Panel } from './ui/panel';
+import { LegacyModal } from './ui/legacyModal';
 import { placementAt } from './ui/placement';
 import { SkillModal } from './ui/skillModal';
 import { createUiState } from './ui/state';
@@ -37,6 +38,17 @@ const skillModal = new SkillModal(
   document.getElementById('pickSkillBtn') as HTMLButtonElement,
   () => world,
   (message) => hud.message(message),
+);
+// A rebuild replaces the save like an import does: stamped now, so no offline catch-up.
+const legacyModal = new LegacyModal(
+  document.getElementById('legacyModal') as HTMLDialogElement,
+  document.getElementById('legacyBtn') as HTMLButtonElement,
+  () => world,
+  (next) => {
+    resetting = true;
+    localStorage.setItem(CONFIG.save.key, serialize(next));
+    location.reload();
+  },
 );
 
 // A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
@@ -167,6 +179,7 @@ function frame(now: number): void {
   hud.update();
   panel.update();
   skillModal.update();
+  legacyModal.update();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -118,6 +118,9 @@ must be handled:
 - **Skill:** add it to `SKILLS` and to its place in a `TRACKS` list (`skills.ts`; the skill before it
   is its prerequisite), apply its effect in
   `stats.ts` or `economy.ts`, and add its text and icon (a `UI_ICONS` name) to `SKILL_TEXT`.
+- **Legacy perk:** add it to `PERK_IDS` and `LEGACY` (`legacy.ts`; `requires` places it in the tree), its numbers
+  to `CONFIG.legacy.perks`, its effect in `stats.ts`, `economy.ts` or `state.ts` (via `perk`/`perkMult`), and its
+  text and icon to `LEGACY_TEXT`. `prestige` (`commands.ts`) returns the next run's state, and `main.ts` saves it and reloads.
 - **Tunables:** all of them live in `src/config.ts`.
 
 ## Tests
