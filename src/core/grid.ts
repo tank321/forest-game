@@ -16,8 +16,8 @@ export function neighbors4(s: Dims, i: number): number[] {
   return out;
 }
 
-/** Owned land: open ground or buildings. Also exactly what villagers can walk on. */
-export const isTerritory = (s: GameState, i: number) => s.tiles[i] === Tile.Grass || s.tiles[i] === Tile.Building;
+/** Owned land: open ground, roads or buildings. Also exactly what villagers can walk on. */
+export const isTerritory = (s: GameState, i: number) => s.tiles[i] === Tile.Grass || s.tiles[i] === Tile.Building || s.tiles[i] === Tile.Road;
 export const isWalkable = isTerritory;
 
 const touchesTerritory = (s: GameState, i: number) => neighbors4(s, i).some((n) => isTerritory(s, n));

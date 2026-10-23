@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { buyResource, sellResource } from '../core/commands';
+import { buyResource, hasMarket, sellResource } from '../core/commands';
 import { marketQuote, TRADE_RESOURCES, type TradeResource } from '../core/economy';
 import type { World } from '../core/world';
 import type { UiState } from './state';
@@ -74,6 +74,7 @@ export class MarketView {
     const res = this.ui.marketRes;
     const have = s.resources;
     const quote = (n: number, side: Side) => marketQuote(s, res, n, side);
+    const open = hasMarket(s); // an isolated Market can't trade
     this.tiles.forEach((b, i) => {
       const r = TRADE_RESOURCES[i];
       b.classList.toggle('active', r === res);
@@ -89,16 +90,16 @@ export class MarketView {
     LOTS.forEach((n, i) => {
       const gain = quote(n, 'sell');
       const price = quote(n, 'buy');
-      this.lot(this.lots.sell[i], `+${fmt(gain)}`, have[res] >= n && gain > 0, `Sell ${fmt(n)} ${res} for ${fmt(gain)} gold`);
-      this.lot(this.lots.buy[i], `−${fmt(price)}`, have.gold >= price, `Buy ${fmt(n)} ${res} for ${fmt(price)} gold`);
+      this.lot(this.lots.sell[i], `+${fmt(gain)}`, open && have[res] >= n && gain > 0, `Sell ${fmt(n)} ${res} for ${fmt(gain)} gold`);
+      this.lot(this.lots.buy[i], `−${fmt(price)}`, open && have.gold >= price, `Buy ${fmt(n)} ${res} for ${fmt(price)} gold`);
     });
     const n = this.amount();
     const gain = n ? quote(n, 'sell') : 0;
     const price = n ? quote(n, 'buy') : 0;
     this.html(this.custom.sell, n ? `Sell for ${icon('gold')}${fmt(gain)}` : 'Sell');
     this.html(this.custom.buy, n ? `Buy for ${icon('gold')}${fmt(price)}` : 'Buy');
-    this.custom.sell.disabled = !n || have[res] < n || gain <= 0;
-    this.custom.buy.disabled = !n || have.gold < price;
+    this.custom.sell.disabled = !open || !n || have[res] < n || gain <= 0;
+    this.custom.buy.disabled = !open || !n || have.gold < price;
   }
 
   /** The typed amount as a whole number of units, or 0 if blank or invalid. */

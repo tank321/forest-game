@@ -4,8 +4,8 @@ import { buyResource, removeBuilding, sellResource } from '../src/core/commands'
 import { buildingCost, marketQuote } from '../src/core/economy';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
-import { onBuildingsChanged, type World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import type { World } from '../src/core/world';
+import { clearArea, pave, smallWorld } from './helpers';
 
 /**
  * 30×30 world: the Town Center is at (13, 13), so a Market at (13, 11) touches its north side.
@@ -22,7 +22,7 @@ function withMarket(villagers = 0, post = false, seed = 1): { w: World; marketId
     clearArea(w, 2, 13, 11, 14);
     postId = addBuilding(s, 'tradingPost', 2, 13).id;
   }
-  onBuildingsChanged(w);
+  pave(w);
   return { w, marketId, postId };
 }
 
@@ -81,7 +81,7 @@ describe('tax', () => {
     const w = smallWorld(30);
     const s = w.state;
     addBuilding(s, 'taxOffice', 13, 11);
-    const near = addBuilding(s, 'house', 12, 12).id;
+    const near = addBuilding(s, 'house', 12, 13).id; // touches the TC, so connected
     addBuilding(s, 'house', 2, 2); // far outside the radius
     expect([...getStats(s).taxedHouses]).toEqual([near]);
     expect(getStats(s).tax).toBeCloseTo(0.2, 9);
@@ -131,9 +131,9 @@ describe('trade', () => {
 
   it('pays more than linearly with the gap between the buildings', () => {
     const s = smallWorld(60).state;
-    addBuilding(s, 'market', 0, 0);
-    const near = addBuilding(s, 'tradingPost', 11, 0).id; // gap 10
-    const far = addBuilding(s, 'tradingPost', 21, 0).id; // gap 20
+    addBuilding(s, 'market', 26, 28); // touches the TC's west side
+    const near = addBuilding(s, 'tradingPost', 15, 28).id; // gap 10
+    const far = addBuilding(s, 'tradingPost', 5, 28).id; // gap 20
     const loads = getStats(s).tradeLoads;
     expect(loads.get(far)! / loads.get(near)!).toBeCloseTo(2 ** 1.5, 9);
     s.skills = { packMules: 2 };

@@ -1,7 +1,7 @@
 import type { BuildingKind } from './buildings';
 import type { SkillId } from './skills';
 
-export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3 } as const;
+export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3, Road: 4 } as const;
 export type Tile = (typeof Tile)[keyof typeof Tile];
 
 export const RESOURCES = ['wood', 'food', 'stone', 'cloth', 'gold'] as const;
@@ -51,7 +51,7 @@ export interface GameState {
   w: number;
   h: number;
   origin: Rect; // initial clearing; tree wood grows with distance from it
-  tiles: Uint8Array; // Tile per cell. Every non-Tree cell is territory.
+  tiles: Uint8Array; // Tile per cell. Every cell but trees and relics is territory.
   wood: Float64Array; // wood remaining per tree cell
   marked: number[]; // priority trees (player-marked)
   buildings: Building[];

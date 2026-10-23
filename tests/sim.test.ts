@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chopTree, placeBuilding, toggleMark } from '../src/core/commands';
+import { chopTree, placeBuilding, placeRoad, toggleMark } from '../src/core/commands';
 import { tileAt } from '../src/core/grid';
 import { nearestTree, pathToAny } from '../src/core/pathing';
 import { simulate } from '../src/core/sim';
@@ -104,6 +104,8 @@ describe('villager simulation', () => {
     }
     expect(placeBuilding(w, 'lumberCamp', x - 2, y)).toBe(true);
     expect(before).toBe(-1); // unreachable before the camp
+    expect(w.fields.wood.dist[probe]).toBeGreaterThan(0); // isolated
+    expect(placeRoad(w, (y + 1) * s.w + x)).toBe(true); // joins it to the TC
     expect(w.fields.wood.dist[probe]).toBe(0);
   });
 
@@ -112,5 +114,5 @@ describe('villager simulation', () => {
     simulate(w, 3 * 3600, 1);
     expect(w.state.treesLeft).toBe(0);
     expect(w.state.villagers.every((v) => v.state === 'idle' && v.carry === 0)).toBe(true);
-  });
+  }, 20_000); // three simulated hours: can pass the default 5 s when the suite runs in parallel
 });

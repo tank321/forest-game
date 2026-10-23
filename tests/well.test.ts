@@ -5,7 +5,7 @@ import { buildingCost } from '../src/core/economy';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
 /** Farm on a cleared 3×3 west of the clearing (x-3..x-1, y..y+2); optional Well at (wx, wy). */
 function farmWorld(well?: [dx: number, dy: number]): { w: World; farmId: number } {
@@ -19,6 +19,7 @@ function farmWorld(well?: [dx: number, dy: number]): { w: World; farmId: number 
   const farmId = s.buildings[s.buildings.length - 1].id;
   if (well) expect(placeBuilding(w, 'well', x + well[0], y + well[1])).toBe(true);
   s.resources = { wood: 0, food: 0, stone: 0, cloth: 0, gold: 0 };
+  pave(w);
   return { w, farmId };
 }
 
@@ -39,7 +40,9 @@ describe('wells', () => {
     const s = w.state;
     const { x, y } = s.origin;
     addBuilding(s, 'well', x - 4, y + 2);
+    clearArea(w, x - 6, y - 2, x, y - 1);
     const other = addBuilding(s, 'farm', x - 6, y - 2); // corner at (x-4, y): touches the first well
+    pave(w);
     const st = getStats(s);
     expect([...st.wellFarms].sort()).toEqual([farmId, other.id].sort());
   });

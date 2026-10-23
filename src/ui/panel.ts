@@ -1,6 +1,9 @@
+import { CONFIG } from '../config';
 import { BUILDINGS, buildingById, isUnlocked, type BuildingKind } from '../core/buildings';
-import { removeBuilding } from '../core/commands';
+import { removeBuilding, removeRoad } from '../core/commands';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
+import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
+import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { ACTIONS, INFO, tallyHtml, type Action } from './actions';
 import { MarketView } from './market';
@@ -33,7 +36,7 @@ export class Panel {
       const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'}</span>` : '';
       return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom, tally !== undefined,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom, tally !== undefined,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) {
@@ -75,22 +78,54 @@ export class Panel {
     if (custom) box.replaceWith(custom.el);
   }
 
-  private view(): { title: string; thumb?: BuildingKind; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView } {
+  private view(): { title: string; thumb?: BuildingKind | 'road'; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
     if (ui.moving) {
       return {
         title: `Move ${BUILDING_TEXT[ui.moving.kind].name}`,
-        sub: 'Tap clear land for the new location. Green = valid. Moving is free; the original stays until placed.',
+        sub: 'Tap clear land for the new location. Green = valid; yellow = valid but needs a road to the Town Center. Moving is free; the original stays until placed.',
         actions: [{ label: 'Cancel move', cost: null, enabled: true, run: () => (ui.moving = null) }],
+      };
+    }
+    if (ui.paving) {
+      const built = roadsBuilt(s);
+      return {
+        title: 'Roads',
+        sub: `Tap or drag over cleared land to lay road; start on a road (or right-click) to lift it. Buildings work only where they touch the Town Center or a road joined to it. ${built} of ${roadStock(s)} roads laid; each house adds ${CONFIG.roads.perHouse}.`,
+        actions: [{ label: 'Done', cost: null, enabled: true, run: () => (ui.paving = false) }],
       };
     }
     if (ui.placing) {
       return {
         title: `Place ${BUILDING_TEXT[ui.placing].name}`,
-        sub: 'Tap your territory. Green = valid.',
+        sub: 'Tap your territory. Green = valid; yellow = valid but needs a road to the Town Center.',
         actions: [{ label: 'Cancel', cost: null, enabled: true, run: () => (ui.placing = null) }],
+      };
+    }
+    if (ui.road !== null && s.tiles[ui.road] !== Tile.Road) ui.road = null; // lifted while selected
+    if (ui.road !== null && ui.movingRoad) {
+      return {
+        title: 'Move Road',
+        sub: 'Tap cleared land for the new location.',
+        actions: [{ label: 'Cancel move', cost: null, enabled: true, run: () => (ui.movingRoad = false) }],
+      };
+    }
+    if (ui.road !== null) {
+      const i = ui.road;
+      return {
+        title: 'Road',
+        thumb: 'road',
+        sub: 'Buildings work only where they touch the Town Center or a road joined to it.',
+        status: roadNetwork(s)[i] ? 'Connected to the Town Center.' : 'Not connected to the Town Center.',
+        actions: [
+          { label: 'Move', cost: null, enabled: true, run: () => (ui.movingRoad = true) },
+          { label: 'Sell (back to the road stock)', cost: null, danger: true, enabled: true, run: () => {
+            if (removeRoad(w, i)) ui.road = null;
+          } },
+          { label: 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.road = null) },
+        ],
       };
     }
     if (ui.selected) {
@@ -118,7 +153,8 @@ export class Panel {
         );
       }
       actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => { ui.selected = null; ui.removing = null; } });
-      const info = INFO[k]?.(w, ui.selected);
+      const isolated = BUILDINGS[k].road && !linkedBuildings(s).has(b.id);
+      const info = isolated ? 'Isolated: not connected to the Town Center, so it does nothing. Lay a road from it to the Town Center.' : INFO[k]?.(w, ui.selected);
       const custom = k === 'market' ? this.market : undefined;
       return { title: BUILDING_TEXT[k].name, thumb: k, sub: BUILDING_TEXT[k].desc, status: info, tally: tallyHtml(buildingById(s, b.id) ?? b), actions, custom };
     }
@@ -126,16 +162,19 @@ export class Panel {
       title: 'Build',
       sub: 'Tap a building to select it.',
       // Kinds still locked behind a skill stay out of the menu.
-      actions: BUILDABLE.filter((k) => isUnlocked(s, k)).map((k) => {
-        const cost = buildingCost(s, k);
-        return {
-          label: BUILDING_TEXT[k].name,
-          cost,
-          enabled: canAfford(s, cost),
-          run: () => (ui.placing = k),
-          thumb: k,
-        };
-      }),
+      actions: [
+        { label: `Road (${Math.max(0, roadStock(s) - roadsBuilt(s))} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const },
+        ...BUILDABLE.filter((k) => isUnlocked(s, k)).map((k) => {
+          const cost = buildingCost(s, k);
+          return {
+            label: BUILDING_TEXT[k].name,
+            cost,
+            enabled: canAfford(s, cost),
+            run: () => (ui.placing = k),
+            thumb: k,
+          };
+        }),
+      ],
     };
   }
 }

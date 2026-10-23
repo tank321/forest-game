@@ -4,7 +4,7 @@ import { placeBuilding } from '../src/core/commands';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { tallyHtml } from '../src/ui/actions';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, pave, smallWorld } from './helpers';
 
 describe('building tallies', () => {
   it('credit a farm with what it produced and the Town Center with what it collected', () => {
@@ -16,6 +16,7 @@ describe('building tallies', () => {
     s.resources.wood = 250;
     expect(placeBuilding(w, 'farm', x - 3, y)).toBe(true);
     const farm = s.buildings[s.buildings.length - 1];
+    pave(w);
     const tc = s.buildings.find((b) => b.kind === 'townCenter')!;
     const handChopped = s.totals.wood; // clearArea chops by hand, which no building collects
     simulate(w, 200, 1 / 30);
@@ -31,7 +32,9 @@ describe('building tallies', () => {
     const a = addBuilding(s, 'taxOffice', 13, 11);
     const b = addBuilding(s, 'taxOffice', 15, 11);
     addBuilding(s, 'house', 12, 12); // in reach of both
+    clearArea(w, 18, 12, 20, 12);
     addBuilding(s, 'house', 20, 12); // in reach of b only
+    pave(w);
     simulate(w, 100, 1);
     expect(a.tally.gold).toBeCloseTo(100 * 0.2 / 2, 6);
     expect(b.tally.gold).toBeCloseTo(100 * 0.2 * 1.5, 6);

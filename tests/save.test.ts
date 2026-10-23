@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { toggleMark } from '../src/core/commands';
 import { addBuilding } from '../src/core/buildings';
 import { buildingRefund } from '../src/core/economy';
+import { linkedBuildings } from '../src/core/roads';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { createWorld } from '../src/core/world';
@@ -51,6 +52,16 @@ it('migrates a v8 save to v9 with no gold', () => {
   const { state } = deserialize(JSON.stringify(old));
   expect(state.resources).toEqual({ ...w.state.resources, gold: 0 });
   expect(state.totals).toEqual({ ...w.state.totals, gold: 0 });
+});
+
+it('migrates a v13 save to v14 unchanged, its buildings isolated until roads reach them', () => {
+  const w = smallWorld(30, 1);
+  const farm = addBuilding(w.state, 'farm', 4, 13);
+  const old = JSON.parse(serialize(w.state, 5));
+  old.version = 13;
+  const { state } = deserialize(JSON.stringify(old));
+  expect(state).toEqual(w.state);
+  expect(linkedBuildings(state).has(farm.id)).toBe(false);
 });
 
 it('migrates a v12 save to v13, unlocking the building kinds it already has', () => {

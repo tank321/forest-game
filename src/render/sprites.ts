@@ -821,6 +821,102 @@ export const GRASS: readonly GroundTile[] = [
   },
 ];
 
+/** RGBA per road grid char. Roads are laid over the grass (chars kept apart from GROUND_PALETTE's). */
+export const ROAD_PALETTE: Record<string, Rgba> = {
+  e: [104, 80, 52, 255], // #685034 edge
+  r: [146, 112, 72, 255], // #927048 dirt
+  R: [168, 134, 88, 255], // #a88658 worn
+  k: [120, 92, 60, 255], // #785c3c rut
+  o: [126, 122, 110, 255], // #7e7a6e pebble
+  O: [170, 164, 146, 255], // #aaa492 pebble lit
+};
+
+/** Road colors per season over ROAD_PALETTE (summer is the base). */
+export const ROAD_TINTS: Record<Season, Record<string, Rgba>> = {
+  spring: {},
+  summer: {},
+  autumn: {},
+  winter: {
+    // trodden snow over the dirt
+    e: [128, 118, 110, 255], r: [176, 166, 156, 255], R: [206, 204, 204, 255], k: [146, 136, 128, 255],
+  },
+};
+
+/** Road pad in the middle of its tile; an arm (ROAD_ARMS) joins it to each road or building beside it. */
+export const ROAD_CENTER: readonly string[] = [
+  '................',
+  '................',
+  '................',
+  '...eeeeeeeeee...',
+  '...erRrrrrRre...',
+  '...errrorrrre...',
+  '...eRrrrrkrre...',
+  '...errkrrrrRe...',
+  '...errrrRrrre...',
+  '...erOrrrrrre...',
+  '...errrrrorRe...',
+  '...eRrrkrrrre...',
+  '...eeeeeeeeee...',
+  '................',
+  '................',
+  '................',
+];
+
+/** Arms toward the north, east, south and west neighbor (bits 1, 2, 4, 8 of a road mask). */
+export const ROAD_ARMS: readonly (readonly string[])[] = [
+  [
+    '...errRrrrrre...',
+    '...errrrrkrre...',
+    '...eRrrorrrre...',
+    '...errrrrrRre...',
+    ...Array(12).fill('................'),
+  ],
+  [
+    ...Array(3).fill('................'),
+    '............eeee',
+    '............rrRr',
+    '............rrrr',
+    '............rrkr',
+    '............Rrrr',
+    '............rrrR',
+    '............rorr',
+    '............rrrr',
+    '............rrRr',
+    '............eeee',
+    ...Array(3).fill('................'),
+  ],
+  [
+    ...Array(12).fill('................'),
+    '...errRrrrrre...',
+    '...errrrkrrre...',
+    '...erRrrrrore...',
+    '...errrrrrRre...',
+  ],
+  [
+    ...Array(3).fill('................'),
+    'eeee............',
+    'rrRr............',
+    'rrrr............',
+    'rkrr............',
+    'rrrR............',
+    'Rrrr............',
+    'rror............',
+    'rrrr............',
+    'rRrr............',
+    'eeee............',
+    ...Array(3).fill('................'),
+  ],
+];
+
+/** A road tile: the pad plus an arm for each set bit of `mask` (1 north, 2 east, 4 south, 8 west). */
+export function composeRoad(mask: number): string[] {
+  const g = ROAD_CENTER.map((r) => [...r]);
+  ROAD_ARMS.forEach((arm, k) => {
+    if (mask & (1 << k)) arm.forEach((r, y) => [...r].forEach((c, x) => c !== '.' && (g[y][x] = c)));
+  });
+  return g.map((r) => r.join(''));
+}
+
 
 /** RGBA per building grid char. */
 export const BUILDING_PALETTE: Record<string, Rgba> = {

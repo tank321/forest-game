@@ -39,7 +39,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
           lostTarget(w, v, st);
           break;
         }
-        const rate = st.chopRate * (st.campBonus > 1 && nearCamp(w, tree, st.campRadius) ? st.campBonus : 1);
+        const rate = st.chopRate * (st.campBonus > 1 && nearCamp(w, tree, st) ? st.campBonus : 1);
         const have = s.wood[tree];
         const room = st.carry - v.carry;
         const amt = have - room < EPS ? have : room; // don't leave a rounding error standing
@@ -103,10 +103,10 @@ function lostTarget(w: World, v: Villager, st: Stats): void {
   if (v.carry > 0 && (isFull(v, st) || !assignTree(w, v, st))) goHome(w, v, 'wood');
 }
 
-/** Tree within `r` tiles (Chebyshev) of any Lumber Camp. */
-function nearCamp(w: World, tree: number, r: number): boolean {
+/** Tree within campRadius tiles (Chebyshev) of a connected Lumber Camp. */
+function nearCamp(w: World, tree: number, st: Stats): boolean {
   const s = w.state;
   const x = tree % s.w;
   const y = (tree / s.w) | 0;
-  return s.buildings.some((b) => b.kind === 'lumberCamp' && distToBuilding(b, x, y) <= r);
+  return s.buildings.some((b) => b.kind === 'lumberCamp' && st.linked.has(b.id) && distToBuilding(b, x, y) <= st.campRadius);
 }

@@ -4,7 +4,7 @@ import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 13;
+const VERSION = 14;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -124,6 +124,8 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
     for (const b of f.state.buildings) if (V13_UNLOCKS[b.kind]) skills[V13_UNLOCKS[b.kind]!] = 1;
     return { ...f, version: 13, state: { ...f.state, skills } };
   },
+  // v14 adds roads (a new tile kind). Old buildings have none, so they stand isolated until roads reach them.
+  13: (f) => ({ ...f, version: 14 }),
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */

@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, countOf, type BuildingKind } from './buildings';
+import { linkedBuildings } from './roads';
 import { lvl } from './skills';
 import type { Building, Cost, GameState, HireResource, ResourceKey } from './types';
 
@@ -53,7 +54,12 @@ export function marketQuote(s: Pick<GameState, 'skills'>, res: TradeResource, n:
   return side === 'sell' ? Math.floor(value * (1 - c) + 1e-9) : Math.ceil(value * (1 + c) - 1e-9);
 }
 
-export const popCap = (s: GameState) => basePop + (popPerHouse + lvl(s, 'roomyHouses')) * countOf(s, 'house');
+/** Base population plus room in every house connected by road. */
+export function popCap(s: GameState): number {
+  const linked = linkedBuildings(s);
+  const houses = s.buildings.reduce((n, b) => n + (b.kind === 'house' && linked.has(b.id) ? 1 : 0), 0);
+  return basePop + (popPerHouse + lvl(s, 'roomyHouses')) * houses;
+}
 
 export type UpgradeKind = keyof GameState['upgrades'];
 

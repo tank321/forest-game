@@ -1,7 +1,10 @@
-import { BUILDINGS, type BuildingKind } from '../src/core/buildings';
+import { border, BUILDINGS, type BuildingKind } from '../src/core/buildings';
 import { chopTree, hireVillager } from '../src/core/commands';
+import { neighbors4 } from '../src/core/grid';
+import { linkedBuildings, roadNetwork } from '../src/core/roads';
 import { createInitialState } from '../src/core/state';
-import { createWorld, type World } from '../src/core/world';
+import { Tile } from '../src/core/types';
+import { createWorld, onBuildingsChanged, type World } from '../src/core/world';
 
 /** Small world (size×size, 6×6 clearing) with `villagers` hired for free. */
 export function smallWorld(size = 20, villagers = 0, seed = 1): World {
@@ -44,4 +47,31 @@ export function clearArea(w: World, x0: number, y0: number, x1: number, y1: numb
     for (let i = 0; i < s.tiles.length; i++) if (inRect(i) && chopTree(w, i)) progress = true;
   }
   w.dev.manualMult = mult;
+}
+
+/**
+ * Lays free roads (outside the stock) from every isolated building to the Town Center or a connected
+ * road, by the shortest edge-to-edge route over open ground, so production tests need not lay them.
+ */
+export function pave(w: World): World {
+  const s = w.state;
+  const tc = s.buildings.find((b) => b.kind === 'townCenter')!;
+  const open = (i: number) => s.tiles[i] === Tile.Grass || s.tiles[i] === Tile.Road;
+  for (const b of s.buildings) {
+    if (linkedBuildings(s).has(b.id)) continue;
+    const net = roadNetwork(s);
+    const atTown = new Set(border(s, tc));
+    const start = border(s, b).filter(open);
+    const prev = new Map<number, number>(start.map((i) => [i, -1]));
+    let goal = -1;
+    for (let q = 0, queue = start; q < queue.length; q++) {
+      const u = queue[q];
+      if (atTown.has(u) || net[u] || neighbors4(s, u).some((n) => net[n])) { goal = u; break; }
+      for (const n of neighbors4(s, u)) if (open(n) && !prev.has(n)) { prev.set(n, u); queue.push(n); }
+    }
+    if (goal === -1) throw new Error(`no open ground from building ${b.id} to the Town Center`);
+    for (let i = goal; i !== -1; i = prev.get(i)!) s.tiles[i] = Tile.Road;
+  }
+  onBuildingsChanged(w);
+  return w;
 }

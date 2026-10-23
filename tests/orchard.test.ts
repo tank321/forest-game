@@ -6,7 +6,7 @@ import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
 import { CONFIG } from '../src/config';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 5×5 west of the clearing and a fruit orchard on it. */
 function withOrchard(villagers = 5, seed = 1): { w: World; id: number } {
@@ -19,6 +19,7 @@ function withOrchard(villagers = 5, seed = 1): { w: World; id: number } {
   s.resources.stone = 300;
   s.resources.cloth = 100;
   expect(placeBuilding(w, 'orchard', x - 5, y)).toBe(true);
+  pave(w);
   return { w, id: s.buildings[s.buildings.length - 1].id };
 }
 

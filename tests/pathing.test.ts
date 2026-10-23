@@ -6,7 +6,7 @@ import { clearLine, DIAG, nearestTree, pathHome, pathToAny } from '../src/core/p
 import { createInitialState } from '../src/core/state';
 import { Tile } from '../src/core/types';
 import { createWorld } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, pave, smallWorld } from './helpers';
 
 describe('pathing', () => {
   it('nearestTree picks the shortest trip: walk to the tree plus the walk home', () => {
@@ -29,6 +29,7 @@ describe('pathing', () => {
     clearArea(w, x - 6, y, x - 1, y + 1);
     s.resources.wood = 100;
     expect(placeBuilding(w, 'lumberCamp', x - 6, y)).toBe(true);
+    pave(w);
     const camp = s.buildings[s.buildings.length - 1];
     const byTc = (y + 5) * s.w + x + 5; // far corner of the clearing
     expect(neighbors4(s, nearestTree(s, w.fields.wood, byTc, () => false)!.tree)).toContain(byTc);

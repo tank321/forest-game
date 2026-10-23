@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildingById, footprint, type BuildingKind } from '../src/core/buildings';
-import { canMoveBuilding, hireVillager, moveBuilding, placeBuilding, removeBuilding, togglePause } from '../src/core/commands';
+import { canMoveBuilding, hireVillager, moveBuilding, placeBuilding, placeRoad, removeBuilding, togglePause } from '../src/core/commands';
 import { buildingRefund, popCap } from '../src/core/economy';
 import { neighbors4, tileAt } from '../src/core/grid';
 import { deserialize, serialize } from '../src/core/save';
@@ -16,6 +16,12 @@ function ready(villagers = 0) {
   clearArea(w, 3, 3, 26, 26);
   w.state.resources = { wood: 1e7, food: 1e7, stone: 1e7, cloth: 1e7, gold: 0 };
   return w;
+}
+
+/** A road along row 4 (x 3..12), then down column 12 to the Town Center's west side. */
+function mainRoad(w: ReturnType<typeof ready>) {
+  for (let x = 3; x <= 12; x++) expect(placeRoad(w, 4 * 30 + x)).toBe(true);
+  for (let y = 5; y <= 13; y++) expect(placeRoad(w, y * 30 + 12)).toBe(true);
 }
 
 function build(w: ReturnType<typeof ready>, kind: BuildingKind, x: number, y: number) {
@@ -148,6 +154,7 @@ describe('workers and delivery routes', () => {
 
   it('redirects workers to their moved workplace after delivering their load', () => {
     const w = ready(1);
+    mainRoad(w);
     const b = build(w, 'farm', 5, 5);
     tick(w, 1);
     const v = w.state.villagers[0];
@@ -168,6 +175,7 @@ describe('workers and delivery routes', () => {
 
   it.each(['move', 'remove'] as const)('rebuilds drop-off routes on %s, including the return to a claimed tree', (action) => {
     const w = ready(1);
+    mainRoad(w);
     const b = build(w, 'lumberCamp', 5, 5);
     const v = w.state.villagers[0];
     v.x = 4.5; v.y = 5.5; v.target = 5 * 30 + 2; v.carry = 4;
@@ -191,6 +199,7 @@ describe('workers and delivery routes', () => {
 
   it.each(['move', 'remove'] as const)('preserves loads above the new capacity when a Well is %sd', (action) => {
     const w = ready(1);
+    mainRoad(w);
     build(w, 'farm', 5, 5);
     const well = build(w, 'well', 4, 5);
     tick(w, 1);

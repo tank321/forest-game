@@ -6,7 +6,7 @@ import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld, totalWood } from './helpers';
+import { clearArea, pave, smallWorld, totalWood } from './helpers';
 
 /** Small world with a cleared 3×3 west of the clearing and a farm on it. */
 function withFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
@@ -18,6 +18,7 @@ function withFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
   s.resources.wood = 250;
   s.resources.food = 0;
   expect(placeBuilding(w, 'farm', x - 3, y)).toBe(true);
+  pave(w);
   return { w, farmId: s.buildings[s.buildings.length - 1].id };
 }
 
@@ -70,8 +71,11 @@ describe('farms', () => {
     const farmTile = (y + 1) * s.w + x - 3;
     expect(w.fields.food.dist[farmTile]).toBe(4 * STEP); // walks to the TC
     clearArea(w, x - 5, y, x - 4, y + 1);
+    clearArea(w, x - 5, y - 1, x, y - 1); // room for the barn's road
     s.resources.wood = 150;
     expect(placeBuilding(w, 'barn', x - 5, y)).toBe(true);
+    expect(w.fields.food.dist[farmTile]).toBe(4 * STEP); // isolated: not a drop-off yet
+    pave(w);
     expect(pathHome(s, w.fields.food, farmTile)).toEqual([farmTile, farmTile - 1]); // barn is adjacent
     expect(w.fields.wood.dist[(y + 1) * s.w + x - 5]).not.toBe(0); // barns don't take wood
   });

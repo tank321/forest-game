@@ -10,6 +10,7 @@ export interface BuildingDef {
   job?: Job; // job its workers do
   buildable: boolean; // appears in the build menu
   cityNeighbor: boolean; // must touch the Town Center or another city building
+  road: boolean; // works only while touching a connected road or the Town Center (see roads.ts)
   unlock?: SkillId; // skill that must be learned before it can be built (none = from the start)
   cost: (owned: number) => Cost;
 }
@@ -19,11 +20,12 @@ const def = (d: Partial<BuildingDef> & Pick<BuildingDef, 'w' | 'h' | 'cost'>): B
   workers: 0,
   buildable: true,
   cityNeighbor: false,
+  road: true,
   ...d,
 });
 
 export const BUILDINGS = {
-  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food', 'stone', 'cloth'], buildable: false, cost: () => ({}) }),
+  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food', 'stone', 'cloth'], buildable: false, road: false, cost: () => ({}) }),
   house: def({
     w: 1,
     h: 1,
@@ -64,7 +66,7 @@ export const BUILDINGS = {
     unlock: 'cottonFields',
     cost: (n) => ({ wood: Math.round(5000 * 1.5 ** n), stone: Math.round(500 * 1.5 ** n), gold: Math.round(250 * 1.5 ** n) }),
   }),
-  well: def({ w: 1, h: 1, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
+  well: def({ w: 1, h: 1, road: false, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
   market: def({
     w: 2,
     h: 2,
@@ -117,6 +119,21 @@ export function footprint(s: GameState, b: Pick<Building, 'kind' | 'x' | 'y'>): 
   return out;
 }
 
+/** Tiles sharing an edge with the footprint, outside it and on the map. */
+export function border(s: GameState, b: Pick<Building, 'kind' | 'x' | 'y'>): number[] {
+  const { w, h } = BUILDINGS[b.kind];
+  const out: number[] = [];
+  for (let x = b.x; x < b.x + w; x++) {
+    if (b.y > 0) out.push((b.y - 1) * s.w + x);
+    if (b.y + h < s.h) out.push((b.y + h) * s.w + x);
+  }
+  for (let y = b.y; y < b.y + h; y++) {
+    if (b.x > 0) out.push(y * s.w + b.x - 1);
+    if (b.x + w < s.w) out.push(y * s.w + b.x + w);
+  }
+  return out;
+}
+
 export function buildingAt(s: GameState, i: number): Building | undefined {
   const x = i % s.w;
   const y = (i / s.w) | 0;
@@ -158,9 +175,12 @@ export const workersOf = (s: GameState, b: Building) =>
 
 export const buildingById = (s: GameState, id: number) => s.buildings.find((b) => b.id === id);
 
-/** A workplace that should be staffed: exists, is not paused, and the building it needs exists. */
-export function isActive(s: GameState, b: Building | undefined): b is Building {
-  if (b === undefined || s.paused.includes(b.id)) return false;
+/**
+ * A workplace that should be staffed: exists, is not paused, is connected by road, and a connected
+ * building of the kind it needs exists. `linked` comes from `linkedBuildings` (roads.ts).
+ */
+export function isActive(s: GameState, b: Building | undefined, linked: ReadonlySet<number>): b is Building {
+  if (b === undefined || s.paused.includes(b.id) || !linked.has(b.id)) return false;
   const needs = NEEDS[b.kind];
-  return needs === undefined || countOf(s, needs) > 0;
+  return needs === undefined || s.buildings.some((o) => o.kind === needs && linked.has(o.id));
 }

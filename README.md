@@ -23,6 +23,15 @@ At the start the build menu has only the House, Lumber Camp, Barn and Farm. Ever
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Cotton Fields, Markets,
 Tax Offices, Trading Posts) and joins the build menu once learned.
 
+**Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
+Town Center; the Well needs no road. An isolated building is tinted red and counts for nothing: no
+workers, no deliveries, no population or tax, no trading. Choose **Road** in the build menu, then tap or
+drag over cleared land to lay road; start a drag on a road (or right-click) to lift it. **Done** or
+Escape ends road mode. Roads come from a stock of 30 plus 10 per house, and lifted roads return to it.
+Tap a road to select it: **Move** it to another cleared tile, or **Sell** it back to the road stock.
+Roads not yet joined to the Town Center are drawn darker. While placing a building, yellow means it can
+stand there but needs a road. Villagers prefer connected roads when walking (at the same speed).
+
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
 Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
@@ -89,7 +98,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/config.ts` – all tunables
 - `src/core/` – pure simulation, no DOM
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
-  - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
+  - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers · `roads.ts` road network, connected buildings, road stock
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking, each worker's spot in its workplace
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
@@ -103,6 +112,13 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v14** – Roads.
+- Roads are laid from the build menu by tapping or dragging over cleared land, from a stock of 30 plus 10 per house.
+- Tap a road to select it, then move it to another cleared tile or sell it back to the stock.
+- A building works only while it touches the Town Center or a road joined to it; the Well needs no road. Isolated buildings are tinted red and do nothing, and their status line says so.
+- Villagers keep to connected roads where that is the cheaper route.
+- Saves migrate from v13; existing buildings stand isolated until roads reach them.
+
 **v13** – Skill tracks.
 - Skills are grouped into six tracks, each unlocking in order, easier skills first:
   - Forestry: Sharp Axes → Power Swing → Camp Crews → Teamwork

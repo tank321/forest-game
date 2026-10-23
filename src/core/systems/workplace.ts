@@ -43,7 +43,7 @@ export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood'
 
 /**
  * Workplace worker (farmer, orchardist, miner, herder, picker, trader): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
- * Workplaces never run out. If the workplace is paused the worker delivers what it carries and goes
+ * Workplaces never run out. If the workplace is paused or cut off from the roads the worker delivers what it carries and goes
  * idle, where the job system hands it back to lumberjacking. dt-independent like the lumberjack.
  */
 export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void {
@@ -51,7 +51,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
   const { res, output, also, speed: speedKey } = WORK[v.job as WorkplaceJob];
   const speed = speedKey ? st[speedKey] : st.speed;
   const place = buildingById(s, v.workplace);
-  const active = isActive(s, place);
+  const active = isActive(s, place, st.linked);
   // Only read in states that require an active (so existing) workplace.
   const { rate, carry } = place ? output(st, place) : { rate: 0, carry: 0 };
   let t = dt;

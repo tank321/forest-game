@@ -1,15 +1,21 @@
+import { CONFIG } from '../config';
 import { BUILDINGS, footprint } from './buildings';
 import { isWalkable, neighbors4 } from './grid';
+import { linkedBuildings, roadNetwork } from './roads';
 import type { GameState, ResourceKey } from './types';
 import { Tile } from './types';
 
 /** Walking costs in tenths of a tile: integers keep the search exact and deterministic. */
 export const STEP = 10;
 export const DIAG = 14;
+/** The same steps between two connected road tiles: cheaper, so routes keep to the roads. */
+export const ROAD_STEP = Math.round(STEP * CONFIG.roads.pathCost);
+export const ROAD_DIAG = Math.round(DIAG * CONFIG.roads.pathCost);
 
 /**
  * Shortest walking distances over walkable tiles, 8-directional. A diagonal step needs both tiles
- * beside it walkable, so villagers never cut past a tree's corner. parent[i] points one step back
+ * beside it walkable, so villagers never cut past a tree's corner. Steps along connected roads cost
+ * less (walking speed is the same), so villagers prefer roads. parent[i] points one step back
  * toward the nearest source; dist is -1 where unreached.
  */
 export interface Field {
@@ -26,6 +32,7 @@ function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: 
   const dist = new Int32Array(n).fill(-1);
   const parent = new Int32Array(n).fill(-1);
   const heap: number[] = []; // keys d * n + tile
+  const net = roadNetwork(s);
   const relax = (v: number, d: number, from: number) => {
     if (dist[v] !== -1 && dist[v] <= d) return;
     dist[v] = d;
@@ -44,23 +51,25 @@ function search(s: GameState, sources: Iterable<number>, visit?: (u: number, d: 
     const right = x < s.w - 1 && isWalkable(s, u + 1);
     const up = u >= s.w && isWalkable(s, u - s.w);
     const down = u < n - s.w && isWalkable(s, u + s.w);
-    if (left) relax(u - 1, d + STEP, u);
-    if (right) relax(u + 1, d + STEP, u);
-    if (up) relax(u - s.w, d + STEP, u);
-    if (down) relax(u + s.w, d + STEP, u);
-    if (up && left && isWalkable(s, u - s.w - 1)) relax(u - s.w - 1, d + DIAG, u);
-    if (up && right && isWalkable(s, u - s.w + 1)) relax(u - s.w + 1, d + DIAG, u);
-    if (down && left && isWalkable(s, u + s.w - 1)) relax(u + s.w - 1, d + DIAG, u);
-    if (down && right && isWalkable(s, u + s.w + 1)) relax(u + s.w + 1, d + DIAG, u);
+    const step = (v: number) => relax(v, d + (net[u] && net[v] ? ROAD_STEP : STEP), u);
+    const diag = (v: number) => relax(v, d + (net[u] && net[v] ? ROAD_DIAG : DIAG), u);
+    if (left) step(u - 1);
+    if (right) step(u + 1);
+    if (up) step(u - s.w);
+    if (down) step(u + s.w);
+    if (up && left && isWalkable(s, u - s.w - 1)) diag(u - s.w - 1);
+    if (up && right && isWalkable(s, u - s.w + 1)) diag(u - s.w + 1);
+    if (down && left && isWalkable(s, u + s.w - 1)) diag(u + s.w - 1);
+    if (down && right && isWalkable(s, u + s.w + 1)) diag(u + s.w + 1);
   }
   return { dist, parent };
 }
 
-/** Walking distance from every tile to the nearest drop-off accepting `res` (0 on the drop-off). */
-export function buildField(s: GameState, res: ResourceKey): Field {
+/** Walking distance from every tile to the nearest connected drop-off accepting `res` (0 on the drop-off). */
+export function buildField(s: GameState, res: ResourceKey, linked = linkedBuildings(s)): Field {
   const sources: number[] = [];
   for (const b of s.buildings) {
-    if ((BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) sources.push(...footprint(s, b));
+    if (linked.has(b.id) && (BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) sources.push(...footprint(s, b));
   }
   return search(s, sources);
 }
@@ -122,22 +131,29 @@ function trace(s: GameState, f: Field, to: number): number[] {
   return smooth(s, path.reverse());
 }
 
-/** Drops waypoints that a straight walk can skip: villagers cross open ground in straight lines. */
+/**
+ * Drops waypoints that a straight walk can skip: villagers cross open ground in straight lines.
+ * A waypoint stays where the path joins or leaves a connected road, and a stretch along the road
+ * is only straightened where the line stays on it, so villagers keep to the road.
+ */
 export function smooth(s: GameState, path: number[]): number[] {
   if (path.length < 3) return path;
+  const net = roadNetwork(s);
+  const onRoad = (k: number) => net[path[k]] === 1 && net[path[k + 1]] === 1; // step k → k + 1
   const out = [path[0]];
   for (let k = 2; k < path.length; k++) {
-    if (!clearLine(s, out[out.length - 1], path[k])) out.push(path[k - 1]);
+    const road = onRoad(k - 1);
+    if (road !== onRoad(k - 2) || !clearLine(s, out[out.length - 1], path[k], road ? net : undefined)) out.push(path[k - 1]);
   }
   out.push(path[path.length - 1]);
   return out;
 }
 
 /**
- * A straight walk between two tile centers stays on walkable tiles: every tile the line passes
- * through, and both tiles beside any corner it passes exactly through.
+ * A straight walk between two tile centers stays on walkable tiles (on connected road, given `net`):
+ * every tile the line passes through, and both tiles beside any corner it passes exactly through.
  */
-export function clearLine(s: GameState, a: number, b: number): boolean {
+export function clearLine(s: GameState, a: number, b: number, net?: Uint8Array): boolean {
   let x = a % s.w;
   let y = (a / s.w) | 0;
   const dx = (b % s.w) - x;
@@ -146,7 +162,7 @@ export function clearLine(s: GameState, a: number, b: number): boolean {
   const ny = Math.abs(dy);
   const sx = Math.sign(dx);
   const sy = Math.sign(dy);
-  const ok = (cx: number, cy: number) => isWalkable(s, cy * s.w + cx);
+  const ok = (cx: number, cy: number) => (net ? net[cy * s.w + cx] === 1 : isWalkable(s, cy * s.w + cx));
   for (let ix = 0, iy = 0; ix < nx || iy < ny; ) {
     const side = (1 + 2 * ix) * ny - (1 + 2 * iy) * nx;
     if (side === 0) {

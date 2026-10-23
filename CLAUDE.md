@@ -23,8 +23,14 @@ No linter or formatter is configured.
   Its typed arrays are converted to plain arrays in `save.ts`. `World` (`world.ts`) wraps it with
   derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
   It also holds `gathered`, per-source counters (each job, hand, tax) since load that only the HUD reads.
-  Change tiles through `claimTile`/`clearTree`. After placing a drop-off building, call
+  Change tiles through `claimTile`/`clearTree`. After placing a drop-off building or changing roads, call
   `onBuildingsChanged` so the fields are rebuilt.
+- **Roads** (`roads.ts`). `Tile.Road` is territory. `roadNetwork` marks roads joined edge to edge to the
+  Town Center; `linkedBuildings` lists buildings that work (touching that network or the Town Center, or
+  `road: false` in `BUILDINGS`). Both are derived on demand. Isolated buildings count for nothing:
+  `isActive` takes the linked set (also `Stats.linked`), drop-off fields, pop cap, tax and trading skip them.
+  Pathing steps between connected road tiles cost `CONFIG.roads.pathCost` × normal, and `smooth` keeps
+  villagers on the road. Tests can call `pave(w)` (`tests/helpers.ts`) to connect every building.
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`,
   then `villagerSystem`. `tick` splits its step at season boundaries (`seasons.ts`; the season is
   derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps

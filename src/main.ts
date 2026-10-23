@@ -1,7 +1,8 @@
 import { CONFIG } from './config';
 import { buildingAt } from './core/buildings';
-import { chopTree, collectRelic, moveBuilding, placeBuilding, toggleMark } from './core/commands';
+import { chopTree, collectRelic, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
 import { inBounds, tileAt } from './core/grid';
+import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
 import { simulate, tick } from './core/sim';
 import { createInitialState } from './core/state';
@@ -42,11 +43,37 @@ const skillModal = new SkillModal(
   (message) => hud.message(message),
 );
 
+// A road stroke lays road on open ground, or lifts it if it starts on a road (or with right-click).
+let lifting = false;
+let lastRoadTile = -1;
 attachInput(canvas, cam, {
   hover: (x, y) => (ui.hover = { x, y }),
   leave: () => (ui.hover = null),
+  brush: () => ui.paving,
+  stroke(wx, wy, start, alt) {
+    ui.hover = { x: wx, y: wy };
+    const i = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
+    if (start) {
+      lifting = alt || (i >= 0 && s.tiles[i] === Tile.Road);
+      lastRoadTile = -1;
+    }
+    if (i < 0 || i === lastRoadTile) return;
+    lastRoadTile = i;
+    if (lifting) removeRoad(world, i);
+    else if (!placeRoad(world, i) && s.tiles[i] === Tile.Grass && roadsBuilt(s) >= roadStock(s)) {
+      hud.message(`No roads left. Each house adds ${CONFIG.roads.perHouse} more.`);
+    }
+  },
   tap(wx, wy, alt) {
     ui.hover = { x: wx, y: wy };
+    if (ui.movingRoad && ui.road !== null) {
+      const to = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
+      if (moveRoad(world, ui.road, to)) {
+        ui.road = to;
+        ui.movingRoad = false;
+      } else hud.message('Cannot move there. Choose cleared land.');
+      return;
+    }
     if (ui.moving) {
       const b = ui.moving;
       const { x, y } = placementAt(b.kind, wx, wy);
@@ -66,6 +93,7 @@ attachInput(canvas, cam, {
     ui.removing = null;
     const i = tileAt(s, wx, wy);
     ui.selected = s.tiles[i] === Tile.Building ? (buildingAt(s, i) ?? null) : null;
+    ui.road = s.tiles[i] === Tile.Road ? i : null;
     if (s.tiles[i] === Tile.Relic) {
       if (!collectRelic(world, i)) hud.message('Clear a path to the relic first');
       return;
@@ -78,8 +106,10 @@ attachInput(canvas, cam, {
 addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || document.getElementById('skillModal')!.matches('[open]')) return;
   if (ui.moving) ui.moving = null;
+  else if (ui.movingRoad) ui.movingRoad = false;
+  else if (ui.paving) ui.paving = false;
   else if (ui.removing !== null) ui.removing = null;
-  else ui.placing = ui.selected = null;
+  else ui.placing = ui.selected = ui.road = null;
 });
 
 function catchUp(seconds: number): void {

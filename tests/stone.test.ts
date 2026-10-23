@@ -6,7 +6,7 @@ import { simulate } from '../src/core/sim';
 import { availableSkills } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 2×2 west of the clearing and a quarry on it. */
 function withQuarry(villagers = 3, seed = 1): { w: World; quarryId: number } {
@@ -17,6 +17,7 @@ function withQuarry(villagers = 3, seed = 1): { w: World; quarryId: number } {
   clearArea(w, x - 2, y, x - 1, y + 1);
   s.resources.wood = 400;
   expect(placeBuilding(w, 'quarry', x - 2, y)).toBe(true);
+  pave(w);
   return { w, quarryId: s.buildings[s.buildings.length - 1].id };
 }
 

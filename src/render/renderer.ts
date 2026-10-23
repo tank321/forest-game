@@ -1,7 +1,8 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
-import { canMoveBuilding, canPlace } from '../core/commands';
+import { border, BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
+import { canMoveBuilding, canPlace, canPlaceRoad } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
+import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import { jobResource } from '../core/systems/workplace';
 import type { Building, GameState, Job, ResourceKey, Villager } from '../core/types';
@@ -14,6 +15,7 @@ import { bake } from './bake';
 import type { Camera } from './camera';
 import {
   BUILDING_SPRITES,
+  composeRoad,
   composeVillager,
   FLAG,
   FLAG_CLOTH,
@@ -27,6 +29,8 @@ import {
   RELIC_GLOW,
   RELIC_PALETTE,
   RELIC_TINTS,
+  ROAD_PALETTE,
+  ROAD_TINTS,
   seasonalBuilding,
   SPRITE_W,
   STUMP,
@@ -52,6 +56,8 @@ import {
 // Everything is a sprite except buildings that have none yet (colored rectangles).
 const VOID = [0x07, 0x0a, 0x07]; // fog beyond the visible radius
 const VOID_KEY = -2; // terrain cache key for a fogged-out cell
+const ROAD_KEY = 10_000; // terrain cache keys from here up are road cells
+const ISOLATED_ROAD_LIGHT = 0.7; // roads not (yet) joined to the Town Center are drawn darker
 const FOG_LIGHT = [1, 1, 0.75, 0.5]; // brightness by fog distance 0..R
 const WINTER_FADE = 10; // s the winter tint takes to fade in or out
 const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at its own moment
@@ -95,6 +101,11 @@ export class Renderer {
   private ground = SEASONS.map((season) => {
     const palette = { ...GROUND_PALETTE, ...GROUND_TINTS[season] };
     return FOG_LIGHT.map((light) => GRASS.map((t) => bake(t.grid, palette, light)));
+  });
+  /** Baked road tiles: [season][connected 0, isolated 1][mask of joined neighbors]. */
+  private roads = SEASONS.map((season) => {
+    const palette = { ...ROAD_PALETTE, ...ROAD_TINTS[season] };
+    return [1, ISOLATED_ROAD_LIGHT].map((light) => Array.from({ length: 16 }, (_, mask) => bake(composeRoad(mask), palette, light)));
   });
   /** Baked building sprites per season (buildings sit in territory, so never fogged). */
   private buildingSprites = SEASONS.map((season) => {
@@ -180,13 +191,14 @@ export class Renderer {
       ctx.fillRect(sx, sy, w * k, h * k);
     };
 
-    this.drawTerrain(world);
+    const net = roadNetwork(s);
+    this.drawTerrain(world, net);
     ctx.fillStyle = `rgb(${VOID})`;
     ctx.fillRect(0, 0, cam.vw, cam.vh);
     ctx.imageSmoothingEnabled = k < SPRITE_W; // crisp pixels when magnified, averaged when shrunk
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
-    this.drawScene(world);
+    this.drawScene(world, linkedBuildings(s, net));
     this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
     this.drawCarryTags(s);
@@ -198,14 +210,35 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(sx, sy, d.w * k, d.h * k);
     }
+    if (ui.road !== null) {
+      const [sx, sy] = cam.toScreen(ui.road % s.w, (ui.road / s.w) | 0);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx, sy, k, k);
+    }
 
     const placing = ui.moving?.kind ?? ui.placing;
     if (placing && ui.hover) {
       const { x, y } = placementAt(placing, ui.hover.x, ui.hover.y);
       const d = BUILDINGS[placing];
       const valid = ui.moving ? canMoveBuilding(world, ui.moving.id, x, y) : canPlace(world, placing, x, y);
-      ctx.fillStyle = valid ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+      // Yellow: it can stand there but would be isolated until a road reaches it.
+      const linked = !d.road || touchesNetwork(s, { kind: placing, x, y }, net);
+      ctx.fillStyle = !valid ? 'rgba(230,60,60,.55)' : linked ? 'rgba(80,220,100,.55)' : 'rgba(240,200,60,.55)';
       rect(x, y, d.w, d.h);
+    }
+
+    if (ui.paving && ui.hover && inBounds(s, ui.hover.x, ui.hover.y)) {
+      const i = tileAt(s, ui.hover.x, ui.hover.y);
+      // Orange: a road to lift; green: road can be laid; red: neither.
+      ctx.fillStyle = s.tiles[i] === Tile.Road ? 'rgba(240,150,60,.55)' : canPlaceRoad(world, i) ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+      rect(i % s.w, (i / s.w) | 0, 1, 1);
+    }
+
+    if (ui.movingRoad && ui.hover && inBounds(s, ui.hover.x, ui.hover.y)) {
+      const i = tileAt(s, ui.hover.x, ui.hover.y);
+      ctx.fillStyle = s.tiles[i] === Tile.Grass ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+      rect(i % s.w, (i / s.w) | 0, 1, 1);
     }
   }
 
@@ -223,15 +256,22 @@ export class Renderer {
     return seasonOf(Math.max(0, time - this.turnAt[i]));
   }
 
-  /** Redraws the ground of cells whose fog level or shown season changed since the last frame. */
-  private drawTerrain(world: World): void {
+  /**
+   * Redraws the ground of cells whose fog level or shown season changed since the last frame, and
+   * road cells whose joins or connection changed. `net` marks the connected roads.
+   */
+  private drawTerrain(world: World, net: Uint8Array): void {
     const s = world.state;
     const { tctx } = this;
+    const entrances = roadEntrances(s, net);
     for (let i = 0; i < s.tiles.length; i++) {
       const fog = world.fog[i];
       const v = this.grassAt[i];
       const season = this.seasonAt(s.time, i);
-      const key = fog > CONFIG.fogRadius ? VOID_KEY : (season * FOG_LIGHT.length + fog) * GRASS.length + v;
+      const road = s.tiles[i] === Tile.Road ? roadMask(s, i, entrances) : -1;
+      const key = fog > CONFIG.fogRadius ? VOID_KEY
+        : road >= 0 ? ROAD_KEY + (season * 2 + 1 - net[i]) * 16 + road
+        : (season * FOG_LIGHT.length + fog) * GRASS.length + v;
       if (this.drawn[i] === key) continue;
       this.drawn[i] = key;
       const x = (i % s.w) * SPRITE_W;
@@ -239,7 +279,10 @@ export class Renderer {
       if (key === VOID_KEY) {
         tctx.fillStyle = `rgb(${VOID})`;
         tctx.fillRect(x, y, SPRITE_W, SPRITE_W);
-      } else tctx.drawImage(this.ground[season][fog][v], x, y);
+        continue;
+      }
+      tctx.drawImage(this.ground[season][fog][v], x, y);
+      if (road >= 0) tctx.drawImage(this.roads[season][1 - net[i]][road], x, y);
     }
   }
 
@@ -261,13 +304,13 @@ export class Renderer {
    * their flags) and relics by tile row, buildings by their bottom edge, villagers by their feet.
    * Whatever is lower on screen is drawn later, so it overlaps sprites reaching up behind it.
    */
-  private drawScene(world: World): void {
+  private drawScene(world: World, linked: ReadonlySet<number>): void {
     const s = world.state;
     const { ctx, cam } = this;
     const k = cam.zoom;
     const now = performance.now();
     const props: { depth: number; draw: () => void }[] = [];
-    for (const b of s.buildings) props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b) });
+    for (const b of s.buildings) props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id)) });
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     props.sort((a, b) => a.depth - b.depth);
 
@@ -350,7 +393,7 @@ export class Renderer {
       }
     }
 
-    if (ui.placing || ui.moving || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
+    if (ui.placing || ui.moving || ui.paving || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
     const i = tileAt(s, ui.hover.x, ui.hover.y);
     if (!visible(i)) return;
     const x = i % s.w;
@@ -394,7 +437,8 @@ export class Renderer {
     }
   }
 
-  private drawBuilding(s: GameState, b: Building): void {
+  /** `isolated`: not connected by road, so tinted red until it is. */
+  private drawBuilding(s: GameState, b: Building, isolated: boolean): void {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const d = BUILDINGS[b.kind];
@@ -412,6 +456,10 @@ export class Renderer {
     }
     if (s.paused.includes(b.id)) {
       ctx.fillStyle = 'rgba(0,0,0,.45)';
+      footprint();
+    }
+    if (isolated) {
+      ctx.fillStyle = 'rgba(170,30,20,.35)';
       footprint();
     }
   }
@@ -433,6 +481,35 @@ function villagerDepth(s: GameState, v: Villager): number {
   const i = tileAt(s, v.x, v.y);
   const b = s.tiles[i] === Tile.Building ? buildingAt(s, i) : undefined;
   return b ? b.y + BUILDINGS[b.kind].h + 0.01 : v.y;
+}
+
+/**
+ * Bits for the road's neighbors it joins: 1 north, 2 east, 4 south, 8 west. Roads join every road
+ * beside them; a building is joined only by its one entrance (`entrances`).
+ */
+function roadMask(s: GameState, i: number, entrances: ReadonlyMap<number, number>): number {
+  const road = (j: number) => s.tiles[j] === Tile.Road;
+  const x = i % s.w;
+  return ((i >= s.w && road(i - s.w) ? 1 : 0) | (x < s.w - 1 && road(i + 1) ? 2 : 0)
+    | (i < s.w * (s.h - 1) && road(i + s.w) ? 4 : 0) | (x > 0 && road(i - 1) ? 8 : 0)) | (entrances.get(i) ?? 0);
+}
+
+/**
+ * Each building's entrance: the first road beside it (a connected one if any), mapped to the arm
+ * bit pointing into the building. So a building ringed by road shows one way in, not many.
+ */
+function roadEntrances(s: GameState, net: Uint8Array): Map<number, number> {
+  const out = new Map<number, number>();
+  for (const b of s.buildings) {
+    const roads = border(s, b).filter((i) => s.tiles[i] === Tile.Road);
+    const door = roads.find((i) => net[i]) ?? roads[0];
+    if (door === undefined) continue;
+    const x = door % s.w;
+    const y = (door / s.w) | 0;
+    const bit = y < b.y ? 4 : y >= b.y + BUILDINGS[b.kind].h ? 1 : x < b.x ? 2 : 8;
+    out.set(door, (out.get(door) ?? 0) | bit);
+  }
+  return out;
 }
 
 /** Animation frame from state and wall-clock time; the id offsets each villager's cycle. */

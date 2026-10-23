@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
+import { linkedBuildings } from '../core/roads';
 import { hireVillager, togglePause, upgrade } from '../core/commands';
 import { canAfford, commission, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { getStats, type Stats } from '../core/stats';
@@ -14,7 +15,7 @@ export interface Action {
   cost: Cost | null;
   enabled: boolean;
   run: () => void;
-  thumb?: BuildingKind; // shown as a parchment card with the building's sprite
+  thumb?: BuildingKind | 'road'; // shown as a parchment card with the building's (or a road's) sprite
   refund?: Cost;
   secondary?: boolean;
   danger?: boolean;
@@ -152,7 +153,7 @@ function staffInfo(w: World, b: Building, worker: string): string {
   const s = w.state;
   if (s.paused.includes(b.id)) return 'Production paused.';
   const needs = NEEDS[b.kind];
-  if (!isActive(s, b) && needs) return `Needs a ${BUILDING_TEXT[needs].name} to work.`;
+  if (!isActive(s, b, linkedBuildings(s)) && needs) return `Needs a ${BUILDING_TEXT[needs].name} connected by road to work.`;
   const n = s.villagers.filter((v) => v.workplace === b.id).length;
   const max = workersOf(s, b);
   return `${n} of ${max} ${worker}${max === 1 ? '' : 's'} assigned.${n < max ? ' Waiting for an empty-handed villager.' : ''}`;
@@ -200,9 +201,10 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   },
   tradingPost: (w, b) => {
     const s = w.state;
-    const load = getStats(s).tradeLoads.get(b.id);
+    const st = getStats(s);
+    const load = st.tradeLoads.get(b.id);
     if (load === undefined) return staffInfo(w, b, 'trader');
-    const gap = Math.min(...s.buildings.filter((m) => m.kind === 'market').map((m) => buildingGap(b, m)));
+    const gap = Math.min(...s.buildings.filter((m) => m.kind === 'market' && st.linked.has(m.id)).map((m) => buildingGap(b, m)));
     return `${staffInfo(w, b, 'trader')} · ${plural(gap, 'tile')} to the nearest Market · ${load.toFixed(1)} gold per trip`;
   },
 };

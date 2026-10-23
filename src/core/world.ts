@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { isTerritory } from './grid';
 import { buildField, type Field } from './pathing';
 import { spawnRelic } from './relics';
+import { linkedBuildings } from './roads';
 import { maxWoodTable } from './trees';
 import type { GameState, Job, ResourceKey, Resources } from './types';
 import { RESOURCES, Tile } from './types';
@@ -67,11 +68,12 @@ export function clearTree(w: World, i: number): void {
   if (s.treesChopped >= s.nextRelicAt) spawnRelic(s, w.fog);
 }
 
-/** Drop-off fields must be rebuilt when drop-off buildings change. */
+/** Drop-off fields must be rebuilt when drop-off buildings or roads change. */
 export function onBuildingsChanged(w: World): void {
   w.fields = buildFields(w.state);
 }
 
 function buildFields(s: GameState): Record<ResourceKey, Field> {
-  return Object.fromEntries(RESOURCES.map((r) => [r, buildField(s, r)])) as Record<ResourceKey, Field>;
+  const linked = linkedBuildings(s);
+  return Object.fromEntries(RESOURCES.map((r) => [r, buildField(s, r, linked)])) as Record<ResourceKey, Field>;
 }

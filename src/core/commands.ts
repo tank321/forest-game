@@ -1,9 +1,10 @@
 import { CONFIG } from '../config';
-import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, countOf, footprint, isUnlocked, type BuildingKind } from './buildings';
+import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, isUnlocked, type BuildingKind } from './buildings';
 import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
+import { linkedBuildings, roadsBuilt, roadStock } from './roads';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { spawnVillager } from './state';
 import { getStats } from './stats';
@@ -70,7 +71,13 @@ export function buyResource(w: World, res: TradeResource, n: number): boolean {
   return true;
 }
 
-const canTrade = (s: GameState, n: number) => Number.isInteger(n) && n > 0 && countOf(s, 'market') > 0;
+/** Trading needs a Market connected by road. */
+export function hasMarket(s: GameState): boolean {
+  const linked = linkedBuildings(s);
+  return s.buildings.some((b) => b.kind === 'market' && linked.has(b.id));
+}
+
+const canTrade = (s: GameState, n: number) => Number.isInteger(n) && n > 0 && hasMarket(s);
 
 /** Pause/resume a workplace; its workers return to lumberjacking while paused. */
 export function togglePause(w: World, id: number): boolean {
@@ -161,6 +168,45 @@ function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
       goHome(w, v, jobResource(v.job));
     }
   }
+}
+
+/** A road can be laid on open ground while the road stock lasts. */
+export function canPlaceRoad(w: World, i: number): boolean {
+  const s = w.state;
+  return Number.isInteger(i) && i >= 0 && i < s.tiles.length && s.tiles[i] === Tile.Grass && roadsBuilt(s) < roadStock(s);
+}
+
+/** Lays one road tile. Buildings work once a road joins them to the Town Center. */
+export function placeRoad(w: World, i: number): boolean {
+  if (!canPlaceRoad(w, i)) return false;
+  w.state.tiles[i] = Tile.Road;
+  refreshRoadRoutes(w);
+  return true;
+}
+
+/** Lifts one road tile back into the stock, leaving open ground. */
+export function removeRoad(w: World, i: number): boolean {
+  const s = w.state;
+  if (!Number.isInteger(i) || s.tiles[i] !== Tile.Road) return false;
+  s.tiles[i] = Tile.Grass;
+  refreshRoadRoutes(w);
+  return true;
+}
+
+/** Moves one road tile onto open ground; the stock is unchanged. */
+export function moveRoad(w: World, from: number, to: number): boolean {
+  const s = w.state;
+  if (!Number.isInteger(from) || !Number.isInteger(to) || s.tiles[from] !== Tile.Road || s.tiles[to] !== Tile.Grass) return false;
+  s.tiles[from] = Tile.Grass;
+  s.tiles[to] = Tile.Road;
+  refreshRoadRoutes(w);
+  return true;
+}
+
+/** Roads change which drop-offs work and the best way to each, so deliveries under way re-route. */
+function refreshRoadRoutes(w: World): void {
+  onBuildingsChanged(w);
+  for (const v of w.state.villagers) if (v.state === 'toHome') goHome(w, v, jobResource(v.job));
 }
 
 /** Picks up a relic touching territory; its tile becomes territory and a skill pick is owed. */

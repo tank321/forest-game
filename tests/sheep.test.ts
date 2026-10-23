@@ -6,7 +6,7 @@ import { simulate } from '../src/core/sim';
 import { availableSkills } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 3×3 west of the clearing and a sheep farm on it. */
 function withSheepFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
@@ -18,6 +18,7 @@ function withSheepFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
   s.resources.wood = 600;
   s.resources.food = 150;
   expect(placeBuilding(w, 'sheepFarm', x - 3, y)).toBe(true);
+  pave(w);
   return { w, farmId: s.buildings[s.buildings.length - 1].id };
 }
 
@@ -83,6 +84,7 @@ describe('sheep farms', () => {
     s.resources = { wood: 750, food: 150, stone: 0, cloth: 0, gold: 0 };
     expect(placeBuilding(w, 'sheepFarm', x - 9, y)).toBe(true);
     expect(placeBuilding(w, 'barn', x - 6, y)).toBe(true);
+    pave(w);
     const barn = s.buildings[s.buildings.length - 1];
     expect(w.fields.cloth.dist[barn.y * s.w + barn.x]).toBe(0);
     const herder = s.villagers[0];

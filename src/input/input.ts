@@ -5,13 +5,16 @@ export interface InputHandlers {
   tap(wx: number, wy: number, alt: boolean): void; // alt = right click
   hover(wx: number, wy: number): void;
   leave(): void; // the mouse left the map
+  brush(): boolean; // whether a one-finger drag paints (strokes) instead of panning
+  stroke(wx: number, wy: number, start: boolean, alt: boolean): void; // a painted point; start = where the press began
 }
 
-/** Pointer input: drag to pan, wheel/pinch to zoom, short press = tap (world coords). */
+/** Pointer input: drag to pan (or paint, see `brush`), wheel/pinch to zoom, short press = tap (world coords). */
 export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): void {
   const pts = new Map<number, { x: number; y: number }>();
   let downAt: { x: number; y: number } | null = null; // null once the gesture became a drag/pinch
   let pinchDist = 0;
+  let painting: { x: number; y: number; alt: boolean } | null = null; // last painted world point
 
   const local = (e: PointerEvent | WheelEvent) => {
     const r = el.getBoundingClientRect();
@@ -26,9 +29,14 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
     el.setPointerCapture(e.pointerId);
     const p = local(e);
     pts.set(e.pointerId, p);
-    if (pts.size === 1) downAt = p;
+    if (pts.size === 1 && h.brush()) {
+      const [x, y] = cam.toWorld(p.x, p.y);
+      painting = { x, y, alt: e.button === 2 };
+      h.stroke(x, y, true, painting.alt);
+    } else if (pts.size === 1) downAt = p;
     else {
       downAt = null;
+      painting = null; // a second finger pinches instead
       pinchDist = spread().d;
     }
   });
@@ -38,6 +46,15 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
     const prev = pts.get(e.pointerId);
     if (!prev) return h.hover(...cam.toWorld(p.x, p.y));
     pts.set(e.pointerId, p);
+    if (painting) {
+      // Paint every point along the move in quarter-tile steps, so a fast drag leaves no gaps.
+      const [x, y] = cam.toWorld(p.x, p.y);
+      const n = Math.ceil(Math.hypot(x - painting.x, y - painting.y) * 4);
+      for (let k = 1; k <= n; k++) h.stroke(painting.x + ((x - painting.x) * k) / n, painting.y + ((y - painting.y) * k) / n, false, painting.alt);
+      painting.x = x;
+      painting.y = y;
+      return h.hover(x, y);
+    }
     if (pts.size === 2) {
       const { d, mx, my } = spread();
       cam.zoomAt(mx, my, d / pinchDist);
@@ -53,6 +70,7 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
 
   const end = (e: PointerEvent) => {
     if (!pts.delete(e.pointerId)) return;
+    painting = null;
     if (downAt && e.type === 'pointerup') h.tap(...cam.toWorld(downAt.x, downAt.y), e.button === 2);
     downAt = null;
   };

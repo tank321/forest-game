@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canPlace, chopTree, hireVillager, placeBuilding, toggleMark, upgradeAxe } from '../src/core/commands';
+import { canPlace, chopTree, hireVillager, placeBuilding, placeRoad, toggleMark, upgradeAxe } from '../src/core/commands';
 import { baseVillagerCost, maxLevel, popCap } from '../src/core/economy';
 import { isChoppable } from '../src/core/grid';
 import { createInitialState } from '../src/core/state';
@@ -60,6 +60,8 @@ describe('commands', () => {
     expect(canPlace(w, 'house', x, y)).toBe(false); // corner: diagonal to TC only
     expect(placeBuilding(w, 'house', x, y + 1)).toBe(true);
     expect(placeBuilding(w, 'house', x, y)).toBe(true); // touches the first house
+    expect(popCap(s)).toBe(8); // but no road reaches it
+    expect(placeRoad(w, y * s.w + x + 1)).toBe(true); // between it and the TC
     expect(popCap(s)).toBe(11);
     expect(canPlace(w, 'house', x - 1, y)).toBe(false); // tree
     expect(canPlace(w, 'lumberCamp', x + 1, y)).toBe(false); // overlaps TC

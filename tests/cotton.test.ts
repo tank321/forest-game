@@ -6,7 +6,7 @@ import { tileAt } from '../src/core/grid';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld, unlockBuildings } from './helpers';
+import { clearArea, pave, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 6×6 west of the clearing and a cotton plantation on it. */
 function withPlantation(villagers = 5, seed = 1): { w: World; id: number } {
@@ -19,6 +19,7 @@ function withPlantation(villagers = 5, seed = 1): { w: World; id: number } {
   s.resources.stone = 500;
   s.resources.gold = 250;
   expect(placeBuilding(w, 'cottonPlantation', x - 6, y)).toBe(true);
+  pave(w);
   return { w, id: s.buildings[s.buildings.length - 1].id };
 }
 

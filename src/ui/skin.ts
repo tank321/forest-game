@@ -3,6 +3,10 @@ import {
   BUILDING_PALETTE,
   BUILDING_SPRITES,
   composeFrame,
+  composeRoad,
+  GRASS,
+  GROUND_PALETTE,
+  ROAD_PALETTE,
   type Rgba,
   UI_FRAMES,
   UI_ICON_NAMES,
@@ -19,7 +23,7 @@ const url = (grid: readonly string[], palette: Record<string, Rgba> = UI_PALETTE
 
 /**
  * Bakes the UI sprites once and hands them to CSS: `--frame-<name>` and `--frame-<name>-down`
- * (raised and pressed), `--wood`, and `.ico-<name>` / `.thumb-<kind>` background images.
+ * (raised and pressed), `--wood`, and `.ico-<name>` / `.thumb-<kind>` / `.thumb-road` background images.
  */
 export function applySkin(): void {
   const vars = [`--wood:${url(UI_WOOD)}`];
@@ -36,6 +40,10 @@ export function applySkin(): void {
     const smooth = k < 1 ? ';image-rendering:auto' : '';
     rules.push(`.thumb-${kind}{background-image:${url(grid, BUILDING_PALETTE)};background-size:${w * k}px ${h * k}px${smooth}}`);
   }
+  // Road card: a straight east-west road over plain grass.
+  const road = composeRoad(2 | 8).map((r, y) => [...r].map((c, x) => (c === '.' ? GRASS[0].grid[y][x] : c)).join(''));
+  const k = Math.floor(THUMB / road.length);
+  rules.push(`.thumb-road{background-image:${url(road, { ...GROUND_PALETTE, ...ROAD_PALETTE })};background-size:${road.length * k}px ${road.length * k}px}`);
   const style = document.createElement('style');
   style.textContent = rules.join('\n');
   document.head.append(style);
