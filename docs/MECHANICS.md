@@ -1,7 +1,7 @@
 # Forest Nothing: reference mechanics
 
 Research notes for our clone, taken from the live game (CrazyGames build v69, Oct 2026), its
-devlog, the in-game help strings, and the shipped client source. Numbers are the original game's.
+devlog, the in-game help strings (including the How to Play panel), and the shipped client source. Numbers are the original game's.
 They are a reference to tune against, not something to copy.
 
 ## Tech
@@ -25,16 +25,18 @@ They are a reference to tune against, not something to copy.
 
 ## Core loop (tutorial order)
 1. **Manual chopping:** tap or click a choppable tree for +1 wood per hit, with the "+N" multiplied by skills. Hover-to-collect is a skill.
-2. **Recruit a villager** at the Town Center. Costs come from a table:
+2. **Recruit a villager** at the Town Center, paying wood, food or textiles. Costs come from a table:
    `10, 20, 40, 80, 140, 350, 600, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7000, …, 260000`. Past the table it's ×1.5 each.
 3. Reach 5 villagers. **Population cap = 5 + 3 × (connected houses)**.
-4. **Lumber Camp** (2×2, `100 × 2^n` wood): an extra wood drop-off, so lumberjacks walk less. It doesn't need a road.
+4. **Lumber Camp** (2×2, `100 × 2^n` wood): an extra wood drop-off, so lumberjacks walk less. How to Play says it must touch a connected road or the Town Center (an earlier note said it needs no road).
 5. **Axe upgrade** (10 levels). Wood costs are `100, 200, 350, 550, 850, 1300, 2000, 3000, 4500, 6500`, plus food from level 5 and textiles from level 9.
    - Chop speed is ×1.05 per level.
    - Capacity is `(5 + 2·axe + 2·barrow) × 1.02^axe`.
 6. **House** (`100 × 1.5^n` wood, plus food/textiles/stone/gold at higher n): +3 population cap. It must touch the Town Center or another city building and be connected by road.
 7. Barn, then Farm (food). **Clicking a tree marks it as priority**, and a lumberjack goes to it first.
 8. **Roads** come from a limited road stock. Buildings not connected to the Town Center by road are *isolated* and stop working.
+   - Non-city buildings (farm, quarry, lumber camp, …) only need to touch a connected road or the Town Center. They don't need to sit next to another building.
+   - The Well is the exception: it needs no road at all, and it's cheap.
 9. **Relics** appear in the forest after every N trees chopped (18, 19, 20 … then +2 steps). Chop through to the relic and click it to get a skill card (88 skills). The Legacy (prestige) tiers are tied to relic milestones.
 
 ## Villager (lumberjack) behaviour
@@ -51,9 +53,14 @@ They are a reference to tune against, not something to copy.
 
 ## Economy
 - **Resources:** wood, food, textiles (wool), stone, gold. Later: souls, relics, and decoration coins.
+- **Sheep Farm:** 1 herder (speed 1.2 tiles/s, carry 15, 0.67 leather/s). Bonus slots: Pair Herding, Fertile Herding, Workshop.
 - **Market** (City Market): sell or buy at fixed values in gold (wood 1, food 5, textiles 20, stone 50) with a flat 20% commission.
 - **Gold** comes from house tax (Tax Office) and mule trade routes between the Rural Market and the City Market.
-- **City buildings** (house, bakery, church, workshop, tax office, tavern, market, theatre, sawmill) work only inside an **urban core**. That means next to the Town Center, or in a group of 10 or more connected city buildings, with roads reaching the Town Center.
+  - Mule gold per trip grows **faster than linearly** with the gap between the two markets.
+  - The gap is measured between the buildings, not along the route, so a winding road only makes mules slower.
+- **City buildings** (house, bakery, church, workshop, tax office, tavern, market, theatre, sawmill) work only inside an **urban core**. An isolated one counts for nothing; an isolated house adds no population.
+  - How to Play: it must touch another city building or the Town Center **and** have a connected road nearby.
+  - An earlier note gives a stricter rule: next to the Town Center, or in a group of 10 or more connected city buildings. Which one applies is unverified; the help text may be simplified.
 - Many adjacency bonuses, for example:
   - A Well next to a farm gives ×3 harvest and ×2 carry.
   - A Tavern gives +1 population per house in range.
@@ -83,4 +90,5 @@ They are a reference to tune against, not something to copy.
 | Offline | full simulation, 8 h cap | banked boost time ≤10 min, ×2–×10 | Decide: keep ours (more generous) or copy the boost mechanic |
 | Win | all trees cleared | all trees cleared | ✓ |
 | Stone | Quarry workplace (never depletes), miners deliver to the TC | quarries with assigned villagers; stone in late costs | ✓ v5. No rock tiles: the map stays trees only |
+| Leather | Sheep Farm, 1 herder (0.5/s, carry 10); Fertile Herding adds equal food | Sheep Farm, 1 herder (0.67/s, carry 15) | ✓ v7 |
 | Farm adjacency | Well: farms within 1 tile get ×3 harvest, ×2 carry | Well next to a farm: ×3 harvest, ×2 carry | ✓ v5 |

@@ -7,7 +7,7 @@ import { updateWorker } from './workplace';
 type Updater = (w: World, v: Villager, dt: number, st: Stats) => void;
 
 /** Each job's state machine. New jobs add an entry here. */
-const UPDATERS: Record<Job, Updater> = { lumber: updateLumberjack, farm: updateWorker, mine: updateWorker };
+const UPDATERS: Record<Job, Updater> = { lumber: updateLumberjack, farm: updateWorker, mine: updateWorker, herd: updateWorker };
 
 export function villagerSystem(w: World, dt: number): void {
   const st = getStats(w.state);

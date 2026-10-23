@@ -11,20 +11,31 @@ export type WorkplaceJob = Exclude<Job, 'lumber'>;
 
 type NumericStat = { [K in keyof Stats]: Stats[K] extends number ? K : never }[keyof Stats];
 
+interface Work {
+  res: ResourceKey;
+  rate: NumericStat;
+  carry: NumericStat;
+  also?: { res: ResourceKey; per: NumericStat }; // delivered on top, per unit of `res`
+}
+
 /** What each workplace job produces, and which stats drive it. */
-const WORK: Record<WorkplaceJob, { res: ResourceKey; rate: NumericStat; carry: NumericStat }> = {
+const WORK: Record<WorkplaceJob, Work> = {
   farm: { res: 'food', rate: 'farmRate', carry: 'farmCarry' },
   mine: { res: 'stone', rate: 'mineRate', carry: 'mineCarry' },
+  herd: { res: 'leather', rate: 'herdRate', carry: 'herdCarry', also: { res: 'food', per: 'herdFood' } },
 };
 
+/** Resource a villager with this job carries. */
+export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : WORK[job].res);
+
 /**
- * Workplace worker (farmer, miner): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
+ * Workplace worker (farmer, miner, herder): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
  * Workplaces never run out. If the workplace is paused the worker delivers what it carries and goes
  * idle, where the job system hands it back to lumberjacking. dt-independent like the lumberjack.
  */
 export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void {
   const s = w.state;
-  const { res, rate: rateKey, carry: carryKey } = WORK[v.job as WorkplaceJob];
+  const { res, rate: rateKey, carry: carryKey, also } = WORK[v.job as WorkplaceJob];
   const place = buildingById(s, v.workplace);
   const well = place !== undefined && st.wellFarms.has(place.id);
   const rate = st[rateKey] * (well ? st.wellHarvest : 1);
@@ -76,6 +87,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
         t = walk(w, v, t, st.speed);
         if (!arrived(v)) return;
         gain(s, res, v.carry);
+        if (also && st[also.per] > 0) gain(s, also.res, v.carry * st[also.per]);
         v.carry = 0;
         if (active) returnToWork(w, v, 'toWork');
         else v.state = 'idle';

@@ -7,9 +7,10 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
   house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a house.' },
   lumberCamp: { name: 'Lumber Camp', desc: 'Stores wood. Upgrade all lumberjacks here.' },
-  barn: { name: 'Barn', desc: 'Stores food. Upgrade all farms here.' },
+  barn: { name: 'Barn', desc: 'Stores food and leather. Upgrade all farms and sheep farms here.' },
   farm: { name: 'Farm', desc: 'Assigns a villager to grow food.' },
   quarry: { name: 'Quarry', desc: 'Miners gather stone and deliver it to the Town Center.' },
+  sheepFarm: { name: 'Sheep Farm', desc: 'A herder gathers leather for the Town Center or the nearest Barn.' },
   well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
 };
 
@@ -28,6 +29,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   masons: { name: 'Masons', desc: 'Stone costs 15% less per level', icon: 'stone' },
   quarryCrews: { name: 'Quarry Crews', desc: '+1 miner per quarry per level', icon: 'pair' },
   deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles', icon: 'drop' },
+  fertileHerding: { name: 'Fertile Herding', desc: 'Herders also bring back as much food as leather', icon: 'food' },
 };
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];

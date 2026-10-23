@@ -69,7 +69,7 @@ describe('commands', () => {
 
   it('axe upgrade raises chop rate and carry, stops at max level', () => {
     const w = smallWorld();
-    w.state.resources = { wood: 1e9, food: 1e9, stone: 1e9 };
+    w.state.resources = { wood: 1e9, food: 1e9, stone: 1e9, leather: 1e9 };
     for (let k = 0; k < 10; k++) expect(upgradeAxe(w)).toBe(true);
     expect(upgradeAxe(w)).toBe(false);
     expect(w.state.upgrades.axe).toBe(maxLevel('axe'));

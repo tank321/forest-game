@@ -11,7 +11,7 @@ export const CONFIG = {
       17000, 25000, 33000, 49000, 65000, 97000, 130000, 195000, 260000,
     ],
     villagerCostGrowth: 1.5, // beyond the table
-    foodHireOffset: 1, // food villagers start one step into the table
+    hireOffset: { wood: 0, food: 1, leather: 2 }, // steps into the table each price track starts
     basePop: 5,
     popPerHouse: 3,
     buildingRefund: 0.5, // fraction of original construction cost returned on removal
@@ -22,6 +22,7 @@ export const CONFIG = {
       wood: [100, 200, 350, 550, 850, 1300, 2000, 3000, 4500, 6500],
       food: [0, 0, 0, 0, 300, 500, 800, 1200, 1800, 2500],
       stone: [0, 0, 0, 0, 0, 0, 100, 200, 400, 800],
+      leather: [0, 0, 0, 0, 0, 0, 0, 0, 50, 150],
     },
     speedGrowth: 1.05, // chop rate ×1.05^lvl
     carryPerLevel: 2, // carry (base + 2·lvl)·1.02^lvl
@@ -33,6 +34,7 @@ export const CONFIG = {
       wood: [200, 400, 700, 1100, 1700, 2600, 4000, 6000, 9000, 13000],
       food: [0, 0, 0, 0, 600, 1000, 1600, 2400, 3600, 5000],
       stone: [0, 0, 0, 0, 0, 0, 150, 300, 600, 1200],
+      leather: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
     },
     speedGrowth: 1.05,
     carryPerLevel: 2,
@@ -43,11 +45,13 @@ export const CONFIG = {
     costs: {
       wood: [300, 500, 800, 1200, 1800, 2700, 4000, 6000, 9000, 13000],
       stone: [0, 50, 100, 200, 350, 550, 850, 1300, 2000, 3000],
+      leather: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
     },
     speedGrowth: 1.05,
     carryPerLevel: 2,
     carryGrowth: 1.02,
   },
+  herd: { rate: 0.5, carry: 10 }, // herder leather/s and base carry
   well: { radius: 1, harvestMult: 3, carryMult: 2 }, // farms within radius (Chebyshev) of a Well
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6 }, // zoom = CSS px per tile

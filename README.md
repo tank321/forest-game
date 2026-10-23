@@ -1,4 +1,4 @@
-# Forest Game (alpha v6)
+# Forest Game (alpha v7)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -16,7 +16,7 @@ Hover over a tree to see its wood left out of its full-grown wood; a tree that h
 shows a health bar.
 In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
-the Town Center hires villagers (with wood or food), a Lumber Camp upgrades the axe, a Barn
+the Town Center hires villagers (with wood, food or leather), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, a Quarry upgrades picks. Esc cancels.
 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
@@ -36,6 +36,12 @@ carry stone to the Town Center. Pause a quarry to give its miners back. Stone pa
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
 within 1 tile harvest ×3 and carry ×2 (wells don't stack).
 
+**Leather:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
+gathers leather and carries it to the Town Center or the nearest Barn. Barn (farm) upgrades raise
+herding speed and carry too. Pause a sheep farm to give its herder back.
+The **Fertile Herding** skill makes herders bring back as much food as leather. Leather pays for
+leather-priced villagers, the last two axe/farm/pick levels, and houses from the 10th.
+
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
@@ -50,7 +56,7 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
   - `pathing.ts` per-resource drop-off BFS fields, `pathHome`, `nearestTree` (villager-centred, marked first), `pathToAny`
-  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (sticky tree claims) / `workplace.ts` (farmers, miners) · `movement.ts` shared walking
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (sticky tree claims) / `workplace.ts` (farmers, miners, herders) · `movement.ts` shared walking
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
@@ -61,6 +67,14 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v7** – Leather.
+- Sheep Farm (3×3) with a herder job; leather resource delivered to the Town Center or the nearest Barn.
+- Barn (farm) upgrades also raise herding speed and carry.
+- Fertile Herding skill: herders also deliver food equal to their leather.
+- Leather costs on axe/farm/pick levels 9–10 and houses from the 10th; a leather price track for hiring villagers.
+- Sprites: fenced sheep pen, herder with a crook, leather icon.
+- Saves migrate from v6 automatically.
+
 **Unreleased** – Art.
 - Readable system fonts throughout the UI and tree hover labels, with lighter text shadows. Top stats stay in one row; scroll horizontally on narrow screens to see all six counters.
 - Skills journal popup: cards with level pips, learned/locked/maxed states, status and group filters, prerequisite navigation, and current/next-level bonus previews on hover (tap on phones). A separate relic-choice tab requires an explicit **Choose** action; closing preserves pending choices. Upgrade messages and animated pips confirm each pick.

@@ -8,7 +8,7 @@ export type SkillStatus = 'Unlearned' | 'Learned' | 'Locked' | 'Maxed';
 export const SKILL_GROUP: Record<SkillId, SkillGroup> = {
   sharpAxes: 'Gathering', bigBaskets: 'Gathering', swiftFeet: 'Gathering',
   powerSwing: 'Gathering', campCrews: 'Gathering', teamwork: 'Gathering',
-  greenThumbs: 'Gathering', stonecutters: 'Gathering',
+  greenThumbs: 'Gathering', stonecutters: 'Gathering', fertileHerding: 'Gathering',
   roomyHouses: 'Village', recruiters: 'Village', quarryCrews: 'Village',
   masterBuilders: 'Building', masons: 'Building', deepWells: 'Building',
 };
@@ -39,6 +39,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'stonecutters': return `+${20 * level}% mining speed`;
     case 'masons': return `${discount} lower stone costs`;
     case 'quarryCrews': return `+${level} miner${level === 1 ? '' : 's'} per quarry`;
+    case 'fertileHerding': return level ? 'Herders deliver 1 food per leather' : 'Herders deliver leather only';
     case 'deepWells': return `Wells reach farms within ${CONFIG.well.radius + level} tile${CONFIG.well.radius + level === 1 ? '' : 's'}`;
   }
 }

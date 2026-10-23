@@ -15,6 +15,9 @@ export interface Stats {
   farmCarry: number;
   mineRate: number; // miner stone/s
   mineCarry: number;
+  herdRate: number; // herder leather/s
+  herdCarry: number;
+  herdFood: number; // food delivered per leather (Fertile Herding)
   wellRadius: number; // Chebyshev reach of a Well
   wellFarms: ReadonlySet<number>; // ids of farms boosted by a Well
   wellHarvest: number; // farm rate multiplier from a Well
@@ -41,6 +44,9 @@ export function getStats(s: GameState): Stats {
     farmCarry: (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm,
     mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')),
     mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick,
+    herdRate: CONFIG.herd.rate * f.speedGrowth ** farm, // Barn upgrades cover herders too
+    herdCarry: (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm,
+    herdFood: lvl(s, 'fertileHerding'),
     wellRadius,
     wellFarms: wellFarms(s, wellRadius),
     wellHarvest: CONFIG.well.harvestMult,

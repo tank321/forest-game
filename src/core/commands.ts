@@ -5,8 +5,9 @@ import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { spawnVillager } from './state';
 import { getStats } from './stats';
-import { Tile, type Building, type ResourceKey } from './types';
+import { Tile, type Building, type HireResource, type ResourceKey } from './types';
 import { goHome } from './systems/movement';
+import { jobResource } from './systems/workplace';
 import { claimTile, clearTree, onBuildingsChanged, type World } from './world';
 
 /** Player actions. The UI mutates game state only through these; each validates itself. */
@@ -30,8 +31,8 @@ export function toggleMark(w: World, i: number): boolean {
   return true;
 }
 
-/** Hire a villager paid in wood or food (separate price tracks, shared population cap). */
-export function hireVillager(w: World, res: 'wood' | 'food' = 'wood'): boolean {
+/** Hire a villager paid in wood, food or leather (separate price tracks, shared population cap). */
+export function hireVillager(w: World, res: HireResource = 'wood'): boolean {
   const s = w.state;
   if (s.villagers.length >= popCap(s) || !pay(s, villagerCost(s, res))) return false;
   s.hires[res]++;
@@ -127,14 +128,14 @@ function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
   for (const v of w.state.villagers) {
     const assigned = v.workplace === b.id;
     if (assigned && (v.carry > 0 || v.state === 'toHome')) {
-      goHome(w, v, v.job === 'farm' ? 'food' : 'stone');
+      goHome(w, v, jobResource(v.job));
     } else if (assigned) {
       v.path = [];
       v.pathI = 0;
       v.state = 'idle';
       if (removed) { v.job = 'lumber'; v.workplace = -1; v.target = -1; }
     } else if (dropoff && v.state === 'toHome') {
-      goHome(w, v, v.job === 'lumber' ? 'wood' : v.job === 'farm' ? 'food' : 'stone');
+      goHome(w, v, jobResource(v.job));
     }
   }
 }

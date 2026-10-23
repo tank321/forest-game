@@ -33,8 +33,9 @@ No linter or formatter is configured.
   state and checks that the continued simulation matches exactly.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
   - `lumber` uses `lumberjack.ts`. A lumberjack keeps its claimed tree across trips; marked trees come first.
-  - Workplace jobs (`farm`, `mine`) share `workplace.ts`. Its `WORK` table maps each job to a
-    resource and the stats that drive it. Workplaces never run out.
+  - Workplace jobs (`farm`, `mine`, `herd`) share `workplace.ts`. Its `WORK` table maps each job
+    to a resource and the stats that drive it, plus an optional `also` resource delivered alongside
+    it (herders' food from Fertile Herding). Workplaces never run out.
   - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at
     `carry === 0`. That keeps resources conserved, and tests check the totals.
 - **Effective values.** Gameplay reads villager and production numbers from `getStats(s)`

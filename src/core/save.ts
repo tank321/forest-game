@@ -4,7 +4,7 @@ import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState } from './types';
 
-const VERSION = 6;
+const VERSION = 7;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -44,7 +44,7 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
         resources: { ...s.resources, food: 0 },
         totals: { ...s.totals, food: 0 },
         upgrades: { ...s.upgrades, farm: 0 },
-        hires: { wood: s.villagers.length, food: 0 },
+        hires: { wood: s.villagers.length, food: 0 } as GameState['hires'], // leather joins in v7
         paused: [],
         villagers: s.villagers.map((v) => ({ ...v, job: 'lumber', workplace: -1 })),
       },
@@ -76,6 +76,19 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
           owned.set(b.kind, count + 1);
           return { ...b, paidCost: b.paidCost ?? buildingCost(f.state, b.kind, count) };
         }),
+      },
+    };
+  },
+  6: (f) => {
+    const s = f.state;
+    return {
+      ...f,
+      version: 7,
+      state: {
+        ...s,
+        resources: { ...s.resources, leather: 0 },
+        totals: { ...s.totals, leather: 0 },
+        hires: { ...s.hires, leather: 0 },
       },
     };
   },

@@ -1,9 +1,9 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, countOf, type BuildingKind } from './buildings';
 import { lvl } from './skills';
-import type { Building, Cost, GameState, ResourceKey } from './types';
+import type { Building, Cost, GameState, HireResource, ResourceKey } from './types';
 
-const { villagerCosts, villagerCostGrowth, foodHireOffset, basePop, popPerHouse } = CONFIG.economy;
+const { villagerCosts, villagerCostGrowth, hireOffset, basePop, popPerHouse } = CONFIG.economy;
 
 /** Multiplies every non-zero amount (rounded, at least 1); zero entries are dropped. */
 const scale = (c: Cost, f: number): Cost =>
@@ -16,8 +16,8 @@ export function baseVillagerCost(owned: number): number {
 }
 
 /** Next villager paid in `res`; each resource has its own price track. */
-export function villagerCost(s: GameState, res: 'wood' | 'food' = 'wood'): Cost {
-  const n = res === 'wood' ? s.hires.wood : s.hires.food + foodHireOffset;
+export function villagerCost(s: GameState, res: HireResource = 'wood'): Cost {
+  const n = s.hires[res] + hireOffset[res];
   return scale({ [res]: baseVillagerCost(n) }, 0.85 ** lvl(s, 'recruiters'));
 }
 

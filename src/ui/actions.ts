@@ -2,7 +2,7 @@ import { isActive, workersOf, type BuildingKind } from '../core/buildings';
 import { hireVillager, togglePause, upgrade } from '../core/commands';
 import { canAfford, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { getStats, type Stats } from '../core/stats';
-import type { Building, Cost, GameState, Job } from '../core/types';
+import type { Building, Cost, GameState, HireResource, Job } from '../core/types';
 import type { World } from '../core/world';
 
 export interface Action {
@@ -27,7 +27,7 @@ export interface Action {
 type Selected = (w: World, b: Building) => Action[];
 type Info = (w: World, b: Building) => string;
 
-function hire(w: World, res: 'wood' | 'food'): Action {
+function hire(w: World, res: HireResource): Action {
   const s = w.state;
   const full = s.villagers.length >= popCap(s);
   const cost = villagerCost(s, res);
@@ -56,7 +56,7 @@ function upgradeAction(w: World, kind: UpgradeKind, title: string, preview: (st:
       title,
       level: lvl,
       max: maxLevel(kind),
-      scope: kind === 'farm' ? 'Per farmer · before Well bonuses' : kind === 'axe' ? 'Per lumberjack' : 'Per miner',
+      scope: kind === 'farm' ? 'Per farmer or herder · Well bonuses apply to farms only' : kind === 'axe' ? 'Per lumberjack' : 'Per miner',
       rows: current.map((row, i) => ({ label: row.label, current: row.value, next: next?.[i].value ?? null })),
     },
   };
@@ -75,7 +75,7 @@ function pauseAction(w: World, b: Building): Action {
 
 /** Actions offered when a building of each kind is selected. New buildings add an entry here. */
 export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
-  townCenter: (w) => [hire(w, 'wood'), hire(w, 'food')],
+  townCenter: (w) => [hire(w, 'wood'), hire(w, 'food'), hire(w, 'leather')],
   lumberCamp: (w) => [
     upgradeAction(w, 'axe', 'Axe upgrades', (st) => [
       { label: 'Chopping', value: `${st.chopRate.toFixed(2)} wood/s` },
@@ -86,6 +86,8 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     upgradeAction(w, 'farm', 'Farm upgrades', (st) => [
       { label: 'Harvest', value: `${st.farmRate.toFixed(2)} food/s` },
       { label: 'Carry', value: `${Math.round(st.farmCarry)} food` },
+      { label: 'Herding', value: `${st.herdRate.toFixed(2)} leather/s` },
+      { label: 'Herder carry', value: `${Math.round(st.herdCarry)} leather` },
     ]),
   ],
   farm: (w, b) => [pauseAction(w, b)],
@@ -96,6 +98,7 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     ]),
     pauseAction(w, b),
   ],
+  sheepFarm: (w, b) => [pauseAction(w, b)],
 };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -113,7 +116,7 @@ function staffInfo(w: World, b: Building, worker: string): string {
 export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
-    return `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')}`;
+    return `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')}`;
   },
   farm: (w, b) => {
     const st = getStats(w.state);
@@ -121,4 +124,8 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
     return staffInfo(w, b, 'farmer') + well;
   },
   quarry: (w, b) => staffInfo(w, b, 'miner'),
+  sheepFarm: (w, b) => {
+    const st = getStats(w.state);
+    return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per leather' : '');
+  },
 };

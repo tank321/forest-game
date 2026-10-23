@@ -517,6 +517,9 @@ export const BUILDING_PALETTE: Record<string, Rgba> = {
   F: [178, 59, 46, 255], // #b23b2e
   V: [242, 239, 230, 255], // #f2efe6
   U: [58, 120, 176, 255], // #3a78b0
+  G: [79, 125, 60, 255], // #4f7d3c
+  H: [127, 174, 88, 255], // #7fae58
+  I: [214, 208, 192, 255], // #d6d0c0
 };
 
 /**
@@ -784,6 +787,60 @@ export const BUILDING_SPRITES: Partial<Record<BuildingKind, readonly string[]>> 
     '.........................xxxxxxx',
     '................................',
   ],
+  sheepFarm: [
+    '................................................',
+    '................................................',
+    'ox....ox....ox....ox....ox....ox....ox....ox...o',
+    'Lx....Lx....Lx....Lx....Lx....Lx....Lx....Lx...L',
+    'LljjjjLjjjjjLjjjjjLjjjjjLjjjjjLjjjjjLjjjjjLjjjlL',
+    'llllllllllllllllllllllllllllllllllllllllllllllll',
+    'LlxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxlL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll............G.H.............................lL',
+    'Ll...........GHGHG..................G.H.......lL',
+    'Ll.....ooooooo.....................GHGHG......lL',
+    'Ll....oVVVVVVVoooo............................lL',
+    'Ll...oVVVVVVVVoZZo............................lL',
+    'Ll...oVVIVVVVVoZZo............................lL',
+    'Ll...oIVVVVVVIoooo............ooooooo.........lL',
+    'Ll....oIIIIIIIo...........ooooVVVVVVVo........lL',
+    'Ll.....oZo..oZo...........oZZoVVVVVVVVo.......lL',
+    'Ll.....xxxxxxxx...........oZZoVVVVVIVVo.......lL',
+    'Ll...................G.H..ooooIVVVVVVIo.......lL',
+    'Ll..................GHGHG....oIIIIIIIo........lL',
+    'Ll...........................oZo..oZo.........lL',
+    'Ll...........................xxxxxxxx.........lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll.............ooooooo........................lL',
+    'Ll............oVVVVVVVoooo....................lL',
+    'Ll...........oVVVVVVVVoZZo....................lL',
+    'Ll...........oVVIVVVVVoZZo....................lL',
+    'Ll...........oIVVVVVVIoooo....................lL',
+    'Ll............oIIIIIIIo...........ooooooo.....lL',
+    'Ll.....G.H.....oZo..oZo.......ooooVVVVVVVo....lL',
+    'Ll....GHGHG....xxxxxxxx.......oZZoVVVVVVVVo...lL',
+    'Ll............................oZZoVVVVVIVVo...lL',
+    'Ll............................ooooIVVVVVVIo...lL',
+    'Ll...............................oIIIIIIIo....lL',
+    'Ll...............................oZo..oZo.....lL',
+    'Ll...............................xxxxxxxx.....lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll.....................................G.H....lL',
+    'Ll....................................GHGHG...lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'Ll............................................lL',
+    'jl....j.....j.....j...........j.....j.....j...lj',
+    'Ll....L.....L.....L...........L.....L.....L...lL',
+    'LljjjjLjjjjjLjjjjjLjj......jjjLjjjjjLjjjjjLjjjlL',
+    'lllllllllllllllllllll......lllllllllllllllllllll',
+    '.xxxxxxxxxxxxxxxxxxxx......xxxxxxxxxxxxxxxxxxxxx',
+  ],
   well: [
     '................',
     '.oooooooooooooo.',
@@ -952,6 +1009,7 @@ export const VILLAGER_CLOTH: Record<Job, { c: Rgba; C: Rgba }> = {
   lumber: { c: [192, 57, 43, 255], C: [126, 35, 24, 255] }, // #c0392b
   farm: { c: [90, 154, 58, 255], C: [58, 110, 42, 255] }, // #5a9a3a
   mine: { c: [138, 106, 62, 255], C: [94, 68, 38, 255] }, // #8a6a3e
+  herd: { c: [74, 120, 176, 255], C: [46, 82, 128, 255] }, // #4a78b0
 };
 
 export const VILLAGER_FRAMES = ['stand', 'walk1', 'walk2', 'work1', 'work2', 'carry1', 'carry2'] as const;
@@ -1292,6 +1350,76 @@ export const VILLAGER_GEAR: Record<Job, Record<'hat' | 'tool1' | 'tool2' | 'load
       '............',
     ],
   },
+  herd: {
+    hat: [
+      '............',
+      '............',
+      '............',
+      '....LLLL....',
+      '..llllllll..',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+    ],
+    tool1: [
+      '..........t.',
+      '.........t.t',
+      '.........t.t',
+      '.........t..',
+      '.........t..',
+      '.........t..',
+      '.........s..',
+      '........c...',
+      '........c...',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+    ],
+    tool2: [
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '........cs..',
+      '..........t.',
+      '...........t',
+      '...........t',
+      '..........t.',
+      '............',
+    ],
+    load: [
+      '...tttttt...',
+      '..tnttnttt..',
+      '..LLLLLLLL..',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+      '............',
+    ],
+  },
 };
 
 /** One villager frame (facing right): body + hat + tool or load, outlined, with a ground shadow. */
@@ -1404,7 +1532,7 @@ export const UI_WOOD: readonly string[] = [
 
 export const UI_ICON_W = 12;
 export const UI_ICON_NAMES = [
-  'wood', 'food', 'stone', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',
+  'wood', 'food', 'stone', 'leather', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',
   'basket', 'boot', 'bolt', 'house', 'hammer', 'pick', 'pair', 'drop',
 ] as const;
 export type UiIcon = (typeof UI_ICON_NAMES)[number];
@@ -1451,6 +1579,20 @@ export const UI_ICONS: Record<UiIcon, readonly string[]> = {
     '..osssssZZo.',
     '...oooooooo.',
     '............',
+    '............',
+  ],
+  leather: [
+    '............',
+    '.oo......oo.',
+    '.onoooooono.',
+    '..onhhhhno..',
+    '..ohhhhhmo..',
+    '.ohhhhhmmmo.',
+    '.ohhhhmmmmo.',
+    '..ohhmmmdo..',
+    '..ommmmddo..',
+    '.omoooooomo.',
+    '.oo......oo.',
     '............',
   ],
   pop: [
