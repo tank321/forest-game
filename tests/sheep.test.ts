@@ -131,9 +131,9 @@ describe('cloth economy', () => {
     expect(upgradeCost(s, 'axe', 8)?.cloth).toBe(50);
     expect(upgradeCost(s, 'farm', 9)?.cloth).toBe(200);
     expect(upgradeCost(s, 'pick', 8)?.cloth).toBe(80);
-    for (let k = 0; k < 8; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
+    for (let k = 0; k < 8; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house').cloth).toBeUndefined();
-    s.buildings.push({ id: 908, kind: 'house', x: 0, y: 8, paidCost: {} });
+    s.buildings.push({ id: 908, kind: 'house', x: 0, y: 8, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house').cloth).toBe(20);
   });
 

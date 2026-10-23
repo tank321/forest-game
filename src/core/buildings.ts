@@ -108,9 +108,14 @@ export function buildingAt(s: GameState, i: number): Building | undefined {
   });
 }
 
+/** Adds `n` of `r` to a building's lifetime tally. */
+export function tallyTo(b: Building, r: ResourceKey, n: number): void {
+  b.tally[r] = (b.tally[r] ?? 0) + n;
+}
+
 /** Low-level placement, no validation or payment (see commands.placeBuilding). */
 export function addBuilding(s: GameState, kind: BuildingKind, x: number, y: number, paidCost: Cost = {}): Building {
-  const b: Building = { id: s.nextId++, kind, x, y, paidCost: { ...paidCost } };
+  const b: Building = { id: s.nextId++, kind, x, y, paidCost: { ...paidCost }, tally: {} };
   for (const i of footprint(s, b)) s.tiles[i] = Tile.Building;
   s.buildings.push(b);
   return b;

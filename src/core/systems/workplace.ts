@@ -1,10 +1,9 @@
 import { CONFIG } from '../../config';
 import { buildingById, isActive } from '../buildings';
-import { gain } from '../economy';
 import type { Stats } from '../stats';
 import type { Building, Job, ResourceKey, Villager } from '../types';
 import type { World } from '../world';
-import { arrived, goHome, pathToWork, returnToWork, walk } from './movement';
+import { arrived, deliver, goHome, pathToWork, returnToWork, walk } from './movement';
 
 export type WorkplaceJob = Exclude<Job, 'lumber'>;
 
@@ -100,8 +99,9 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
       case 'toHome':
         t = walk(w, v, t, speed);
         if (!arrived(v)) return;
-        gain(s, res, v.carry);
-        if (also && st[also.per] > 0) gain(s, also.res, v.carry * st[also.per]);
+        // A removed workplace's last load still counts for the drop-off.
+        deliver(w, v, res, v.carry, place);
+        if (also && st[also.per] > 0) deliver(w, v, also.res, v.carry * st[also.per], place);
         v.carry = 0;
         if (active) returnToWork(w, v);
         else v.state = 'idle';

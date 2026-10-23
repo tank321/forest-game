@@ -152,9 +152,9 @@ const reset = () => {
   location.reload();
 };
 if (import.meta.env.DEV) {
+  $('devTools').hidden = false;
   const tap = $('devTap');
-  const tapLabel = () => (tap.textContent = `DEV tap ×${world.dev.manualMult}`);
-  tap.hidden = false;
+  const tapLabel = () => (tap.textContent = `Tap ×${world.dev.manualMult}`);
   tap.onclick = () => {
     world.dev.manualMult = world.dev.manualMult >= 1000 ? 1 : world.dev.manualMult * 10;
     tapLabel();
@@ -163,8 +163,7 @@ if (import.meta.env.DEV) {
 
   const SPEEDS = [1, 2, 5, 10];
   const speed = $('devSpeed');
-  const speedLabel = () => (speed.textContent = `DEV speed ×${world.dev.speed}`);
-  speed.hidden = false;
+  const speedLabel = () => (speed.textContent = `Speed ×${world.dev.speed}`);
   speed.onclick = () => {
     world.dev.speed = SPEEDS[(SPEEDS.indexOf(world.dev.speed) + 1) % SPEEDS.length];
     speedLabel();
@@ -174,13 +173,12 @@ if (import.meta.env.DEV) {
   // Two clicks within a few seconds, so a stray click can't wipe the game.
   const wipe = $('devReset');
   let armed = 0;
-  wipe.hidden = false;
   wipe.onclick = () => {
     if (armed) return reset();
-    wipe.textContent = 'DEV reset: sure?';
+    wipe.textContent = 'Sure?';
     armed = window.setTimeout(() => {
       armed = 0;
-      wipe.textContent = 'DEV reset';
+      wipe.textContent = 'Reset';
     }, 3000);
   };
 }

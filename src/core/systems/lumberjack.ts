@@ -1,12 +1,11 @@
 import { distToBuilding } from '../buildings';
-import { gain } from '../economy';
 import { tileAt } from '../grid';
 import { nearestTree } from '../pathing';
 import type { Stats } from '../stats';
 import type { Villager } from '../types';
 import { Tile } from '../types';
 import { clearTree, type World } from '../world';
-import { arrived, goHome, walk } from './movement';
+import { arrived, deliver, goHome, walk } from './movement';
 
 const EPS = 1e-9; // wood amounts closer than this are equal (float drift across step sizes)
 
@@ -65,7 +64,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
       case 'toHome':
         t = walk(w, v, t, st.speed);
         if (!arrived(v)) return;
-        gain(s, 'wood', v.carry);
+        deliver(w, v, 'wood', v.carry);
         v.carry = 0;
         v.target = -1; // choose again from here
         v.state = 'idle';

@@ -20,6 +20,7 @@ export function chopTree(w: World, i: number): boolean {
   const amt = Math.min(getStats(s).manualChop * w.dev.manualMult, s.wood[i]);
   s.wood[i] -= amt;
   gain(s, 'wood', amt);
+  w.gathered.hand.wood += amt;
   if (s.wood[i] === 0) clearTree(w, i);
   return true;
 }

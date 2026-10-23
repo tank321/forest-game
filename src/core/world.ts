@@ -3,8 +3,13 @@ import { isTerritory } from './grid';
 import { buildField, type Field } from './pathing';
 import { spawnRelic } from './relics';
 import { maxWoodTable } from './trees';
-import type { GameState, ResourceKey } from './types';
+import type { GameState, Job, ResourceKey, Resources } from './types';
 import { RESOURCES, Tile } from './types';
+
+/** Where gathered goods come from: a job's deliveries, chopping by hand, or tax. */
+export type Source = Job | 'hand' | 'tax';
+const SOURCE_KEYS: Record<Source, true> = { lumber: true, farm: true, orchard: true, mine: true, herd: true, cotton: true, trade: true, hand: true, tax: true };
+export const SOURCES = Object.keys(SOURCE_KEYS) as Source[];
 
 /** Runtime container: persistent state plus derived data that is never saved. */
 export interface World {
@@ -13,6 +18,7 @@ export interface World {
   fog: Uint8Array; // Chebyshev distance to territory, capped at fogRadius + 1
   maxWood: Float64Array; // full-grown wood per tile (static)
   dev: { manualMult: number; speed: number }; // dev-only testing aids (never saved); speed scales the live loop
+  gathered: Record<Source, Resources>; // gathered per source since this World was made; for the HUD only, never saved or read by the simulation
 }
 
 export function createWorld(state: GameState): World {
@@ -22,6 +28,7 @@ export function createWorld(state: GameState): World {
     fog: new Uint8Array(state.w * state.h).fill(CONFIG.fogRadius + 1),
     maxWood: maxWoodTable(state),
     dev: { manualMult: 1, speed: 1 },
+    gathered: Object.fromEntries(SOURCES.map((src) => [src, Object.fromEntries(RESOURCES.map((r) => [r, 0]))])) as World['gathered'],
   };
   for (let i = 0; i < state.tiles.length; i++) if (isTerritory(state, i)) stampFog(w, i);
   return w;

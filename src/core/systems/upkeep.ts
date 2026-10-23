@@ -1,3 +1,5 @@
+import { CONFIG } from '../../config';
+import { buildingGap, tallyTo } from '../buildings';
 import { gain } from '../economy';
 import { getStats } from '../stats';
 import type { World } from '../world';
@@ -9,8 +11,18 @@ import type { World } from '../world';
  */
 export function upkeepSystem(w: World, dt: number): void {
   const r = w.state.resources;
-  const { eat, burn, tax } = getStats(w.state);
+  const { eat, burn, tax, taxedHouses } = getStats(w.state);
   r.food = Math.max(0, r.food - eat * dt);
   r.wood = Math.max(0, r.wood - burn * dt);
-  if (tax > 0) gain(w.state, 'gold', tax * dt);
+  if (!tax) return;
+  gain(w.state, 'gold', tax * dt);
+  w.gathered.tax.gold += tax * dt;
+  // Each taxed house's gold is shared equally by the Tax Offices in reach of it.
+  const offices = w.state.buildings.filter((b) => b.kind === 'taxOffice');
+  const perHouse = (tax * dt) / taxedHouses.size;
+  for (const h of w.state.buildings) {
+    if (!taxedHouses.has(h.id)) continue;
+    const reach = offices.filter((o) => buildingGap(h, o) <= CONFIG.tax.radius);
+    for (const o of reach) tallyTo(o, 'gold', perHouse / reach.length);
+  }
 }

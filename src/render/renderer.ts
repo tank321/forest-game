@@ -3,8 +3,9 @@ import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
 import { canMoveBuilding, canPlace } from '../core/commands';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
-import type { Building, GameState, Job, Villager } from '../core/types';
-import { Tile } from '../core/types';
+import { jobResource } from '../core/systems/workplace';
+import type { Building, GameState, Job, ResourceKey, Villager } from '../core/types';
+import { RESOURCES, Tile } from '../core/types';
 import type { World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
@@ -33,6 +34,9 @@ import {
   TREE_SPECIES,
   TREE_TINTS,
   TREES,
+  UI_ICON_W,
+  UI_ICONS,
+  UI_PALETTE,
   VILLAGER_CLOTH,
   VILLAGER_FEET,
   VILLAGER_FRAMES,
@@ -72,6 +76,8 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
 const BAR = { x: 2, y: 3, w: 12, h: 4 };
 const BAR_COLOR = { outline: '#1b1a10', health: '#3fae4a', lost: '#8e2a2a' };
 const HOVER_FONT = '600 16px system-ui, "Segoe UI", sans-serif';
+/** Tag over a villager's head showing what it carries, in CSS px. */
+const TAG = { font: '700 12px system-ui, "Segoe UI", sans-serif', pad: 2, gap: 3, lift: 2, bg: 'rgba(20,16,10,.85)', text: '#f6dca0' };
 const WALK_MS = 140; // per walk frame
 const SWING_MS = 260; // per tool-swing frame
 
@@ -106,6 +112,8 @@ export class Renderer {
     return FOG_LIGHT.map((light) => bake(season === 'winter' ? WINTER_RELIC : RELIC, palette, light));
   });
   private relicGlow = bake(RELIC_GLOW, RELIC_PALETTE, 1);
+  /** Baked resource icons for carry tags. */
+  private resourceIcons = Object.fromEntries(RESOURCES.map((r) => [r, bake(UI_ICONS[r], UI_PALETTE, 1)])) as Record<ResourceKey, HTMLCanvasElement>;
   /** Baked mark flags: red where villagers can reach the tree, yellow until then. */
   private flags = {
     reachable: bake(FLAG, { ...FLAG_PALETTE, ...FLAG_CLOTH.reachable }, 1),
@@ -181,6 +189,7 @@ export class Renderer {
     this.drawScene(world);
     this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
+    this.drawCarryTags(s);
 
     if (ui.selected) {
       const d = BUILDINGS[ui.selected.kind];
@@ -357,6 +366,32 @@ export class Renderer {
     ctx.strokeText(label, cx, ty - 2);
     ctx.fillStyle = '#f6dca0';
     ctx.fillText(label, cx, ty - 2);
+  }
+
+  /** Zoomed in: a tag over each villager's head with the resource it carries and how much. Empty hands show none. */
+  private drawCarryTags(s: GameState): void {
+    const { ctx, cam } = this;
+    if (cam.zoom < CONFIG.camera.carryZoom) return;
+    ctx.font = TAG.font;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const h = UI_ICON_W + 2 * TAG.pad;
+    for (const v of s.villagers) {
+      const n = Math.floor(v.carry);
+      if (n < 1) continue;
+      const [cx, head] = cam.toScreen(v.x, v.y - VILLAGER_FEET.y / SPRITE_W);
+      if (cx < -cam.zoom || cx > cam.vw + cam.zoom || head < 0 || head > cam.vh + cam.zoom) continue;
+      const label = fmt(n);
+      const w = 2 * TAG.pad + UI_ICON_W + TAG.gap + Math.ceil(ctx.measureText(label).width);
+      // Whole screen pixels keep the icon crisp.
+      const l = Math.round(cx - w / 2);
+      const t = Math.round(head - TAG.lift - h);
+      ctx.fillStyle = TAG.bg;
+      ctx.fillRect(l, t, w, h);
+      ctx.drawImage(this.resourceIcons[jobResource(v.job)], l + TAG.pad, t + TAG.pad, UI_ICON_W, UI_ICON_W);
+      ctx.fillStyle = TAG.text;
+      ctx.fillText(label, l + TAG.pad + UI_ICON_W + TAG.gap, t + h / 2 + 1);
+    }
   }
 
   private drawBuilding(s: GameState, b: Building): void {

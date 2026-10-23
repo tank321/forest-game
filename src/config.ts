@@ -59,6 +59,18 @@ export const CONFIG = {
   seasons: { length: 180, farm: [1, 1, 1.5, 0] }, // s per season; farm multiplier: spring, summer, autumn, winter
   // food/wood per villager beyond freeVillagers per s (wood in winter only); work multipliers on shortage
   upkeep: { freeVillagers: 5, food: 0.1, wood: 0.1, hungry: 0.5, cold: 0.5 },
+  // Town Center: walk speed for every villager, and the same flat carry for every gatherer
+  barrow: {
+    costs: {
+      wood: [150, 300, 500, 800, 1200, 1800, 2700, 4000, 6000, 9000],
+      food: [0, 0, 100, 200, 350, 550, 850, 1300, 2000, 3000],
+      stone: [0, 0, 0, 0, 50, 100, 200, 400, 700, 1200],
+      cloth: [0, 0, 0, 0, 0, 0, 40, 100, 200, 400],
+      gold: [0, 0, 0, 0, 0, 0, 0, 0, 150, 400],
+    },
+    speedGrowth: 1.05, // walk speed ×1.05^lvl
+    carryPerLevel: 2, // flat carry added after each job's own multipliers
+  },
   coats: {
     costs: {
       wood: [300, 800, 2000],
@@ -76,6 +88,6 @@ export const CONFIG = {
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
-  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6 }, // zoom = CSS px per tile
+  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48 }, // zoom = CSS px per tile; carry tags show from carryZoom
   save: { key: 'forest-game-save', intervalMs: 10_000 },
 } as const;

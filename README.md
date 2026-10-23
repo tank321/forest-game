@@ -13,11 +13,11 @@ npm run build   # typecheck + production build to dist/
 ## Controls
 Drag to pan, wheel or pinch to zoom. In **Chop** mode, tap a tree next to your land for +1 wood.
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
-shows a health bar.
+shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
 In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
-the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
-upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. Esc cancels.
+the Town Center hires villagers (with wood, food or cloth) and upgrades the wheelbarrow and coats, a Lumber Camp upgrades the axe, a Barn
+upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
@@ -51,8 +51,11 @@ season (or tap it, or press Enter on it) to see what this season and the next on
 ×1.5 in autumn and nothing in winter. The first 5 villagers live for free; every villager beyond
 them eats 0.1 food/s all year and burns 0.1 wood/s in winter. Nobody dies, but when a stock runs
 out the town slows down: **Hungry** (no food) halves chopping and mining, **Cold** (no firewood in
-winter) halves farming, mining, herding and picking. Food and wood rates on the plaque are net of upkeep.
+winter) halves farming, mining, herding and picking. Food and wood rates on the plaque are net of upkeep; hover over (or tap) a resource for its sources and upkeep.
 **Coats** at the Town Center (wood and cloth, 3 levels) cut firewood by 25% per level.
+The **Wheelbarrow** at the Town Center (10 levels) makes every villager walk 5% faster per level and adds
+a flat 2 to every gatherer's carry per level, the same for every job. It costs wood,
+then also food from level 3, stone from level 5, cloth from level 7 and gold from level 9.
 
 **Gold:** a **Market** (2×2, a city building) sells wood, food, stone and cloth for gold at 80% of
 their value (wood 1, food 5, stone 20, cloth 20) and sells them to you at 120%. Select the Market,
@@ -72,8 +75,8 @@ of the offered cards and press **Choose** to upgrade it. Close with × or Escape
 with **Pick skill** in the sidebar. **Skills** opens a popup journal: filter by status or group,
 hover over a card to compare current and next-level bonuses in the right-hand panel, and follow prerequisite links.
 On phones, tap a card to show details beneath it. Keyboard users can select cards with Enter or Space. **Export/Import** move
-saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000,
-**DEV speed** runs the game ×1/×2/×5/×10, and **DEV reset** (click twice) wipes the save and starts over.
+saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
+**Speed** runs the game ×1/×2/×5/×10, and **Reset** (click twice) wipes the save and starts over.
 
 ## Layout
 - `src/config.ts` – all tunables
@@ -93,6 +96,18 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v12** – Wheelbarrow.
+- Wheelbarrow upgrade at the Town Center (10 levels, 150 wood to 9000 wood + 3000 food + 1200 stone + 400 cloth + 400 gold): every villager walks ×1.05 per level, and every gatherer carries a flat +2 per level, the same for every job. Its card previews walking speed and the extra carry.
+- Relic skill choice: the popup keeps one size while you hover between the offered skills.
+- Zoomed in, a tag over each villager's head shows the resource it carries and how much. Empty-handed villagers show none.
+- A selected building that gathers shows a lifetime counter: **Total produced** on farms, orchards, quarries, sheep farms, cotton plantations and trading posts, **Total collected** on the Town Center, lumber camps, barns, markets and tax offices (a house taxed by several offices is shared between them). Counting starts at v12 for existing buildings.
+- Build menu: cards sit in a fixed two-column grid, with each icon and name in a same-height top row and costs wrapping across the full card width, so cards line up and stay shorter.
+- Sidebar: the relic count and **Find relic** share their own row under Chop and Mark, and the DEV buttons (now **Tap**, **Speed**, **Reset** behind a DEV tag) stay together on one row under Skills.
+- The per-minute rates on the stats plaque are a smooth rolling one-minute average: loads villagers are still carrying count as they are gathered, so deliveries no longer make the rates jump, and they refresh once a second. They show … for the first few seconds after loading.
+- The stats plaque no longer shows trees left.
+- Hover over (or tap) a resource on the stats plaque for where its per-minute rate comes from: each job (lumberjacks, farms, orchards, quarries, sheep farms, cotton plantations, trading posts), chopping by hand and tax, minus villagers' food and winter firewood, with the net when upkeep applies.
+- Saves migrate from v11 automatically.
+
 **v11** – Seasonal sprites.
 - Trees change with the seasons: fresh greens in spring with lime blossom, russet oaks and golden limes and birches in autumn, bare snowy branches in winter. Pines stay green and gather snow on their tiers, and stumps get a cap of snow. Each tile turns at its own moment over the first 15 s of a season.
 - Ground changes with the seasons: brighter grass and flowers in spring, olive and straw grass with fallen leaves in autumn, snow in winter with the flowers buried and pebbles poking through.

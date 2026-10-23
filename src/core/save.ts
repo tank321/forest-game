@@ -4,7 +4,7 @@ import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 10;
+const VERSION = 12;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -116,6 +116,8 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
       },
     };
   },
+  10: (f) => ({ ...f, version: 11, state: { ...f.state, upgrades: { ...f.state.upgrades, barrow: 0 } } }),
+  11: (f) => ({ ...f, version: 12, state: { ...f.state, buildings: f.state.buildings.map((b) => ({ ...b, tally: {} })) } }),
 };
 
 /** v10 renamed leather to cloth. */

@@ -13,11 +13,11 @@
           <div class="stats frame parchment" tabindex="0" role="region" aria-label="Resources and population; scroll horizontally for more stats">
             <span title="Population"><i class="ico ico-pop"></i><b id="pop">0/5</b></span>
             <span title="Land"><i class="ico ico-land"></i><b id="land">0</b></span>
-            <span title="Trees left"><i class="ico ico-trees"></i><b id="trees">0</b></span>
             <span id="seasonChip" class="stack" tabindex="0" role="button" aria-label="Season effects" aria-expanded="false" aria-controls="seasonInfo"><b id="season">Spring</b><span class="season-bar" role="progressbar" aria-label="Season progress" aria-valuemin="0" aria-valuemax="100"><i id="seasonBar"></i></span></span>
             <span id="shortage" class="stack alert" hidden><b></b><small></small></span>
           </div>
           <div id="seasonInfo" class="frame parchment" role="tooltip" hidden></div>
+          <div id="resourceInfo" class="frame parchment" role="tooltip" hidden></div>
         </header>
         <p id="msg" class="frame parchment"></p>
       </main>
@@ -25,18 +25,23 @@
         <div id="tools">
           <button data-tool="chop"><i class="ico ico-chop"></i>Chop</button>
           <button data-tool="mark"><i class="ico ico-mark"></i>Mark</button>
-          <span id="relicInfo"><i class="ico ico-relic"></i><span id="relic"></span></span>
-          <button id="findRelic" hidden>Find relic</button>
           <button id="pickSkillBtn" class="gold" hidden><i class="ico ico-skills"></i><span></span></button>
+          <div id="relicRow">
+            <span id="relicInfo"><i class="ico ico-relic"></i><span id="relic"></span></span>
+            <button id="findRelic" hidden>Find relic</button>
+          </div>
         </div>
         <section id="panel"></section>
         <nav id="menu">
           <button id="skillsBtn" aria-haspopup="dialog" aria-controls="skillModal" aria-expanded="false"><i class="ico ico-skills"></i>Skills</button>
           <button id="exportBtn" title="Export save" aria-label="Export save"><i class="ico ico-export"></i></button>
           <button id="importBtn" title="Import save" aria-label="Import save"><i class="ico ico-import"></i></button>
-          <button id="devTap" class="dev" hidden></button>
-          <button id="devSpeed" class="dev" hidden></button>
-          <button id="devReset" class="dev" hidden>DEV reset</button>
+          <div id="devTools" role="group" aria-label="Developer tools" hidden>
+            <span class="dev-tag">DEV</span>
+            <button id="devTap" class="dev"></button>
+            <button id="devSpeed" class="dev"></button>
+            <button id="devReset" class="dev">Reset</button>
+          </div>
           <input id="importFile" type="file" accept=".json,application/json" hidden />
         </nav>
       </aside>

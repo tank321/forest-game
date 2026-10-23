@@ -1,8 +1,8 @@
-import { BUILDINGS, type BuildingKind } from '../core/buildings';
+import { BUILDINGS, buildingById, type BuildingKind } from '../core/buildings';
 import { removeBuilding } from '../core/commands';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import type { World } from '../core/world';
-import { ACTIONS, INFO, type Action } from './actions';
+import { ACTIONS, INFO, tallyHtml, type Action } from './actions';
 import { MarketView } from './market';
 import type { UiState } from './state';
 import { BUILDING_TEXT, costHtml } from './text';
@@ -23,23 +23,30 @@ export class Panel {
   }
 
   update(): void {
-    const { title, thumb, sub, status, actions, custom } = this.view();
+    const { title, thumb, sub, status, tally, actions, custom } = this.view();
     custom?.update(); // updates itself in place, so it stays out of the change key
     const have = this.world().state.resources;
     const html = actions.map((a) => {
-      const thumb = a.thumb ? `<i class="thumb thumb-${a.thumb}"></i>` : '';
       const cost = a.cost && !a.upgrade ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
+      // Build card: icon and name share a fixed top row, costs run full width below.
+      if (a.thumb) return `<i class="thumb thumb-${a.thumb}"></i><span class="name">${a.label}</span>${cost}`;
       const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'}</span>` : '';
-      return `${thumb}<span class="label">${a.label}${cost}${refund}</span>`;
+      return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom, tally !== undefined,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
-    if (key === this.key) return;
+    if (key === this.key) {
+      // The counter ticks up constantly, so it is patched in place rather than rebuilding the buttons.
+      const counter = this.el.querySelector('.building-tally');
+      if (counter && tally !== undefined && counter.innerHTML !== tally) counter.innerHTML = tally;
+      return;
+    }
     this.key = key;
     const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}</h2>` : `<h2>${title}</h2>`;
-    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
+    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
     const box = this.el.querySelector('.actions')!;
+    box.classList.toggle('build-grid', actions.length > 0 && actions.every((a) => a.thumb));
     actions.forEach((a, i) => {
       const b = document.createElement('button');
       b.innerHTML = html[i];
@@ -68,7 +75,7 @@ export class Panel {
     if (custom) box.replaceWith(custom.el);
   }
 
-  private view(): { title: string; thumb?: BuildingKind; sub: string; status?: string; actions: Action[]; custom?: MarketView } {
+  private view(): { title: string; thumb?: BuildingKind; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
@@ -113,7 +120,7 @@ export class Panel {
       actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => { ui.selected = null; ui.removing = null; } });
       const info = INFO[k]?.(w, ui.selected);
       const custom = k === 'market' ? this.market : undefined;
-      return { title: BUILDING_TEXT[k].name, thumb: k, sub: BUILDING_TEXT[k].desc, status: info, actions, custom };
+      return { title: BUILDING_TEXT[k].name, thumb: k, sub: BUILDING_TEXT[k].desc, status: info, tally: tallyHtml(buildingById(s, b.id) ?? b), actions, custom };
     }
     return {
       title: 'Build',

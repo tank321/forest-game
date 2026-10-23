@@ -8,6 +8,7 @@ export interface Stats {
   speed: number; // villager tiles/s
   chopRate: number; // villager wood/s
   carry: number;
+  carryBonus: number; // Wheelbarrow: flat carry every gatherer gets on top of its own
   manualChop: number; // wood per tap
   campBonus: number; // chop multiplier near a Lumber Camp
   campRadius: number;
@@ -41,11 +42,13 @@ export interface Stats {
 
 /** Effective gameplay values: base config × upgrades × skills × season and upkeep (later: × legacy). */
 export function getStats(s: GameState): Stats {
-  const { axe, farm, pick } = s.upgrades;
+  const { axe, farm, pick, barrow } = s.upgrades;
   const f = CONFIG.farm;
   const p = CONFIG.pick;
   const wellRadius = CONFIG.well.radius + lvl(s, 'deepWells');
   const { speed, chopRate, carry } = CONFIG.villager;
+  const b = CONFIG.barrow;
+  const carryBonus = b.carryPerLevel * barrow; // added after every job's own multipliers, so it is the same for all
   const a = CONFIG.axe;
   const u = CONFIG.upkeep;
   const season = seasonOf(s.time);
@@ -59,31 +62,32 @@ export function getStats(s: GameState): Stats {
   const fed = hungry ? u.hungry : 1;
   const warm = cold ? u.cold : 1;
   const taxedHouses = inRange(s, 'house', 'taxOffice', CONFIG.tax.radius);
-  const walk = speed * (1 + 0.1 * lvl(s, 'swiftFeet'));
+  const walk = speed * b.speedGrowth ** barrow * (1 + 0.1 * lvl(s, 'swiftFeet'));
   const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm;
-  const farmCarry = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
+  const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
   const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm; // Barn upgrades cover herders too
-  const herdCarry = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
+  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
   return {
     speed: walk,
     chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed,
-    carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe,
+    carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe + carryBonus,
+    carryBonus,
     manualChop: CONFIG.manualChop * 5 ** lvl(s, 'powerSwing'),
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
     campRadius: 3,
     perTree: lvl(s, 'teamwork') ? 2 : 1,
     farmRate,
-    farmCarry,
+    farmCarry: farmLoad + carryBonus,
     orchardSpeed: walk * CONFIG.orchard.speedMult,
     orchardRate: farmRate * CONFIG.orchard.rateMult,
-    orchardCarry: farmCarry * CONFIG.orchard.carryMult,
+    orchardCarry: farmLoad * CONFIG.orchard.carryMult + carryBonus,
     mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * warm,
-    mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick,
+    mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick + carryBonus,
     herdRate,
-    herdCarry,
+    herdCarry: herdLoad + carryBonus,
     herdFood: lvl(s, 'fertileHerding'),
     cottonRate: herdRate * CONFIG.cotton.rateMult,
-    cottonCarry: herdCarry * CONFIG.cotton.carryMult,
+    cottonCarry: herdLoad * CONFIG.cotton.carryMult + carryBonus,
     wellRadius,
     wellFarms: inRange(s, 'farm', 'well', wellRadius),
     wellHarvest: CONFIG.well.harvestMult,

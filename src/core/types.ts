@@ -34,6 +34,7 @@ export interface Building {
   x: number; // top-left tile
   y: number;
   paidCost: Cost; // original materials paid; moving and later discounts do not change this
+  tally: Cost; // lifetime amounts its workers produced (workplaces) or it collected (drop-offs, Tax Office)
 }
 
 export interface Rect {
@@ -56,7 +57,7 @@ export interface GameState {
   buildings: Building[];
   villagers: Villager[];
   resources: Resources;
-  upgrades: { axe: number; farm: number; pick: number; coats: number };
+  upgrades: { axe: number; farm: number; pick: number; coats: number; barrow: number };
   hires: Record<HireResource, number>; // villagers bought with each resource (separate price tracks)
   paused: number[]; // ids of paused workplaces
   skills: Partial<Record<SkillId, number>>;

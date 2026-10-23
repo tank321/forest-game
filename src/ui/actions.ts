@@ -1,12 +1,13 @@
 import { CONFIG } from '../config';
-import { buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
+import { BUILDINGS, buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
 import { hireVillager, togglePause, upgrade } from '../core/commands';
 import { canAfford, commission, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { getStats, type Stats } from '../core/stats';
-import type { Building, Cost, GameState, HireResource, Job } from '../core/types';
+import { jobResource } from '../core/systems/workplace';
+import type { Building, Cost, GameState, HireResource, Job, ResourceKey } from '../core/types';
 import type { World } from '../core/world';
 import { seasonName } from './seasonInfo';
-import { BUILDING_TEXT, fmt } from './text';
+import { BUILDING_TEXT, fmt, icon } from './text';
 
 export interface Action {
   label: string;
@@ -34,13 +35,11 @@ function hire(w: World, res: HireResource): Action {
   const s = w.state;
   const full = s.villagers.length >= popCap(s);
   const cost = villagerCost(s, res);
-  const { food, wood, freeVillagers } = CONFIG.upkeep;
   return {
     label: full ? `Hire with ${res} (need a house)` : `Hire villager with ${res}`,
     cost,
     enabled: !full && canAfford(s, cost),
     run: () => hireVillager(w, res),
-    hint: s.villagers.length >= freeVillagers ? `Eats ${food} food/s, and burns ${wood} wood/s in winter.` : undefined,
   };
 }
 
@@ -72,6 +71,7 @@ const SCOPE: Record<UpgradeKind, string> = {
   farm: 'Per farmer, orchardist, herder or picker · Well bonuses apply to farms only',
   pick: 'Per miner',
   coats: 'Whole town · firewood is burned in winter',
+  barrow: 'Every villager walks faster · every gatherer carries the same extra amount',
 };
 
 const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
@@ -93,6 +93,10 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     hire(w, 'wood'),
     hire(w, 'food'),
     hire(w, 'cloth'),
+    upgradeAction(w, 'barrow', 'Wheelbarrow', (st) => [
+      { label: 'Walking', value: `${st.speed.toFixed(2)} tiles/s` },
+      { label: 'Extra carry', value: `+${st.carryBonus}` },
+    ]),
     upgradeAction(w, 'coats', 'Coats', (st) => [{ label: 'Winter firewood', value: perSec(st.winterBurn, 'wood') }]),
   ],
   lumberCamp: (w) => [
@@ -126,6 +130,20 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   cottonPlantation: (w, b) => [pauseAction(w, b)],
   tradingPost: (w, b) => [pauseAction(w, b)],
 };
+
+/**
+ * Lifetime counter for the selected building: what its workers produced (workplaces) or what it
+ * collected (drop-offs, the Tax Office). Undefined for buildings that gather nothing.
+ */
+export function tallyHtml(b: Building): string | undefined {
+  const d = BUILDINGS[b.kind];
+  const base: readonly ResourceKey[] = d.job ? [jobResource(d.job)] : d.dropoff.length ? d.dropoff : b.kind === 'taxOffice' ? ['gold'] : [];
+  if (!base.length) return undefined;
+  // Extras show once they have been gathered, like a sheep farm's food from Fertile Herding.
+  const res = [...new Set([...base, ...(Object.keys(b.tally) as ResourceKey[])])];
+  const chips = res.map((r) => `<span class="chip" title="${r}">${icon(r)}${fmt(b.tally[r] ?? 0)}</span>`).join('');
+  return `<span>Total ${d.job ? 'produced' : 'collected'}</span>${chips}`;
+}
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 

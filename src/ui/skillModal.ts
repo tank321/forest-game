@@ -77,7 +77,17 @@ export class SkillModal {
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-pressed', String(selected));
     }
-    this.detailSlot.replaceChildren(this.details(id));
+    if (this.view === 'choose') this.showStacked(id);
+    else this.detailSlot.replaceChildren(this.details(id));
+  }
+
+  /** Shows one of the stacked choice details. All of them share a grid cell, so the slot keeps the tallest one's height. */
+  private showStacked(id: SkillId): void {
+    for (const detail of this.detailSlot.querySelectorAll<HTMLElement>('.skill-detail')) {
+      const hidden = detail.dataset.detail !== id;
+      detail.classList.toggle('is-hidden', hidden);
+      detail.inert = hidden;
+    }
   }
 
   /** Learns an offered skill. Returns to the game, or shows the next choice while picks remain. */
@@ -150,6 +160,7 @@ export class SkillModal {
     );
     if (!this.selected || !ids.includes(this.selected)) this.selected = ids[0] ?? null;
     this.gallery.classList.toggle('choosing', choosing);
+    this.detailSlot.classList.toggle('stacked', choosing);
     this.detailSlot.replaceChildren();
     this.gallery.replaceChildren(...ids.map((id) => {
       const level = lvl(s, id);
@@ -177,9 +188,15 @@ export class SkillModal {
       empty.className = 'skill-empty';
       empty.textContent = 'No skills match these filters. Try another group or show all skills.';
       this.gallery.append(empty);
-    } else if (!this.mobile.matches) this.detailSlot.append(this.details(this.selected!));
+    } else if (!this.mobile.matches) {
+      // While choosing, every offered skill's details are stacked so hovering never resizes the dialog.
+      if (choosing) {
+        this.detailSlot.append(...ids.map((id) => this.details(id)));
+        this.showStacked(this.selected!);
+      } else this.detailSlot.append(this.details(this.selected!));
+    }
     if (focused) {
-      const target = [...this.dlg.querySelectorAll<HTMLElement>('[data-focus]')].find((el) => el.dataset.focus === focused);
+      const target = [...this.dlg.querySelectorAll<HTMLElement>('[data-focus]')].find((el) => el.dataset.focus === focused && !el.closest('[inert]'));
       (target ?? this.gallery.querySelector<HTMLButtonElement>('[aria-pressed="true"]'))?.focus({ preventScroll: true });
     }
   }
@@ -193,6 +210,7 @@ export class SkillModal {
     const status = skillStatus(s, id);
     const detail = document.createElement('section');
     detail.className = 'skill-detail frame parchment';
+    detail.dataset.detail = id;
     detail.setAttribute('aria-label', `${text.name} details`);
     detail.innerHTML = `<div class="skill-detail-heading">${icon(text.icon)}<div><p class="skill-eyebrow">${SKILL_GROUP[id]} · ${status}</p><h3>${text.name}</h3></div></div><p>${text.desc}.</p><dl><dt>Current bonus · level ${level}</dt><dd>${skillBonus(id, level)}</dd>${level < max ? `<dt>Next level · ${level + 1}/${max}</dt><dd>${skillBonus(id, level + 1)}</dd>` : '<dt>Fully learned</dt><dd>You have every level of this skill.</dd>'}</dl>`;
     if (req) {

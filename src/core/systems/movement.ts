@@ -1,4 +1,5 @@
-import { BUILDINGS, buildingById, footprint, workersOf } from '../buildings';
+import { BUILDINGS, buildingAt, buildingById, footprint, tallyTo, workersOf } from '../buildings';
+import { gain } from '../economy';
 import { tileAt } from '../grid';
 import { pathHome, pathToAny } from '../pathing';
 import type { Building, GameState, ResourceKey, Villager } from '../types';
@@ -35,6 +36,19 @@ export function goHome(w: World, v: Villager, res: ResourceKey): void {
   v.path = pathHome(w.state, w.fields[res], tileAt(w.state, v.x, v.y));
   v.pathI = 0;
   v.state = 'toHome';
+}
+
+/**
+ * Delivers `n` of `res` where the villager stands: into the stockpile, and onto the tally of the
+ * drop-off it reached (none if it stopped short, e.g. with no way home) and of its `source` workplace.
+ */
+export function deliver(w: World, v: Villager, res: ResourceKey, n: number, source?: Building): void {
+  const s = w.state;
+  gain(s, res, n);
+  w.gathered[v.job][res] += n;
+  const at = buildingAt(s, tileAt(s, v.x, v.y));
+  if (at && BUILDINGS[at.kind].dropoff.includes(res)) tallyTo(at, res, n);
+  if (source) tallyTo(source, res, n);
 }
 
 /**

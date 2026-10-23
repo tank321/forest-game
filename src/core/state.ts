@@ -24,7 +24,7 @@ export function createInitialState(
     buildings: [],
     villagers: [],
     resources: { wood: 0, food: 0, stone: 0, cloth: 0, gold: 0 },
-    upgrades: { axe: 0, farm: 0, pick: 0, coats: 0 },
+    upgrades: { axe: 0, farm: 0, pick: 0, coats: 0, barrow: 0 },
     hires: { wood: 0, food: 0, cloth: 0 },
     paused: [],
     skills: {},

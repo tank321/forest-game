@@ -22,6 +22,7 @@ No linter or formatter is configured.
 - **`GameState` vs `World`.** `GameState` (`types.ts`) is the persistent, JSON-serializable state.
   Its typed arrays are converted to plain arrays in `save.ts`. `World` (`world.ts`) wraps it with
   derived data that is never saved: drop-off distance fields per resource, fog, max wood per tile.
+  It also holds `gathered`, per-source counters (each job, hand, tax) since load that only the HUD reads.
   Change tiles through `claimTile`/`clearTree`. After placing a drop-off building, call
   `onBuildingsChanged` so the fields are rebuilt.
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`,

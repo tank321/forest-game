@@ -106,7 +106,7 @@ describe('food economy', () => {
     expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200, cloth: 200 });
     expect(upgradeCost(s, 'farm', 10)).toBeNull();
     expect(buildingCost(s, 'house')).toEqual({ wood: 100 });
-    for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
+    for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house')).toEqual({ wood: 338, food: 50 });
   });
 
@@ -136,7 +136,7 @@ describe('food economy', () => {
     };
     const { state } = deserialize(JSON.stringify({ version: 3, savedAt: 1, state: v3state }));
     expect(state.resources).toEqual({ wood: 5, food: 0, stone: 0, cloth: 0, gold: 0 });
-    expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0 });
+    expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0, barrow: 0 });
     expect(state.hires).toEqual({ wood: 2, food: 0, cloth: 0 });
     expect(state.villagers.every((v) => v.job === 'lumber' && v.workplace === -1)).toBe(true);
   });

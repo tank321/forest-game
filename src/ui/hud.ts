@@ -2,28 +2,63 @@ import { popCap } from '../core/economy';
 import { CONFIG } from '../config';
 import { SEASONS, seasonLeft } from '../core/seasons';
 import { getStats, type Stats } from '../core/stats';
-import { RESOURCES, type Resources } from '../core/types';
-import type { World } from '../core/world';
+import { jobResource } from '../core/systems/workplace';
+import { RESOURCES, type ResourceKey, type Resources } from '../core/types';
+import { SOURCES, type Source, type World } from '../core/world';
 import { seasonEffects, seasonName } from './seasonInfo';
 import type { UiState } from './state';
 import { duration, fmt, icon } from './text';
 
 const $ = (id: string) => document.getElementById(id)!;
 const RATE_WINDOW = 60; // sim seconds
+const RATE_REFRESH_MS = 1000; // rates are recomputed at most this often (wall clock), so they stay readable
+const RATE_MIN = 5; // sim seconds of history needed before a rate is shown
 const SHORTAGE_HOLD = 10; // sim seconds a shortage stays shown, so deliveries don't make it flicker
+
+type Flows = Record<Source, Resources>;
+
+const SOURCE_LABEL: Record<Source, string> = {
+  lumber: 'Lumberjacks',
+  farm: 'Farms',
+  orchard: 'Orchards',
+  mine: 'Quarries',
+  herd: 'Sheep farms',
+  cotton: 'Cotton plantations',
+  trade: 'Trading posts',
+  hand: 'Chopping by hand',
+  tax: 'Tax',
+};
+
+/** Gathered per source so far, plus loads still being carried (under the carrier's job), so it grows as goods are gathered, not in lumps at delivery. */
+function gathered(w: World): Flows {
+  const out = Object.fromEntries(SOURCES.map((src) => [src, { ...w.gathered[src] }])) as Flows;
+  for (const v of w.state.villagers) out[v.job][jobResource(v.job)] += v.carry;
+  return out;
+}
+
+/** Upkeep drawn from a resource, per minute. */
+function sinks(r: ResourceKey, st: Stats): [string, number][] {
+  if (r === 'food' && st.eat) return [['Villagers eat', 60 * st.eat]];
+  if (r === 'wood' && st.burn) return [['Firewood', 60 * st.burn]];
+  return [];
+}
+
+const perMin = (n: number) => `${n < 0 ? '−' : '+'}${fmt(Math.abs(n))}/min`;
 
 /** Top bar. Reads state every frame, writes the DOM only on change. */
 export class Hud {
   private res = RESOURCES.map((r) => {
     const span = document.createElement('span');
-    span.title = `${r[0].toUpperCase()}${r.slice(1)}`;
-    span.innerHTML = `${icon(r)}<b>0</b><small></small>`;
+    span.tabIndex = 0;
+    span.setAttribute('role', 'button');
+    span.setAttribute('aria-label', `${r[0].toUpperCase()}${r.slice(1)}: show sources and upkeep`);
+    span.setAttribute('aria-controls', 'resourceInfo');
+    span.innerHTML = `${icon(r)}<b>0</b><small>…</small>`;
     return { r, amount: span.querySelector('b')!, rate: span.querySelector('small')!, span };
   });
   private els = {
     pop: $('pop'),
     land: $('land'),
-    trees: $('trees'),
     relic: $('relic'),
     msg: $('msg'),
     season: $('season'),
@@ -40,7 +75,13 @@ export class Hud {
   private tools = [...document.querySelectorAll<HTMLButtonElement>('[data-tool]')];
   private cache = new Map<HTMLElement, string>();
   private msgUntil = 0;
-  private samples: [number, Resources][] = []; // [sim time, lifetime totals]
+  private samples: [number, Flows][] = []; // [sim time, gathered so far per source]
+  private rateAt = -Infinity; // wall-clock time the shown rates were computed
+  private flows: Flows | null = null; // per-minute rate per source, null until there is enough history
+  private resourceInfo = $('resourceInfo');
+  private resourceHtml = '';
+  private resHover: ResourceKey | null = null; // resource under the mouse
+  private resPinned: ResourceKey | null = null; // opened by a click, tap or key
 
   constructor(
     private world: () => World,
@@ -48,6 +89,21 @@ export class Hud {
     onFindRelic: () => void,
   ) {
     $('hud').querySelector('.stats')!.prepend(...this.res.map((e) => e.span));
+    for (const { r, span } of this.res) {
+      span.onpointerenter = (e) => e.pointerType === 'mouse' && (this.resHover = r);
+      span.onpointerleave = (e) => e.pointerType === 'mouse' && this.resHover === r && (this.resHover = null);
+      span.onclick = () => (this.resPinned = this.resPinned === r ? null : r);
+      span.onkeydown = (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        this.resPinned = this.resPinned === r ? null : r;
+      };
+    }
+    document.addEventListener('pointerdown', (e) => {
+      const t = e.target as Node;
+      if (!this.res.some(({ span }) => span.contains(t)) && !this.resourceInfo.contains(t)) this.resPinned = null;
+    });
+    addEventListener('keydown', (e) => e.key === 'Escape' && (this.resPinned = null));
     for (const b of this.tools) b.onclick = () => (ui.tool = b.dataset.tool as UiState['tool']);
     this.find.onclick = onFindRelic;
     const chip = this.seasonChip;
@@ -73,21 +129,27 @@ export class Hud {
 
   update(): void {
     const s = this.world().state;
-    const rate = this.perMinute();
     const st = getStats(s);
+    const now = performance.now();
+    const refresh = now - this.rateAt >= RATE_REFRESH_MS;
+    if (refresh) {
+      this.rateAt = now;
+      this.flows = this.perMinute();
+    }
     for (const { r, amount, rate: el } of this.res) {
-      const net = rate[r] - 60 * (r === 'food' ? st.eat : r === 'wood' ? st.burn : 0);
       this.set(amount, fmt(s.resources[r]));
-      this.set(el, `${net < 0 ? '−' : '+'}${fmt(Math.abs(net))}/min`);
+      if (!refresh || !this.flows) continue;
+      const net = this.net(this.flows, r, st);
+      this.set(el, perMin(net));
       el.classList.toggle('neg', net < 0);
     }
+    this.updateResourceInfo(st);
     this.set(this.els.season, seasonName(st.season));
     this.updateSeasonBar(st.season, s.time);
     this.updateSeasonInfo(st, s.time);
     this.updateShortage(s.time, st.hungry, st.cold);
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
-    this.set(this.els.trees, fmt(s.treesLeft));
     this.set(
       this.els.relic,
       s.relics.length ? `${s.relics.length} relic${s.relics.length > 1 ? 's' : ''} in the forest` : `Next relic: ${s.nextRelicAt - s.treesChopped} trees`,
@@ -144,17 +206,54 @@ export class Hud {
     this.shortage.title = h ? 'Out of food: build farms.' + (c ? ' Out of firewood: chop wood.' : '') : 'Out of firewood: chop wood.';
   }
 
-  /** Lifetime-totals slope over the last minute of simulated time (offline catch-up included). */
-  private perMinute(): Resources {
-    const s = this.world().state;
+  /**
+   * Rolling one-minute rate per source of everything gathered, or null until there is enough
+   * history. Loads still being carried count, so a delivery doesn't make the rate jump.
+   */
+  private perMinute(): Flows | null {
+    const w = this.world();
+    const t = w.state.time;
+    const now = gathered(w);
     const smp = this.samples;
-    if (!smp.length || s.time - smp[smp.length - 1][0] >= 1) smp.push([s.time, { ...s.totals }]);
-    while (smp.length > 2 && s.time - smp[0][0] > RATE_WINDOW) smp.shift();
-    const [t0, r0] = smp[0];
-    const dt = s.time - t0;
-    return Object.fromEntries(
-      RESOURCES.map((k) => [k, dt > 0 ? ((s.totals[k] - r0[k]) / dt) * 60 : 0]),
-    ) as Resources;
+    if (!smp.length || t - smp[smp.length - 1][0] >= 1) smp.push([t, now]);
+    while (smp.length > 2 && t - smp[0][0] > RATE_WINDOW) smp.shift();
+    const [t0, then] = smp[0];
+    const dt = t - t0;
+    if (dt < RATE_MIN) return null;
+    return Object.fromEntries(SOURCES.map((src) => [src, Object.fromEntries(
+      RESOURCES.map((r) => [r, ((now[src][r] - then[src][r]) / dt) * 60]),
+    )])) as Flows;
+  }
+
+  /** Net per-minute change of a resource: every source minus upkeep. */
+  private net(flows: Flows, r: ResourceKey, st: Stats): number {
+    return SOURCES.reduce((sum, src) => sum + flows[src][r], 0) - sinks(r, st).reduce((sum, [, n]) => sum + n, 0);
+  }
+
+  /** Sources and upkeep of the hovered or pinned resource, under its stat. */
+  private updateResourceInfo(st: Stats): void {
+    const r = this.resHover ?? this.resPinned;
+    const info = this.resourceInfo;
+    info.hidden = r === null;
+    for (const { r: k, span } of this.res) span.setAttribute('aria-expanded', String(k === r));
+    if (r === null) return;
+    const flows = this.flows;
+    const row = (label: string, n: number) => `<li><span>${label}</span><span class="${n < 0 ? 'neg' : 'pos'}">${perMin(n)}</span></li>`;
+    let body: string;
+    if (!flows) body = '<p>Measuring…</p>';
+    else {
+      const sources = SOURCES.filter((src) => flows[src][r] > 0).sort((a, b) => flows[b][r] - flows[a][r]);
+      const used = sinks(r, st);
+      const rows = [...sources.map((src) => row(SOURCE_LABEL[src], flows[src][r])), ...used.map(([label, n]) => row(label, -n))];
+      body = rows.length ? `<ul>${rows.join('')}</ul>` : '<p>Nothing gathered in the last minute.</p>';
+      if (used.length) body += `<ul class="net">${row('Net', this.net(flows, r, st))}</ul>`;
+    }
+    if (body !== this.resourceHtml) info.innerHTML = this.resourceHtml = body;
+    // Under the stat, kept inside the HUD (the plaque scrolls sideways on narrow screens).
+    const span = this.res.find((e) => e.r === r)!.span;
+    const hud = info.offsetParent!.getBoundingClientRect();
+    const left = Math.max(0, Math.min(span.getBoundingClientRect().left - hud.left, hud.width - info.offsetWidth));
+    info.style.left = `${left}px`;
   }
 
   private set(el: HTMLElement, text: string): void {

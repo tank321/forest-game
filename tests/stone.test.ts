@@ -77,9 +77,9 @@ describe('quarries', () => {
     expect(upgradeCost(s, 'axe', 5)).toEqual({ wood: 1300, food: 500 });
     expect(upgradeCost(s, 'axe', 6)).toEqual({ wood: 2000, food: 800, stone: 100 });
     expect(upgradeCost(s, 'farm', 6)).toEqual({ wood: 4000, food: 1600, stone: 150 });
-    for (let k = 0; k < 5; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
+    for (let k = 0; k < 5; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house').stone).toBeUndefined();
-    s.buildings.push({ id: 905, kind: 'house', x: 0, y: 5, paidCost: {} });
+    s.buildings.push({ id: 905, kind: 'house', x: 0, y: 5, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house')).toEqual({ wood: 1139, food: 169, stone: 30 });
   });
 
@@ -95,7 +95,7 @@ describe('quarries', () => {
     const { state } = deserialize(JSON.stringify({ version: 4, savedAt: 1, state: v4state }));
     expect(state.resources).toEqual({ wood: 5, food: 3, stone: 0, cloth: 0, gold: 0 });
     expect(state.totals).toEqual({ wood: 9, food: 4, stone: 0, cloth: 0, gold: 0 });
-    expect(state.upgrades).toEqual({ axe: 2, farm: 1, pick: 0, coats: 0 });
+    expect(state.upgrades).toEqual({ axe: 2, farm: 1, pick: 0, coats: 0, barrow: 0 });
   });
 
   it('Stonecutters speeds mining; Masons discounts only the stone part of costs', () => {
