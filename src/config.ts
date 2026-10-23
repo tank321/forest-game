@@ -16,20 +16,38 @@ export const CONFIG = {
     popPerHouse: 3,
   },
   axe: {
-    costs: [100, 200, 350, 550, 850, 1300, 2000, 3000, 4500, 6500],
-    foodCosts: [0, 0, 0, 0, 300, 500, 800, 1200, 1800, 2500],
+    // per-level cost by resource; every row has one entry per level (0 = not charged)
+    costs: {
+      wood: [100, 200, 350, 550, 850, 1300, 2000, 3000, 4500, 6500],
+      food: [0, 0, 0, 0, 300, 500, 800, 1200, 1800, 2500],
+      stone: [0, 0, 0, 0, 0, 0, 100, 200, 400, 800],
+    },
     speedGrowth: 1.05, // chop rate ×1.05^lvl
     carryPerLevel: 2, // carry (base + 2·lvl)·1.02^lvl
     carryGrowth: 1.02,
   },
   farm: {
     harvestRate: 1, // food/s per farmer
-    costs: [200, 400, 700, 1100, 1700, 2600, 4000, 6000, 9000, 13000],
-    foodCosts: [0, 0, 0, 0, 600, 1000, 1600, 2400, 3600, 5000],
+    costs: {
+      wood: [200, 400, 700, 1100, 1700, 2600, 4000, 6000, 9000, 13000],
+      food: [0, 0, 0, 0, 600, 1000, 1600, 2400, 3600, 5000],
+      stone: [0, 0, 0, 0, 0, 0, 150, 300, 600, 1200],
+    },
     speedGrowth: 1.05,
     carryPerLevel: 2,
     carryGrowth: 1.02,
   },
+  pick: {
+    mineRate: 0.5, // stone/s per miner
+    costs: {
+      wood: [300, 500, 800, 1200, 1800, 2700, 4000, 6000, 9000, 13000],
+      stone: [0, 50, 100, 200, 350, 550, 850, 1300, 2000, 3000],
+    },
+    speedGrowth: 1.05,
+    carryPerLevel: 2,
+    carryGrowth: 1.02,
+  },
+  well: { radius: 1, harvestMult: 3, carryMult: 2 }, // farms within radius (Chebyshev) of a Well
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6 }, // zoom = CSS px per tile
   save: { key: 'forest-game-save', intervalMs: 10_000 },

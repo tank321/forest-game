@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { neighbors4 } from '../src/core/grid';
+import { isWalkable, neighbors4 } from '../src/core/grid';
 import { nearestTree, pathHome } from '../src/core/pathing';
 import { createInitialState } from '../src/core/state';
 import { Tile } from '../src/core/types';
@@ -31,6 +31,19 @@ describe('pathing', () => {
       expect(neighbors4(s, r.path[k - 1])).toContain(r.path[k]);
       expect(s.tiles[r.path[k]]).not.toBe(Tile.Tree);
     }
+  });
+
+  it('never stands on or walks through a relic', () => {
+    const w = createWorld(createInitialState(1, 20, 6));
+    const s = w.state;
+    const { x, y } = s.origin;
+    const relic = y * s.w + x - 1; // touches the clearing
+    const behind = relic - 1; // only reachable through the relic
+    s.tiles[relic] = Tile.Relic;
+    s.marked.push(behind);
+    const r = nearestTree(s, y * s.w + x, () => false)!;
+    expect(r.tree).not.toBe(behind);
+    for (const i of r.path) expect(isWalkable(s, i)).toBe(true);
   });
 
   it('pathHome goes to the nearest drop-off', () => {

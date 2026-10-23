@@ -3,11 +3,13 @@ import type { SkillId } from '../core/skills';
 import type { Cost } from '../core/types';
 
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
-  townCenter: { name: 'Town Center', desc: 'Hire villagers. Wood drop-off.' },
+  townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
   house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a house.' },
   lumberCamp: { name: 'Lumber Camp', desc: 'Extra wood drop-off. Axe upgrades.' },
   barn: { name: 'Barn', desc: 'Food drop-off. Farm upgrades.' },
   farm: { name: 'Farm', desc: 'Takes one villager as a farmer. Never runs out.' },
+  quarry: { name: 'Quarry', desc: 'Takes villagers as miners; stone goes to the Town Center. Pick upgrades.' },
+  well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
 };
 
 export const SKILL_TEXT: Record<SkillId, { name: string; desc: string }> = {
@@ -21,6 +23,10 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string }> = {
   campCrews: { name: 'Camp Crews', desc: 'Chop ×1.5 within 3 tiles of a Lumber Camp' },
   teamwork: { name: 'Teamwork', desc: 'Two villagers can work the same tree' },
   greenThumbs: { name: 'Green Thumbs', desc: '+20% farm harvest per level' },
+  stonecutters: { name: 'Stonecutters', desc: '+20% mining speed per level' },
+  masons: { name: 'Masons', desc: 'Stone costs 15% less per level' },
+  quarryCrews: { name: 'Quarry Crews', desc: '+1 miner per quarry per level' },
+  deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles' },
 };
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];

@@ -21,17 +21,26 @@ export function villagerCost(s: GameState, res: 'wood' | 'food' = 'wood'): Cost 
   return scale({ [res]: baseVillagerCost(n) }, 0.85 ** lvl(s, 'recruiters'));
 }
 
+/** Masons: the stone part of any cost is discounted. */
+const masonry = (s: GameState, c: Cost): Cost =>
+  c.stone ? { ...c, ...scale({ stone: c.stone }, 0.85 ** lvl(s, 'masons')) } : c;
+
 export const buildingCost = (s: GameState, kind: BuildingKind): Cost =>
-  scale(BUILDINGS[kind].cost(countOf(s, kind)), lvl(s, 'masterBuilders') ? 0.8 : 1);
+  masonry(s, scale(BUILDINGS[kind].cost(countOf(s, kind)), lvl(s, 'masterBuilders') ? 0.8 : 1));
 
 export const popCap = (s: GameState) => basePop + (popPerHouse + lvl(s, 'roomyHouses')) * countOf(s, 'house');
 
-const tableCost = (t: { costs: readonly number[]; foodCosts: readonly number[] }, level: number): Cost | null =>
-  level < t.costs.length ? scale({ wood: t.costs[level], food: t.foodCosts[level] }, 1) : null;
+export type UpgradeKind = keyof GameState['upgrades'];
 
-/** Next level's cost, or null at max level. */
-export const axeCost = (level: number) => tableCost(CONFIG.axe, level);
-export const farmUpgradeCost = (level: number) => tableCost(CONFIG.farm, level);
+/** Levels in an upgrade track. */
+export const maxLevel = (k: UpgradeKind) => CONFIG[k].costs.wood.length;
+
+/** Cost of upgrading from `level` (default: the current one), or null at max level. */
+export function upgradeCost(s: GameState, k: UpgradeKind, level = s.upgrades[k]): Cost | null {
+  if (level >= maxLevel(k)) return null;
+  const rows = Object.entries(CONFIG[k].costs) as [ResourceKey, readonly number[]][];
+  return masonry(s, scale(Object.fromEntries(rows.map(([r, row]) => [r, row[level]])), 1));
+}
 
 const entries = (c: Cost) => Object.entries(c) as [ResourceKey, number][];
 

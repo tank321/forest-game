@@ -1,4 +1,4 @@
-import { BUILDINGS, buildingById, isActive } from '../buildings';
+import { BUILDINGS, buildingById, isActive, workersOf } from '../buildings';
 import type { World } from '../world';
 
 /**
@@ -17,11 +17,12 @@ export function jobSystem(w: World): void {
   }
   for (const b of s.buildings) {
     const def = BUILDINGS[b.kind];
-    if (!def.workers || !def.job || !isActive(s, b)) continue;
+    const slots = workersOf(s, b);
+    if (!slots || !def.job || !isActive(s, b)) continue;
     let staff = s.villagers.reduce((n, v) => n + (v.workplace === b.id ? 1 : 0), 0);
     const cx = b.x + def.w / 2;
     const cy = b.y + def.h / 2;
-    while (staff < def.workers) {
+    while (staff < slots) {
       let best = null;
       let bd = Infinity;
       for (const v of s.villagers) {

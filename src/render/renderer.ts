@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind } from '../core/buildings';
 import { canPlace } from '../core/commands';
 import { isCollectable } from '../core/grid';
-import type { VillagerState } from '../core/types';
+import type { Job, VillagerState } from '../core/types';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { placementAt } from '../ui/placement';
@@ -21,16 +21,17 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   lumberCamp: '#a0522d',
   barn: '#8e3b2e',
   farm: '#cdb14e',
+  quarry: '#78909c',
+  well: '#4fc3f7',
 };
-const VILLAGER_COLOR: Record<VillagerState, string> = {
+const VILLAGER_COLOR: Record<Exclude<VillagerState, 'toHome'>, string> = {
   idle: '#9aa0a6',
   toTree: '#f2f2f2',
   chop: '#ffd54a',
-  toHome: '#ff8a3d', // lumberjacks carrying wood; farmers carrying food use FARMER_HOME
   toWork: '#b3e5fc',
   work: '#29b6f6',
 };
-const FARMER_HOME = '#f48fb1';
+const CARRY_COLOR: Record<Job, string> = { lumber: '#ff8a3d', farm: '#f48fb1', mine: '#cfd8dc' }; // toHome
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -101,7 +102,7 @@ export class Renderer {
 
     const vs = 0.35;
     for (const v of s.villagers) {
-      ctx.fillStyle = v.job === 'farm' && v.state === 'toHome' ? FARMER_HOME : VILLAGER_COLOR[v.state];
+      ctx.fillStyle = v.state === 'toHome' ? CARRY_COLOR[v.job] : VILLAGER_COLOR[v.state];
       rect(v.x - vs / 2, v.y - vs / 2, vs, vs);
     }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { hireVillager, placeBuilding, togglePause, upgrade } from '../src/core/commands';
-import { axeCost, buildingCost, farmUpgradeCost, villagerCost } from '../src/core/economy';
+import { buildingCost, upgradeCost, villagerCost } from '../src/core/economy';
 import { pathHome } from '../src/core/pathing';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
@@ -100,11 +100,11 @@ describe('food economy', () => {
 
   it('houses, axe and farm upgrades start costing food', () => {
     const s = smallWorld().state;
-    expect(axeCost(3)).toEqual({ wood: 550 });
-    expect(axeCost(4)).toEqual({ wood: 850, food: 300 });
-    expect(farmUpgradeCost(0)).toEqual({ wood: 200 });
-    expect(farmUpgradeCost(9)).toEqual({ wood: 13000, food: 5000 });
-    expect(farmUpgradeCost(10)).toBeNull();
+    expect(upgradeCost(s, 'axe', 3)).toEqual({ wood: 550 });
+    expect(upgradeCost(s, 'axe', 4)).toEqual({ wood: 850, food: 300 });
+    expect(upgradeCost(s, 'farm', 0)).toEqual({ wood: 200 });
+    expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200 });
+    expect(upgradeCost(s, 'farm', 10)).toBeNull();
     expect(buildingCost(s, 'house')).toEqual({ wood: 100 });
     for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k });
     expect(buildingCost(s, 'house')).toEqual({ wood: 338, food: 50 });
@@ -114,7 +114,7 @@ describe('food economy', () => {
     const w = smallWorld();
     const s = w.state;
     const base = getStats(s);
-    s.resources = { wood: 1e9, food: 1e9 };
+    s.resources = { wood: 1e9, food: 1e9, stone: 1e9 };
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'farm')).toBe(true);
     expect(upgrade(w, 'farm')).toBe(false);
     s.skills = { greenThumbs: 1, bigBaskets: 1 };
@@ -135,8 +135,8 @@ describe('food economy', () => {
       villagers: rest.villagers.map(({ job: _j, workplace: _w, ...v }: Record<string, unknown>) => v),
     };
     const { state } = deserialize(JSON.stringify({ version: 3, savedAt: 1, state: v3state }));
-    expect(state.resources).toEqual({ wood: 5, food: 0 });
-    expect(state.upgrades).toEqual({ axe: 2, farm: 0 });
+    expect(state.resources).toEqual({ wood: 5, food: 0, stone: 0 });
+    expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0 });
     expect(state.hires).toEqual({ wood: 2, food: 0 });
     expect(state.villagers.every((v) => v.job === 'lumber' && v.workplace === -1)).toBe(true);
   });

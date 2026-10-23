@@ -82,3 +82,5 @@ They are a reference to tune against, not something to copy.
 | Drop-offs | TC only | TC + Lumber Camps (100·2ⁿ) | Our `dropoff` flag + multi-source BFS already fit; fix per-villager start path |
 | Offline | full simulation, 8 h cap | banked boost time ≤10 min, ×2–×10 | Decide: keep ours (more generous) or copy the boost mechanic |
 | Win | all trees cleared | all trees cleared | ✓ |
+| Stone | Quarry workplace (never depletes), miners deliver to the TC | quarries with assigned villagers; stone in late costs | ✓ v5. No rock tiles: the map stays trees only |
+| Farm adjacency | Well: farms within 1 tile get ×3 harvest, ×2 carry | Well next to a farm: ×3 harvest, ×2 carry | ✓ v5 |

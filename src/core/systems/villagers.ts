@@ -1,13 +1,15 @@
-import { getStats } from '../stats';
+import { getStats, type Stats } from '../stats';
+import type { Job, Villager } from '../types';
 import type { World } from '../world';
-import { updateFarmer } from './farmer';
 import { updateLumberjack } from './lumberjack';
+import { updateWorker } from './workplace';
 
-/** Runs each villager's job state machine. New jobs add a case here. */
+type Updater = (w: World, v: Villager, dt: number, st: Stats) => void;
+
+/** Each job's state machine. New jobs add an entry here. */
+const UPDATERS: Record<Job, Updater> = { lumber: updateLumberjack, farm: updateWorker, mine: updateWorker };
+
 export function villagerSystem(w: World, dt: number): void {
   const st = getStats(w.state);
-  for (const v of w.state.villagers) {
-    if (v.job === 'farm') updateFarmer(w, v, dt, st);
-    else updateLumberjack(w, v, dt, st);
-  }
+  for (const v of w.state.villagers) UPDATERS[v.job](w, v, dt, st);
 }

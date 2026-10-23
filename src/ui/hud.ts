@@ -9,11 +9,12 @@ const RATE_WINDOW = 60; // sim seconds
 
 /** Top bar. Reads state every frame, writes the DOM only on change. */
 export class Hud {
+  private res = RESOURCES.map((r) => {
+    const span = document.createElement('span');
+    span.innerHTML = `${r[0].toUpperCase()}${r.slice(1)} <b>0</b><small></small>`;
+    return { r, amount: span.querySelector('b')!, rate: span.querySelector('small')!, span };
+  });
   private els = {
-    wood: $('wood'),
-    woodRate: $('woodRate'),
-    food: $('food'),
-    foodRate: $('foodRate'),
     pop: $('pop'),
     land: $('land'),
     trees: $('trees'),
@@ -31,6 +32,7 @@ export class Hud {
     private ui: UiState,
     onFindRelic: () => void,
   ) {
+    $('hud').querySelector('.stats')!.prepend(...this.res.map((e) => e.span));
     for (const b of this.tools) b.onclick = () => (ui.tool = b.dataset.tool as UiState['tool']);
     this.find.onclick = onFindRelic;
   }
@@ -43,10 +45,10 @@ export class Hud {
   update(): void {
     const s = this.world().state;
     const rate = this.perMinute();
-    this.set(this.els.wood, fmt(s.resources.wood));
-    this.set(this.els.woodRate, `+${fmt(rate.wood)}/min`);
-    this.set(this.els.food, fmt(s.resources.food));
-    this.set(this.els.foodRate, `+${fmt(rate.food)}/min`);
+    for (const { r, amount, rate: el } of this.res) {
+      this.set(amount, fmt(s.resources[r]));
+      this.set(el, `+${fmt(rate[r])}/min`);
+    }
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
     this.set(this.els.trees, fmt(s.treesLeft));

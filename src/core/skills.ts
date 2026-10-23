@@ -18,6 +18,10 @@ export const SKILLS = {
   campCrews: { max: 1, requires: 'sharpAxes' }, // ×1.5 chop within 3 tiles of a Lumber Camp
   teamwork: { max: 1, requires: 'bigBaskets' }, // 2 villagers per tree
   greenThumbs: { max: 5 }, // +20% farm harvest / lvl
+  stonecutters: { max: 5 }, // +20% mining speed / lvl
+  masons: { max: 3, requires: 'stonecutters' }, // stone costs −15% / lvl
+  quarryCrews: { max: 2, requires: 'stonecutters' }, // +1 miner per quarry / lvl
+  deepWells: { max: 1, requires: 'greenThumbs' }, // well radius +1
 } as const satisfies Record<string, SkillDef>;
 export type SkillId = keyof typeof SKILLS;
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];

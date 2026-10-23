@@ -1,3 +1,4 @@
+import { lvl } from './skills';
 import type { Building, Cost, GameState, Job, ResourceKey } from './types';
 import { Tile } from './types';
 
@@ -21,16 +22,22 @@ const def = (d: Partial<BuildingDef> & Pick<BuildingDef, 'w' | 'h' | 'cost'>): B
 });
 
 export const BUILDINGS = {
-  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food'], buildable: false, cost: () => ({}) }),
+  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food', 'stone'], buildable: false, cost: () => ({}) }),
   house: def({
     w: 1,
     h: 1,
     cityNeighbor: true,
-    cost: (n) => ({ wood: Math.round(100 * 1.5 ** n), food: n >= 3 ? Math.round(50 * 1.5 ** (n - 3)) : 0 }),
+    cost: (n) => ({
+      wood: Math.round(100 * 1.5 ** n),
+      food: n >= 3 ? Math.round(50 * 1.5 ** (n - 3)) : 0,
+      stone: n >= 6 ? Math.round(30 * 1.5 ** (n - 6)) : 0,
+    }),
   }),
   lumberCamp: def({ w: 2, h: 2, dropoff: ['wood'], cost: (n) => ({ wood: 100 * 2 ** n }) }),
   barn: def({ w: 2, h: 2, dropoff: ['food'], cost: (n) => ({ wood: 150 * 2 ** n }) }),
   farm: def({ w: 3, h: 3, workers: 1, job: 'farm', cost: (n) => ({ wood: Math.round(250 * 1.5 ** n) }) }),
+  quarry: def({ w: 2, h: 2, workers: 2, job: 'mine', cost: (n) => ({ wood: Math.round(400 * 1.5 ** n) }) }),
+  well: def({ w: 1, h: 1, cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
 } satisfies Record<string, BuildingDef>;
 export type BuildingKind = keyof typeof BUILDINGS;
 
@@ -62,6 +69,16 @@ export function addBuilding(s: GameState, kind: BuildingKind, x: number, y: numb
   s.buildings.push(b);
   return b;
 }
+
+/** Chebyshev distance from tile (x, y) to the building's footprint (0 = on it). */
+export function distToBuilding(b: Pick<Building, 'kind' | 'x' | 'y'>, x: number, y: number): number {
+  const { w, h } = BUILDINGS[b.kind];
+  return Math.max(b.x - x, x - (b.x + w - 1), b.y - y, y - (b.y + h - 1), 0);
+}
+
+/** Job slots of a workplace, including skill bonuses. */
+export const workersOf = (s: GameState, b: Building) =>
+  BUILDINGS[b.kind].workers + (b.kind === 'quarry' ? lvl(s, 'quarryCrews') : 0);
 
 export const buildingById = (s: GameState, id: number) => s.buildings.find((b) => b.id === id);
 

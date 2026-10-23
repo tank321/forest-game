@@ -83,6 +83,7 @@ export function nearestTree(
         }
         continue;
       }
+      if (!isWalkable(s, v)) continue; // relics: never stand on or walk through
       parent[v] = u;
       queue[tail++] = v;
     }

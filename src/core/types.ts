@@ -4,13 +4,13 @@ import type { SkillId } from './skills';
 export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3 } as const;
 export type Tile = (typeof Tile)[keyof typeof Tile];
 
-export const RESOURCES = ['wood', 'food'] as const;
+export const RESOURCES = ['wood', 'food', 'stone'] as const;
 export type ResourceKey = (typeof RESOURCES)[number];
 export type Resources = Record<ResourceKey, number>;
 export type Cost = Partial<Resources>;
 
-export type Job = 'lumber' | 'farm';
-/** Lumberjack: idle → toTree → chop → toHome. Farmer: idle → toWork → work → toHome. */
+export type Job = 'lumber' | 'farm' | 'mine';
+/** Lumberjack: idle → toTree → chop → toHome. Workplace jobs: idle → toWork → work → toHome. */
 export type VillagerState = 'idle' | 'toTree' | 'chop' | 'toWork' | 'work' | 'toHome';
 
 export interface Villager {
@@ -23,7 +23,7 @@ export interface Villager {
   target: number; // claimed tree tile, -1 if none (kept across trips until it falls)
   carry: number; // of the job's resource
   job: Job;
-  workplace: number; // building id for building jobs (farm), -1 otherwise
+  workplace: number; // building id for workplace jobs (farm, mine), -1 otherwise
 }
 
 export interface Building {
@@ -53,7 +53,7 @@ export interface GameState {
   buildings: Building[];
   villagers: Villager[];
   resources: Resources;
-  upgrades: { axe: number; farm: number };
+  upgrades: { axe: number; farm: number; pick: number };
   hires: { wood: number; food: number }; // villagers bought with each resource (separate price tracks)
   paused: number[]; // ids of paused workplaces
   skills: Partial<Record<SkillId, number>>;

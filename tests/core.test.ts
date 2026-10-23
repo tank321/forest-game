@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { canPlace, chopTree, hireVillager, placeBuilding, toggleMark, upgradeAxe } from '../src/core/commands';
-import { baseVillagerCost, popCap } from '../src/core/economy';
+import { baseVillagerCost, maxLevel, popCap } from '../src/core/economy';
 import { isChoppable } from '../src/core/grid';
 import { createInitialState } from '../src/core/state';
 import { ringOf, ringWood } from '../src/core/trees';
 import { Tile } from '../src/core/types';
-import { CONFIG } from '../src/config';
 import { smallWorld } from './helpers';
 
 describe('map & trees', () => {
@@ -70,10 +69,10 @@ describe('commands', () => {
 
   it('axe upgrade raises chop rate and carry, stops at max level', () => {
     const w = smallWorld();
-    w.state.resources = { wood: 1e9, food: 1e9 };
+    w.state.resources = { wood: 1e9, food: 1e9, stone: 1e9 };
     for (let k = 0; k < 10; k++) expect(upgradeAxe(w)).toBe(true);
     expect(upgradeAxe(w)).toBe(false);
-    expect(w.state.upgrades.axe).toBe(CONFIG.axe.costs.length);
+    expect(w.state.upgrades.axe).toBe(maxLevel('axe'));
   });
 
   it('marks only visible trees', () => {

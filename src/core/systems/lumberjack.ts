@@ -1,4 +1,4 @@
-import { BUILDINGS } from '../buildings';
+import { distToBuilding } from '../buildings';
 import { gain } from '../economy';
 import { isChoppable, tileAt } from '../grid';
 import { nearestTree } from '../pathing';
@@ -112,9 +112,5 @@ function nearCamp(w: World, tree: number, r: number): boolean {
   const s = w.state;
   const x = tree % s.w;
   const y = (tree / s.w) | 0;
-  return s.buildings.some((b) => {
-    if (b.kind !== 'lumberCamp') return false;
-    const d = BUILDINGS[b.kind];
-    return Math.max(b.x - x, x - (b.x + d.w - 1), b.y - y, y - (b.y + d.h - 1)) <= r;
-  });
+  return s.buildings.some((b) => b.kind === 'lumberCamp' && distToBuilding(b, x, y) <= r);
 }

@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, type BuildingKind } from './buildings';
-import { axeCost, buildingCost, farmUpgradeCost, gain, pay, popCap, villagerCost } from './economy';
+import { buildingCost, gain, pay, popCap, upgradeCost, villagerCost, type UpgradeKind } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { spawnVillager } from './state';
@@ -38,11 +38,9 @@ export function hireVillager(w: World, res: 'wood' | 'food' = 'wood'): boolean {
   return true;
 }
 
-const UPGRADE_COST = { axe: axeCost, farm: farmUpgradeCost };
-
-export function upgrade(w: World, kind: keyof typeof UPGRADE_COST): boolean {
+export function upgrade(w: World, kind: UpgradeKind): boolean {
   const s = w.state;
-  const cost = UPGRADE_COST[kind](s.upgrades[kind]);
+  const cost = upgradeCost(s, kind);
   if (!cost || !pay(s, cost)) return false;
   s.upgrades[kind]++;
   return true;
