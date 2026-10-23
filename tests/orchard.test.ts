@@ -6,11 +6,11 @@ import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
 import { CONFIG } from '../src/config';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 5×5 west of the clearing and a fruit orchard on it. */
 function withOrchard(villagers = 5, seed = 1): { w: World; id: number } {
-  const w = smallWorld(30, villagers, seed);
+  const w = unlockBuildings(smallWorld(30, villagers, seed));
   const s = w.state;
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;

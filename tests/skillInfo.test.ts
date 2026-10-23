@@ -8,17 +8,25 @@ import { smallWorld } from './helpers';
 describe('skill journal previews', () => {
   it('distinguishes prerequisites, unlearned, learned, and maxed skills consistently with eligibility', () => {
     const s = smallWorld().state;
-    expect(skillStatus(s, 'recruiters')).toBe('Locked');
-    expect(skillStatus(s, 'roomyHouses')).toBe('Unlearned');
-    s.skills.roomyHouses = 1;
-    expect(skillStatus(s, 'roomyHouses')).toBe('Learned');
-    expect(skillStatus(s, 'recruiters')).toBe('Unlearned');
+    expect(skillStatus(s, 'bigBaskets')).toBe('Locked');
+    expect(skillStatus(s, 'swiftFeet')).toBe('Unlearned');
+    s.skills.swiftFeet = 1;
+    expect(skillStatus(s, 'swiftFeet')).toBe('Learned');
+    expect(skillStatus(s, 'bigBaskets')).toBe('Unlearned');
+    s.skills.sharpAxes = 1;
     s.skills.powerSwing = SKILLS.powerSwing.max;
     expect(skillStatus(s, 'powerSwing')).toBe('Maxed');
     const eligible = availableSkills(s);
     for (const id of SKILL_IDS) {
       expect(eligible.includes(id)).toBe(['Unlearned', 'Learned'].includes(skillStatus(s, id)));
     }
+  });
+
+  it('never shows a skill learned out of track order as locked', () => {
+    const s = smallWorld().state;
+    s.skills = { recruiters: 1 }; // an older save, before tracks
+    expect(skillStatus(s, 'recruiters')).toBe('Learned');
+    expect(skillStatus(s, 'roomyHouses')).toBe('Locked');
   });
 
   it('shows exponential tap gains and additive production bonuses', () => {

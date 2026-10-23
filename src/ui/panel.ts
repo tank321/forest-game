@@ -1,4 +1,4 @@
-import { BUILDINGS, buildingById, type BuildingKind } from '../core/buildings';
+import { BUILDINGS, buildingById, isUnlocked, type BuildingKind } from '../core/buildings';
 import { removeBuilding } from '../core/commands';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import type { World } from '../core/world';
@@ -125,7 +125,8 @@ export class Panel {
     return {
       title: 'Build',
       sub: 'Tap a building to select it.',
-      actions: BUILDABLE.map((k) => {
+      // Kinds still locked behind a skill stay out of the menu.
+      actions: BUILDABLE.filter((k) => isUnlocked(s, k)).map((k) => {
         const cost = buildingCost(s, k);
         return {
           label: BUILDING_TEXT[k].name,

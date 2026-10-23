@@ -19,6 +19,10 @@ yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth) and upgrades the wheelbarrow and coats, a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 
+At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
+unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Cotton Fields, Markets,
+Tax Offices, Trading Posts) and joins the build menu once learned.
+
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
 Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
@@ -69,12 +73,15 @@ from the Market. Without a Market the post stands idle. Gold pays for houses fro
 **Tax Collectors** (+20% tax per level), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
 
-Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
+Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it); the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
-with **Pick skill** in the sidebar. **Skills** opens a popup journal: filter by status or group,
-hover over a card to compare current and next-level bonuses in the right-hand panel, and follow prerequisite links.
-On phones, tap a card to show details beneath it. Keyboard users can select cards with Enter or Space. **Export/Import** move
+with **Pick skill** in the sidebar. Skills come in six tracks (Forestry, Villagers, Buildings, Farming, Mining,
+Trade), and each skill is offered only once the one before it in its track has a level. A relic offers skills
+from different tracks while it can. **Skills** opens the skill tree: one column per track, easier skills on top,
+with a solid link once a skill unlocks the next one. Hover over a skill to compare current and next-level bonuses
+in the right-hand panel; skills on offer from a relic glow, and clicking one learns it right there. On phones, tap a skill to show details beneath the tree,
+which scrolls sideways. Keyboard users can select skills with Enter or Space. **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
 **Speed** runs the game ×1/×2/×5/×10, and **Reset** (click twice) wipes the save and starts over.
 
@@ -87,15 +94,38 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking, each worker's spot in its workplace
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
   - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
-  - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
+  - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v13** – Skill tracks.
+- Skills are grouped into six tracks, each unlocking in order, easier skills first:
+  - Forestry: Sharp Axes → Power Swing → Camp Crews → Teamwork
+  - Villagers: Swift Feet → Big Baskets → Roomy Houses → Recruiters
+  - Buildings: Master Builders → Masons → Deep Wells
+  - Farming: Green Thumbs → Fertile Herding
+  - Mining: Stonecutters → Quarry Crews
+  - Trade: Tax Collectors → Pack Mules → Shrewd Traders
+- A skill is offered once the one before it has a level. Power Swing, Fertile Herding and every other skill below the top of its track are now gated; Masons follows Master Builders instead of Stonecutters, and Deep Wells follows Masons instead of Green Thumbs.
+- Relic choices come from three different tracks while there are enough to go round.
+- Buildings unlock gradually: only the House, Lumber Camp, Barn and Farm can be built at the start. Eight new one-level skills each unlock a building and add it to the build menu, and their tree nodes show the building:
+  - Farming: Green Thumbs → **Wells** → Deep Wells → **Orchards**
+  - Herding (new): **Sheep Farms** → Fertile Herding → **Cotton Fields**
+  - Mining: **Quarrying** → Stonecutters → Quarry Crews
+  - Trade: **Markets** → **Tax Offices** → Tax Collectors → **Trading Posts** → Pack Mules → Shrewd Traders
+  - Buildings is now Master Builders → Masons; Deep Wells moved to Farming.
+- Buildings that already stand keep working and can still be moved; saves migrate from v12, learning the unlock skill of every building kind they already have.
+- The **Skills** popup is a skill tree: a column per track with linked pixel-framed nodes (dim when locked, plank when available, parchment when learned, gold when maxed); skills on offer from a relic glow, and clicking one (or its **Choose** button in the detail panel) learns it without going back to the choice tab. The detail panel names the skill's track and place in it. The status and group filters are gone, and each relic choice card names its track.
+- Skills learned in older saves keep their levels, even where they skip ahead of a track.
+- Under the land counter on the stats plaque, **relic in N** counts down the trees left to fell before the next relic appears.
+- The stats plaque starts with only wood; food, stone, cloth and gold each appear once you first gather (or buy) some.
+- Fix: a marked tree's flag is a short pennant planted in the ground beside the trunk, about a third of a grown tree's height, instead of floating in the canopy.
+
 **v12** – Wheelbarrow.
 - Wheelbarrow upgrade at the Town Center (10 levels, 150 wood to 9000 wood + 3000 food + 1200 stone + 400 cloth + 400 gold): every villager walks ×1.05 per level, and every gatherer carries a flat +2 per level, the same for every job. Its card previews walking speed and the extra carry.
 - Relic skill choice: the popup keeps one size while you hover between the offered skills.

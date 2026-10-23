@@ -1,27 +1,19 @@
 import { CONFIG } from '../config';
+import { unlocks } from '../core/buildings';
 import { commission } from '../core/economy';
-import { lvl, SKILLS, type SkillDef, type SkillId } from '../core/skills';
+import { lvl, prerequisite, SKILLS, type SkillId } from '../core/skills';
 import type { GameState } from '../core/types';
+import { BUILDING_TEXT } from './text';
 
-export type SkillGroup = 'Gathering' | 'Village' | 'Building';
 export type SkillStatus = 'Unlearned' | 'Learned' | 'Locked' | 'Maxed';
 
-export const SKILL_GROUP: Record<SkillId, SkillGroup> = {
-  sharpAxes: 'Gathering', bigBaskets: 'Gathering', swiftFeet: 'Gathering',
-  powerSwing: 'Gathering', campCrews: 'Gathering', teamwork: 'Gathering',
-  greenThumbs: 'Gathering', stonecutters: 'Gathering', fertileHerding: 'Gathering',
-  roomyHouses: 'Village', recruiters: 'Village', quarryCrews: 'Village',
-  taxCollectors: 'Village', packMules: 'Village', shrewdTraders: 'Village',
-  masterBuilders: 'Building', masons: 'Building', deepWells: 'Building',
-};
-
-export const prerequisite = (id: SkillId) => (SKILLS[id] as SkillDef).requires as SkillId | undefined;
-
+/** A learned skill is never Locked, even if an older save learned it out of track order. */
 export function skillStatus(s: GameState, id: SkillId): SkillStatus {
-  const req = prerequisite(id);
-  if (req && !lvl(s, req)) return 'Locked';
   const level = lvl(s, id);
-  return level === SKILLS[id].max ? 'Maxed' : level > 0 ? 'Learned' : 'Unlearned';
+  if (level === SKILLS[id].max) return 'Maxed';
+  if (level > 0) return 'Learned';
+  const req = prerequisite(id);
+  return req && !lvl(s, req) ? 'Locked' : 'Unlearned';
 }
 
 /** Total contribution of this skill, before other upgrades and skills. */
@@ -45,6 +37,9 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'taxCollectors': return `+${20 * level}% tax`;
     case 'packMules': return `+${25 * level}% gold per trade trip`;
     case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level } }))}% market commission`;
+    case 'quarrying': case 'wells': case 'orchards': case 'sheepFarms': case 'cottonFields':
+    case 'markets': case 'taxOffices': case 'tradingPosts':
+      return `${BUILDING_TEXT[unlocks(id)!].name} ${level ? 'unlocked' : 'not yet buildable'}`;
     case 'deepWells': return `Wells reach farms within ${CONFIG.well.radius + level} tile${CONFIG.well.radius + level === 1 ? '' : 's'}`;
   }
 }

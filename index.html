@@ -12,7 +12,7 @@
         <header id="hud">
           <div class="stats frame parchment" tabindex="0" role="region" aria-label="Resources and population; scroll horizontally for more stats">
             <span title="Population"><i class="ico ico-pop"></i><b id="pop">0/5</b></span>
-            <span title="Land"><i class="ico ico-land"></i><b id="land">0</b></span>
+            <span title="Land, and trees left to fell before the next relic appears"><i class="ico ico-land"></i><b id="land">0</b><small id="relicCountdown"></small></span>
             <span id="seasonChip" class="stack" tabindex="0" role="button" aria-label="Season effects" aria-expanded="false" aria-controls="seasonInfo"><b id="season">Spring</b><span class="season-bar" role="progressbar" aria-label="Season progress" aria-valuemin="0" aria-valuemax="100"><i id="seasonBar"></i></span></span>
             <span id="shortage" class="stack alert" hidden><b></b><small></small></span>
           </div>
@@ -54,16 +54,12 @@
       </div>
       <div class="skill-controls">
         <div class="skill-tabs" role="group" aria-label="Skill views">
-          <button data-skill-view="all" aria-pressed="true">All skills</button>
+          <button data-skill-view="all" aria-pressed="true">Skill tree</button>
           <button data-skill-view="choose" aria-pressed="false" disabled>Choose a skill (0)</button>
-        </div>
-        <div class="skill-filters">
-          <label>Show <select id="skillStatus"><option value="all">All skills</option><option value="learned">Learned</option><option value="locked">Locked</option><option value="maxed">Maxed</option></select></label>
-          <label>Group <select id="skillGroup"><option value="all">All groups</option><option>Gathering</option><option>Village</option><option>Building</option></select></label>
         </div>
       </div>
       <div class="skill-layout">
-        <div class="skill-gallery" role="group" aria-label="Skills to inspect"></div>
+        <div class="skill-gallery" role="group" aria-label="Skill tree"></div>
         <div class="skill-detail-slot"></div>
       </div>
       <p class="skill-feedback" role="status" aria-live="polite"></p>

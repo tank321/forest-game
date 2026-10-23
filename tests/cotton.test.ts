@@ -6,11 +6,11 @@ import { tileAt } from '../src/core/grid';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 6×6 west of the clearing and a cotton plantation on it. */
 function withPlantation(villagers = 5, seed = 1): { w: World; id: number } {
-  const w = smallWorld(30, villagers, seed);
+  const w = unlockBuildings(smallWorld(30, villagers, seed));
   const s = w.state;
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;
@@ -88,7 +88,7 @@ describe('cotton plantations', () => {
   });
 
   it('costs gold', () => {
-    const w = smallWorld(30);
+    const w = unlockBuildings(smallWorld(30));
     const s = w.state;
     expect(buildingCost(s, 'cottonPlantation')).toEqual({ wood: 5000, stone: 500, gold: 250 });
     const { x, y } = s.origin;

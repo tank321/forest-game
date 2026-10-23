@@ -6,11 +6,11 @@ import { simulate } from '../src/core/sim';
 import { availableSkills } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 3×3 west of the clearing and a sheep farm on it. */
 function withSheepFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
-  const w = smallWorld(30, villagers, seed);
+  const w = unlockBuildings(smallWorld(30, villagers, seed));
   const s = w.state;
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;
@@ -77,7 +77,7 @@ describe('sheep farms', () => {
     const w = smallWorld(30, 1);
     const s = w.state;
     s.nextRelicAt = Infinity;
-    s.skills = { fertileHerding: 1 };
+    s.skills = { sheepFarms: 1, fertileHerding: 1 };
     const { x, y } = s.origin;
     clearArea(w, x - 9, y, x - 1, y + 2); // sheep farm far west, barn between it and the Town Center
     s.resources = { wood: 750, food: 150, stone: 0, cloth: 0, gold: 0 };
@@ -108,8 +108,11 @@ describe('sheep farms', () => {
     expect(st.herdCarry).toBeCloseTo((10 + 20) * 1.02 ** 10);
   });
 
-  it('Fertile Herding is offered without prerequisites', () => {
-    expect(availableSkills(smallWorld().state)).toContain('fertileHerding');
+  it('Fertile Herding is offered after Sheep Farms', () => {
+    const s = smallWorld().state;
+    expect(availableSkills(s)).not.toContain('fertileHerding');
+    s.skills = { sheepFarms: 1 };
+    expect(availableSkills(s)).toContain('fertileHerding');
   });
 });
 

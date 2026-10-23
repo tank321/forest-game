@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
-import type { BuildingKind } from '../core/buildings';
-import type { SkillId } from '../core/skills';
+import { unlocks, type BuildingKind } from '../core/buildings';
+import type { SkillId, Track } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
 import type { UiIcon } from '../render/sprites';
 
@@ -35,6 +35,16 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   },
 };
 
+export const TRACK_TEXT: Record<Track, { name: string; icon: UiIcon }> = {
+  forestry: { name: 'Forestry', icon: 'trees' },
+  villagers: { name: 'Villagers', icon: 'pop' },
+  buildings: { name: 'Buildings', icon: 'hammer' },
+  farming: { name: 'Farming', icon: 'food' },
+  herding: { name: 'Herding', icon: 'cloth' },
+  mining: { name: 'Mining', icon: 'pick' },
+  trade: { name: 'Trade', icon: 'gold' },
+};
+
 export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiIcon }> = {
   sharpAxes: { name: 'Sharp Axes', desc: '+20% villager chop speed per level', icon: 'chop' },
   bigBaskets: { name: 'Big Baskets', desc: '+2 villager carry per level', icon: 'basket' },
@@ -54,7 +64,21 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   taxCollectors: { name: 'Tax Collectors', desc: '+20% tax per level', icon: 'gold' },
   packMules: { name: 'Pack Mules', desc: '+25% gold per trade trip per level', icon: 'basket' },
   shrewdTraders: { name: 'Shrewd Traders', desc: 'Market commission 5 points lower per level', icon: 'gold' },
+  quarrying: { name: 'Quarrying', desc: 'Unlocks the Quarry', icon: 'stone' },
+  wells: { name: 'Wells', desc: 'Unlocks the Well', icon: 'drop' },
+  orchards: { name: 'Orchards', desc: 'Unlocks the Fruit Orchard', icon: 'food' },
+  sheepFarms: { name: 'Sheep Farms', desc: 'Unlocks the Sheep Farm', icon: 'cloth' },
+  cottonFields: { name: 'Cotton Fields', desc: 'Unlocks the Cotton Plantation', icon: 'cloth' },
+  markets: { name: 'Markets', desc: 'Unlocks the Market', icon: 'gold' },
+  taxOffices: { name: 'Tax Offices', desc: 'Unlocks the Tax Office', icon: 'gold' },
+  tradingPosts: { name: 'Trading Posts', desc: 'Unlocks the Trading Post', icon: 'gold' },
 };
+
+/** A skill's icon; a skill that unlocks a building shows that building's thumbnail instead. */
+export function skillIcon(id: SkillId): string {
+  const kind = unlocks(id);
+  return kind ? `<i class="ico skill-thumb thumb-${kind}"></i>` : icon(SKILL_TEXT[id].icon);
+}
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];
 /** 999 → "999", 12345 → "12.3k", 4.56e6 → "4.56M". */

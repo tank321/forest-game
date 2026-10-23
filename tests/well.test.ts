@@ -5,11 +5,11 @@ import { buildingCost } from '../src/core/economy';
 import { simulate } from '../src/core/sim';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 /** Farm on a cleared 3×3 west of the clearing (x-3..x-1, y..y+2); optional Well at (wx, wy). */
 function farmWorld(well?: [dx: number, dy: number]): { w: World; farmId: number } {
-  const w = smallWorld(30, 2, 1);
+  const w = unlockBuildings(smallWorld(30, 2, 1));
   const s = w.state;
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;

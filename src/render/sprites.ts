@@ -1777,28 +1777,28 @@ export const FLAG_CLOTH: Record<'reachable' | 'unreachable', { c: Rgba; C: Rgba 
   unreachable: { c: [253, 216, 53, 255], C: [201, 162, 39, 255] }, // #fdd835
 };
 
-/** Flag planted in a marked tree's canopy; SPRITE_W × TREE_H, aligned with the tree sprite. */
+/** A short flag planted beside a marked tree's trunk, about a third of a grown tree's height; SPRITE_W × TREE_H, aligned with the tree sprite. */
 export const FLAG: readonly string[] = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
+  '................',
   '.....o..........',
-  '....okooo.......',
-  '....oPcccoo.....',
-  '....oPccccCo....',
-  '....oPcccCCo....',
-  '....oPccCoo.....',
-  '....oPCoo.......',
-  '....oPo.........',
-  '....oPo.........',
-  '....oPo.........',
-  '....oPo.........',
-  '....oPo.........',
+  '....okoooo......',
+  '....oPcccCo.....',
+  '....oPcCCoo.....',
+  '....oPoo........',
   '....oPo.........',
   '....oPo.........',
   '....oPox........',
   '.....oxx........',
-  '................',
-  '................',
-  '................',
-  '................',
 ];
 
 export const VILLAGER_W = 12;

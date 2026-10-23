@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, countOf, footprint, type BuildingKind } from './buildings';
+import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, countOf, footprint, isUnlocked, type BuildingKind } from './buildings';
 import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
@@ -81,8 +81,9 @@ export function togglePause(w: World, id: number): boolean {
   return true;
 }
 
+/** New buildings need their kind unlocked; moving one that already stands does not. */
 export function canPlace(w: World, kind: BuildingKind, x: number, y: number): boolean {
-  return canPlaceAt(w, kind, x, y);
+  return isUnlocked(w.state, kind) && canPlaceAt(w, kind, x, y);
 }
 
 function canPlaceAt(w: World, kind: BuildingKind, x: number, y: number, moving?: Building): boolean {

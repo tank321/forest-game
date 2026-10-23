@@ -1,4 +1,4 @@
-import { lvl } from './skills';
+import { lvl, type SkillId } from './skills';
 import type { Building, Cost, GameState, Job, ResourceKey } from './types';
 import { Tile } from './types';
 
@@ -10,6 +10,7 @@ export interface BuildingDef {
   job?: Job; // job its workers do
   buildable: boolean; // appears in the build menu
   cityNeighbor: boolean; // must touch the Town Center or another city building
+  unlock?: SkillId; // skill that must be learned before it can be built (none = from the start)
   cost: (owned: number) => Cost;
 }
 
@@ -43,14 +44,16 @@ export const BUILDINGS = {
     h: 5,
     workers: 3,
     job: 'orchard',
+    unlock: 'orchards',
     cost: (n) => ({ wood: Math.round(3000 * 1.5 ** n), stone: Math.round(300 * 1.5 ** n), cloth: Math.round(100 * 1.5 ** n) }),
   }),
-  quarry: def({ w: 2, h: 2, workers: 2, job: 'mine', cost: (n) => ({ wood: Math.round(400 * 1.5 ** n) }) }),
+  quarry: def({ w: 2, h: 2, workers: 2, job: 'mine', unlock: 'quarrying', cost: (n) => ({ wood: Math.round(400 * 1.5 ** n) }) }),
   sheepFarm: def({
     w: 3,
     h: 3,
     workers: 1,
     job: 'herd',
+    unlock: 'sheepFarms',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
   }),
   cottonPlantation: def({
@@ -58,20 +61,23 @@ export const BUILDINGS = {
     h: 6,
     workers: 5,
     job: 'cotton',
+    unlock: 'cottonFields',
     cost: (n) => ({ wood: Math.round(5000 * 1.5 ** n), stone: Math.round(500 * 1.5 ** n), gold: Math.round(250 * 1.5 ** n) }),
   }),
-  well: def({ w: 1, h: 1, cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
+  well: def({ w: 1, h: 1, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
   market: def({
     w: 2,
     h: 2,
     dropoff: ['gold'],
     cityNeighbor: true,
+    unlock: 'markets',
     cost: (n) => ({ wood: Math.round(500 * 1.5 ** n), stone: Math.round(50 * 1.5 ** n) }),
   }),
   taxOffice: def({
     w: 2,
     h: 2,
     cityNeighbor: true,
+    unlock: 'taxOffices',
     cost: (n) => ({ wood: Math.round(800 * 1.5 ** n), stone: Math.round(100 * 1.5 ** n) }),
   }),
   tradingPost: def({
@@ -79,10 +85,22 @@ export const BUILDINGS = {
     h: 2,
     workers: 1,
     job: 'trade',
+    unlock: 'tradingPosts',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
   }),
 } satisfies Record<string, BuildingDef>;
 export type BuildingKind = keyof typeof BUILDINGS;
+
+const KINDS = Object.keys(BUILDINGS) as BuildingKind[];
+
+/** Whether this kind can be built yet: its unlock skill, if any, has been learned. */
+export function isUnlocked(s: Pick<GameState, 'skills'>, kind: BuildingKind): boolean {
+  const skill = BUILDINGS[kind].unlock;
+  return !skill || lvl(s, skill) > 0;
+}
+
+/** The building a skill unlocks, if any. */
+export const unlocks = (id: SkillId): BuildingKind | undefined => KINDS.find((k) => BUILDINGS[k].unlock === id);
 
 export const CITY_KINDS: readonly BuildingKind[] = ['townCenter', 'house', 'market', 'taxOffice'];
 

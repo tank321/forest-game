@@ -59,6 +59,7 @@ export class Hud {
   private els = {
     pop: $('pop'),
     land: $('land'),
+    relicCountdown: $('relicCountdown'),
     relic: $('relic'),
     msg: $('msg'),
     season: $('season'),
@@ -136,7 +137,11 @@ export class Hud {
       this.rateAt = now;
       this.flows = this.perMinute();
     }
-    for (const { r, amount, rate: el } of this.res) {
+    for (const { r, amount, rate: el, span } of this.res) {
+      // Wood shows from the start; every other resource once some has been gathered or bought.
+      const hide = r !== 'wood' && !s.totals[r] && !s.resources[r];
+      if (span.hidden !== hide) span.hidden = hide;
+      if (hide) continue;
       this.set(amount, fmt(s.resources[r]));
       if (!refresh || !this.flows) continue;
       const net = this.net(this.flows, r, st);
@@ -150,6 +155,8 @@ export class Hud {
     this.updateShortage(s.time, st.hungry, st.cold);
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
+    // Zero only while a due relic finds no spot to appear; it retries on the next fell.
+    this.set(this.els.relicCountdown, `relic in ${fmt(Math.max(0, s.nextRelicAt - s.treesChopped))}`);
     this.set(
       this.els.relic,
       s.relics.length ? `${s.relics.length} relic${s.relics.length > 1 ? 's' : ''} in the forest` : `Next relic: ${s.nextRelicAt - s.treesChopped} trees`,

@@ -4,7 +4,7 @@ import { buildingCost, popCap, villagerCost } from '../src/core/economy';
 import { isCollectable, neighbors4 } from '../src/core/grid';
 import { relicGap, spawnRelic } from '../src/core/relics';
 import { simulate } from '../src/core/sim';
-import { availableSkills, dealCards, SKILLS } from '../src/core/skills';
+import { availableSkills, dealCards, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import { Tile } from '../src/core/types';
 import type { World } from '../src/core/world';
@@ -62,7 +62,7 @@ describe('relics', () => {
     expect(s.tiles[r]).toBe(Tile.Grass);
     expect(s.cards).toHaveLength(3);
     expect(new Set(s.cards).size).toBe(3);
-    expect(pickSkill(w, 'teamwork')).toBe(false); // locked behind Big Baskets, never offered
+    expect(pickSkill(w, 'teamwork')).toBe(false); // last in Forestry, never offered first
     const id = s.cards[0];
     expect(pickSkill(w, id)).toBe(true);
     expect(s.skills[id]).toBe(1);
@@ -71,15 +71,55 @@ describe('relics', () => {
 
   it('respects prerequisites and max levels', () => {
     const s = smallWorld().state;
-    expect(availableSkills(s)).not.toContain('teamwork');
-    s.skills.bigBaskets = 1;
+    expect(availableSkills(s)).not.toContain('campCrews');
+    s.skills.sharpAxes = 1;
     s.skills.powerSwing = SKILLS.powerSwing.max;
-    expect(availableSkills(s)).toContain('teamwork');
+    expect(availableSkills(s)).toContain('campCrews');
     expect(availableSkills(s)).not.toContain('powerSwing');
+    expect(availableSkills(s)).not.toContain('teamwork');
     for (let k = 0; k < 50; k++) {
       dealCards(s);
       expect(s.cards).not.toContain('powerSwing');
     }
+  });
+});
+
+describe('skill tracks', () => {
+  it('put every skill in exactly one track', () => {
+    const all = TRACK_IDS.flatMap((t) => [...TRACKS[t]]);
+    expect(all.sort()).toEqual([...SKILL_IDS].sort());
+    for (const t of TRACK_IDS) for (const id of TRACKS[t]) expect(trackOf(id)).toBe(t);
+  });
+
+  it('offer only the first skill of each track at the start', () => {
+    const s = smallWorld().state;
+    expect(availableSkills(s).sort()).toEqual(TRACK_IDS.map((t) => TRACKS[t][0]).sort());
+  });
+
+  it('unlock each skill once the one before it has a level', () => {
+    const s = smallWorld().state;
+    for (const id of SKILL_IDS) {
+      const req = prerequisite(id);
+      if (!req) continue;
+      s.skills = {};
+      expect(availableSkills(s)).not.toContain(id);
+      s.skills = { [req]: 1 };
+      expect(availableSkills(s)).toContain(id);
+    }
+  });
+
+  it('deal relic choices from different tracks while they last', () => {
+    const s = smallWorld().state;
+    s.skills = { sharpAxes: 1, powerSwing: 1, swiftFeet: 1, bigBaskets: 1 };
+    for (let k = 0; k < 50; k++) {
+      dealCards(s);
+      expect(new Set(s.cards.map(trackOf)).size).toBe(3);
+    }
+    // Only Forestry is left: all three choices come from it.
+    s.skills = { sharpAxes: 1, powerSwing: 1 };
+    for (const t of TRACK_IDS) if (t !== 'forestry') for (const id of TRACKS[t]) s.skills[id] = SKILLS[id].max;
+    dealCards(s);
+    expect([...s.cards].sort()).toEqual(['campCrews', 'powerSwing', 'sharpAxes']);
   });
 });
 

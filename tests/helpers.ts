@@ -1,3 +1,4 @@
+import { BUILDINGS, type BuildingKind } from '../src/core/buildings';
 import { chopTree, hireVillager } from '../src/core/commands';
 import { createInitialState } from '../src/core/state';
 import { createWorld, type World } from '../src/core/world';
@@ -11,6 +12,15 @@ export function smallWorld(size = 20, villagers = 0, seed = 1): World {
     w.state.resources.wood -= 1e9;
   }
   w.state.resources.wood = Math.max(0, w.state.resources.wood);
+  return w;
+}
+
+/** Learns every building-unlock skill, so any building can be placed. */
+export function unlockBuildings(w: World): World {
+  for (const kind of Object.keys(BUILDINGS) as BuildingKind[]) {
+    const skill = BUILDINGS[kind].unlock;
+    if (skill) w.state.skills[skill] = 1;
+  }
   return w;
 }
 

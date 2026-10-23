@@ -100,17 +100,21 @@ must be handled:
   (`ui/actions.ts`). An optional pixel-art sprite (`w·16 × h·16 + 4`) goes in `BUILDING_SPRITES`
   (`render/sprites.ts`). Without one, the building is drawn as a `BUILDING_COLOR` rectangle. A roofed
   sprite also gets a `ROOFS` entry, and seasonal crops get `BUILDING_SEASONS` entries.
+  To lock it until a skill is learned, set its `unlock` to a one-level skill placed in a track;
+  the build menu hides it and `canPlace` refuses it until then.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up
   automatically. Then add a save migration.
 - **Workplace job:** extend `Job`, then add entries to `WORK` (`workplace.ts`), `UPDATERS`
   (`villagers.ts`), and `VILLAGER_CLOTH`/`VILLAGER_GEAR` (`render/sprites.ts`).
-- **Skill:** add it to `SKILLS` (`skills.ts`, with an optional `requires`), apply its effect in
+- **Skill:** add it to `SKILLS` and to its place in a `TRACKS` list (`skills.ts`; the skill before it
+  is its prerequisite), apply its effect in
   `stats.ts` or `economy.ts`, and add its text and icon (a `UI_ICONS` name) to `SKILL_TEXT`.
 - **Tunables:** all of them live in `src/config.ts`.
 
 ## Tests
 `tests/helpers.ts` provides:
 - `smallWorld(size, villagers, seed)`: a small map with villagers hired for free.
+- `unlockBuildings`: learns every building-unlock skill, so any building can be placed.
 - `clearArea`: fells a rectangle of trees.
 
 Tests that place buildings usually set `s.nextRelicAt = Infinity` so relics don't interfere.

@@ -8,10 +8,10 @@ import { simulate, tick } from '../src/core/sim';
 import { goHome } from '../src/core/systems/movement';
 import { Tile } from '../src/core/types';
 import { createWorld } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 function ready(villagers = 0) {
-  const w = smallWorld(30, villagers);
+  const w = unlockBuildings(smallWorld(30, villagers));
   w.state.nextRelicAt = Infinity;
   clearArea(w, 3, 3, 26, 26);
   w.state.resources = { wood: 1e7, food: 1e7, stone: 1e7, cloth: 1e7, gold: 0 };
@@ -101,7 +101,7 @@ describe('building refunds', () => {
 
   it('records discounts actually paid and refunds all construction resources after moving', () => {
     const w = ready();
-    w.state.skills = { masterBuilders: 1, masons: 2 };
+    w.state.skills = { masterBuilders: 1, masons: 2, wells: 1 };
     const b = build(w, 'well', 4, 4);
     expect(b.paidCost).toEqual({ wood: 120, stone: 23 });
     expect(buildingRefund(b)).toEqual({ wood: 60, stone: 11 });

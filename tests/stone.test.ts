@@ -6,11 +6,11 @@ import { simulate } from '../src/core/sim';
 import { availableSkills } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import type { World } from '../src/core/world';
-import { clearArea, smallWorld } from './helpers';
+import { clearArea, smallWorld, unlockBuildings } from './helpers';
 
 /** Small world with a cleared 2×2 west of the clearing and a quarry on it. */
 function withQuarry(villagers = 3, seed = 1): { w: World; quarryId: number } {
-  const w = smallWorld(30, villagers, seed);
+  const w = unlockBuildings(smallWorld(30, villagers, seed));
   const s = w.state;
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;
@@ -109,12 +109,15 @@ describe('quarries', () => {
     expect(buildingCost(s, 'well')).toEqual({ wood: 150, stone: 29 }); // 40 × 0.85²
   });
 
-  it('stone skills are offered only after Stonecutters', () => {
+  it('Quarry Crews is offered after Stonecutters, Masons after Master Builders', () => {
     const s = smallWorld().state;
     expect(availableSkills(s)).not.toContain('masons');
     expect(availableSkills(s)).not.toContain('quarryCrews');
     s.skills = { stonecutters: 1 };
-    expect(availableSkills(s)).toEqual(expect.arrayContaining(['masons', 'quarryCrews']));
+    expect(availableSkills(s)).toContain('quarryCrews');
+    expect(availableSkills(s)).not.toContain('masons');
+    s.skills = { masterBuilders: 1 };
+    expect(availableSkills(s)).toContain('masons');
   });
 
   it('Quarry Crews adds a miner per level', () => {

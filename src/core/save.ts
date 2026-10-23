@@ -4,7 +4,7 @@ import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 12;
+const VERSION = 13;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -118,6 +118,18 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   },
   10: (f) => ({ ...f, version: 11, state: { ...f.state, upgrades: { ...f.state.upgrades, barrow: 0 } } }),
   11: (f) => ({ ...f, version: 12, state: { ...f.state, buildings: f.state.buildings.map((b) => ({ ...b, tally: {} })) } }),
+  // v13 locks buildings behind skills: keep every kind the save already has buildable.
+  12: (f) => {
+    const skills: Record<string, number> = { ...f.state.skills };
+    for (const b of f.state.buildings) if (V13_UNLOCKS[b.kind]) skills[V13_UNLOCKS[b.kind]!] = 1;
+    return { ...f, version: 13, state: { ...f.state, skills } };
+  },
+};
+
+/** The skill that unlocked each building kind when v13 introduced unlocks. */
+const V13_UNLOCKS: Partial<Record<string, string>> = {
+  quarry: 'quarrying', well: 'wells', orchard: 'orchards', sheepFarm: 'sheepFarms', cottonPlantation: 'cottonFields',
+  market: 'markets', taxOffice: 'taxOffices', tradingPost: 'tradingPosts',
 };
 
 /** v10 renamed leather to cloth. */
