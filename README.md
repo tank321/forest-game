@@ -29,7 +29,8 @@ levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) 
 within 1 tile harvest ×3 and carry ×2 (wells don't stack).
 
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
-touches it, tap it, and pick one of three skills. **Skills** lists levels; **Export/Import** move
+touches it, tap it, and pick one of three skills in the popup (the game keeps running). Close it
+to pick later with **Pick skill** in the sidebar. **Skills** (or **View skills** in the popup) lists levels; **Export/Import** move
 saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000.
 
 ## Layout
@@ -44,12 +45,13 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` relic skill popup, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – Silkscreen regular and bold (SIL Open Font License, `OFL.txt`)
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
 **Unreleased** – Art.
+- Skill popup: a relic's three skill cards open in a window over the map, with an icon per skill. Close it to pick later (**Pick skill** in the sidebar reopens it); **View skills** shows the skills list.
 - Tree health: a chopped tree shows a health bar (green left, red lost); hovering a tree shows its wood left / full-grown wood.
 - Pixel-art UI: Silkscreen pixel font (bold numbers), sized in multiples of 8 px so it stays on its pixel grid; wooden plank buttons that press down, gold for the active tool and skill picks, parchment for build cards; a wooden sidebar.
 - Icons for resources, stats, tools and menu buttons. Costs are icon chips, red where you are short.

@@ -13,6 +13,7 @@ import { Renderer } from './render/renderer';
 import { Hud } from './ui/hud';
 import { Panel } from './ui/panel';
 import { placementAt } from './ui/placement';
+import { SkillModal } from './ui/skillModal';
 import { createUiState } from './ui/state';
 import { applySkin } from './ui/skin';
 import { duration, fmt } from './ui/text';
@@ -34,6 +35,12 @@ const hud = new Hud(() => world, ui, () => {
   cam.y = ((r / s.w) | 0) + 0.5;
 });
 const panel = new Panel(document.getElementById('panel')!, () => world, ui);
+const skillModal = new SkillModal(
+  document.getElementById('skillModal') as HTMLDialogElement,
+  document.getElementById('pickSkillBtn') as HTMLButtonElement,
+  () => world,
+  ui,
+);
 
 attachInput(canvas, cam, {
   hover: (x, y) => (ui.hover = { x, y }),
@@ -87,6 +94,7 @@ function frame(now: number): void {
   renderer.draw(world, ui);
   hud.update();
   panel.update();
+  skillModal.update();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

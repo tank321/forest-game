@@ -13,21 +13,21 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
 };
 
-export const SKILL_TEXT: Record<SkillId, { name: string; desc: string }> = {
-  sharpAxes: { name: 'Sharp Axes', desc: '+20% villager chop speed per level' },
-  bigBaskets: { name: 'Big Baskets', desc: '+2 villager carry per level' },
-  swiftFeet: { name: 'Swift Feet', desc: '+10% villager walk speed per level' },
-  powerSwing: { name: 'Power Swing', desc: 'Your taps chop ×5 per level' },
-  roomyHouses: { name: 'Roomy Houses', desc: '+1 population per house per level' },
-  recruiters: { name: 'Recruiters', desc: 'Villagers cost 15% less per level' },
-  masterBuilders: { name: 'Master Builders', desc: 'Buildings cost 20% less' },
-  campCrews: { name: 'Camp Crews', desc: 'Chop ×1.5 within 3 tiles of a Lumber Camp' },
-  teamwork: { name: 'Teamwork', desc: 'Two villagers can work the same tree' },
-  greenThumbs: { name: 'Green Thumbs', desc: '+20% farm harvest per level' },
-  stonecutters: { name: 'Stonecutters', desc: '+20% mining speed per level' },
-  masons: { name: 'Masons', desc: 'Stone costs 15% less per level' },
-  quarryCrews: { name: 'Quarry Crews', desc: '+1 miner per quarry per level' },
-  deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles' },
+export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiIcon }> = {
+  sharpAxes: { name: 'Sharp Axes', desc: '+20% villager chop speed per level', icon: 'chop' },
+  bigBaskets: { name: 'Big Baskets', desc: '+2 villager carry per level', icon: 'basket' },
+  swiftFeet: { name: 'Swift Feet', desc: '+10% villager walk speed per level', icon: 'boot' },
+  powerSwing: { name: 'Power Swing', desc: 'Your taps chop ×5 per level', icon: 'bolt' },
+  roomyHouses: { name: 'Roomy Houses', desc: '+1 population per house per level', icon: 'house' },
+  recruiters: { name: 'Recruiters', desc: 'Villagers cost 15% less per level', icon: 'pop' },
+  masterBuilders: { name: 'Master Builders', desc: 'Buildings cost 20% less', icon: 'hammer' },
+  campCrews: { name: 'Camp Crews', desc: 'Chop ×1.5 within 3 tiles of a Lumber Camp', icon: 'wood' },
+  teamwork: { name: 'Teamwork', desc: 'Two villagers can work the same tree', icon: 'trees' },
+  greenThumbs: { name: 'Green Thumbs', desc: '+20% farm harvest per level', icon: 'food' },
+  stonecutters: { name: 'Stonecutters', desc: '+20% mining speed per level', icon: 'pick' },
+  masons: { name: 'Masons', desc: 'Stone costs 15% less per level', icon: 'stone' },
+  quarryCrews: { name: 'Quarry Crews', desc: '+1 miner per quarry per level', icon: 'pair' },
+  deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles', icon: 'drop' },
 };
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];

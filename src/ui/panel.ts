@@ -1,5 +1,4 @@
 import { BUILDINGS, type BuildingKind } from '../core/buildings';
-import { pickSkill } from '../core/commands';
 import { buildingCost, canAfford } from '../core/economy';
 import { lvl, SKILL_IDS, SKILLS, type SkillDef, type SkillId } from '../core/skills';
 import type { World } from '../core/world';
@@ -20,17 +19,16 @@ export class Panel {
   ) {}
 
   update(): void {
-    const { title, sub, actions, rows = [], cls = '' } = this.view();
+    const { title, sub, actions, rows = [] } = this.view();
     const have = this.world().state.resources;
     const html = actions.map((a) => {
       const thumb = a.thumb ? `<i class="thumb thumb-${a.thumb}"></i>` : '';
       const cost = a.cost ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
       return `${thumb}<span class="label">${a.label}${cost}</span>`;
     });
-    const key = JSON.stringify([title, sub, cls, rows, html, actions.map((a) => a.enabled)]);
+    const key = JSON.stringify([title, sub, rows, html, actions.map((a) => a.enabled)]);
     if (key === this.key) return;
     this.key = key;
-    this.el.className = cls;
     const list = rows.length ? `<ul class="frame parchment">${rows.map((r) => `<li>${r}</li>`).join('')}</ul>` : '';
     this.el.innerHTML = `<h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${list}<div class="actions"></div>`;
     const box = this.el.querySelector('.actions')!;
@@ -44,23 +42,10 @@ export class Panel {
     });
   }
 
-  private view(): { title: string; sub: string; actions: Action[]; rows?: string[]; cls?: string } {
+  private view(): { title: string; sub: string; actions: Action[]; rows?: string[] } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
-    if (s.cards.length) {
-      return {
-        title: 'Relic found! Choose a skill',
-        sub: s.picksPending > 1 ? `${s.picksPending} picks waiting` : '',
-        cls: 'cards',
-        actions: s.cards.map((id) => ({
-          label: `${SKILL_TEXT[id].name} · Lv ${lvl(s, id) + 1}/${SKILLS[id].max} — ${SKILL_TEXT[id].desc}`,
-          cost: null,
-          enabled: true,
-          run: () => pickSkill(w, id),
-        })),
-      };
-    }
     if (ui.placing) {
       return {
         title: `Place ${BUILDING_TEXT[ui.placing].name}`,

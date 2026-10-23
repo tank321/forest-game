@@ -1349,6 +1349,9 @@ export const UI_PALETTE: Record<string, Rgba> = {
   e: [31, 82, 40, 255], // #1f5228 pine
   E: [46, 122, 51, 255], // #2e7a33
   j: [79, 156, 60, 255], // #4f9c3c
+  u: [196, 228, 246, 255], // #c4e4f6 water
+  c: [92, 158, 214, 255], // #5c9ed6
+  C: [52, 104, 168, 255], // #3468a8
 };
 
 /**
@@ -1359,7 +1362,7 @@ export const UI_FRAME_W = 8;
 export const UI_FRAME_H = 7;
 export const UI_FRAME_SLICE = 3;
 export const UI_LIP = 2;
-export const UI_FRAMES: Record<'plank' | 'gold' | 'parchment', { face: readonly string[]; lip: string }> = {
+export const UI_FRAMES: Record<'plank' | 'gold' | 'parchment' | 'dark', { face: readonly string[]; lip: string }> = {
   plank: {
     face: ['.oooooo.', 'ohhhhhho', 'ohmmmmdo', 'ohmmmmdo', 'ohmmmmdo', 'oddddddo', '.oooooo.'],
     lip: 'D',
@@ -1371,6 +1374,10 @@ export const UI_FRAMES: Record<'plank' | 'gold' | 'parchment', { face: readonly 
   parchment: {
     face: ['.oooooo.', 'oWWWWWWo', 'oWwwwwko', 'oWwwwwko', 'oWwwwwko', 'okkkkkko', '.oooooo.'],
     lip: 'K',
+  },
+  dark: {
+    face: ['.oooooo.', 'oyyyyyyo', 'oyqqqqvo', 'oyqqqqvo', 'oyqqqqvo', 'ovvvvvvo', '.oooooo.'],
+    lip: 'V',
   },
 };
 export type UiFrame = keyof typeof UI_FRAMES;
@@ -1398,10 +1405,11 @@ export const UI_WOOD: readonly string[] = [
 export const UI_ICON_W = 12;
 export const UI_ICON_NAMES = [
   'wood', 'food', 'stone', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',
+  'basket', 'boot', 'bolt', 'house', 'hammer', 'pick', 'pair', 'drop',
 ] as const;
 export type UiIcon = (typeof UI_ICON_NAMES)[number];
 
-/** UI_ICON_W-square icons for resources, stats, tools and menu buttons. */
+/** UI_ICON_W-square icons for resources, stats, tools, menu buttons and skills. */
 export const UI_ICONS: Record<UiIcon, readonly string[]> = {
   wood: [
     '............',
@@ -1570,5 +1578,117 @@ export const UI_ICONS: Record<UiIcon, readonly string[]> = {
     '..oho.......',
     '..omo.......',
     '..ooo.......',
+  ],
+  basket: [
+    '............',
+    '...oooooo...',
+    '..oo....oo..',
+    '.oo......oo.',
+    'oooooooooooo',
+    'ohhmhhmhhmho',
+    'ommdmmdmmdmo',
+    '.ohhmhhmhho.',
+    '.ommdmmdmmo.',
+    '..ohhmhhmo..',
+    '..oddddddo..',
+    '..oooooooo..',
+  ],
+  boot: [
+    '............',
+    '..ooooooo...',
+    '..ohhhhho...',
+    '..ooooooo...',
+    'w.ohmmmdo...',
+    'wwohmmmdo...',
+    '..ohmmmdooo.',
+    '..ohmmmmmmdo',
+    'w.ohmmmmmmdo',
+    '..oddddddddo',
+    '..oooooooooo',
+    '............',
+  ],
+  bolt: [
+    '.......ooo..',
+    '......oYyo..',
+    '.....oYyo...',
+    '....oYyo....',
+    '...oYyoooo..',
+    '..oYYYYYyo..',
+    '..ooooYyo...',
+    '.....oYo....',
+    '....oYo.....',
+    '...oyo......',
+    '...oo.......',
+    '............',
+  ],
+  house: [
+    '.....oo.....',
+    '....orRo....',
+    '...orrRRo...',
+    '..orrrRRRo..',
+    '.orrrrRRRRo.',
+    'oooooooooooo',
+    '.oWWWWWWWko.',
+    '.oWoooWoooo.',
+    '.oWohoWoYoo.',
+    '.oWohoWoooo.',
+    '.okohokkkko.',
+    'oooooooooooo',
+  ],
+  hammer: [
+    '............',
+    '.ooooooooo..',
+    'oSSSSSaaaso.',
+    'oaaaasssZZo.',
+    '.oooohmoooo.',
+    '....ohmo....',
+    '....ohmo....',
+    '....ohmo....',
+    '....ohmo....',
+    '....ohdo....',
+    '....ohdo....',
+    '....oooo....',
+  ],
+  pick: [
+    '............',
+    '...oooooo...',
+    '.ooSSSaaaoo.',
+    'oSSoohmoosso',
+    'oSo.ohmo.oso',
+    'oo..ohmo..oo',
+    '....ohmo....',
+    '....ohmo....',
+    '....ohmo....',
+    '....ohdo....',
+    '....ohdo....',
+    '....oooo....',
+  ],
+  pair: [
+    '............',
+    '.oooo..oooo.',
+    '.ollo..ollo.',
+    '.offo..offo.',
+    '.oooo..oooo.',
+    'orrrrooggggo',
+    'orrrrooggggo',
+    'oRrrRoozggzo',
+    'oRRRRoozzzzo',
+    'oooooooooooo',
+    '............',
+    '............',
+  ],
+  drop: [
+    '.....oo.....',
+    '....ouco....',
+    '....occo....',
+    '...ouccco...',
+    '..oucccCCo..',
+    '.oucccccCCo.',
+    '.occcccccCo.',
+    '.occcccccCo.',
+    '.oCcccccCCo.',
+    '..oCCCCCCo..',
+    '...oooooo...',
+    '............',
   ],
 };

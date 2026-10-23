@@ -86,7 +86,7 @@ must be handled:
 - **Workplace job:** extend `Job`, then add entries to `WORK` (`workplace.ts`), `UPDATERS`
   (`villagers.ts`), and `VILLAGER_CLOTH`/`VILLAGER_GEAR` (`render/sprites.ts`).
 - **Skill:** add it to `SKILLS` (`skills.ts`, with an optional `requires`), apply its effect in
-  `stats.ts` or `economy.ts`, and add its text to `SKILL_TEXT`.
+  `stats.ts` or `economy.ts`, and add its text and icon (a `UI_ICONS` name) to `SKILL_TEXT`.
 - **Tunables:** all of them live in `src/config.ts`.
 
 ## Tests

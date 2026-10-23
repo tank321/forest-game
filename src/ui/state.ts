@@ -8,6 +8,14 @@ export interface UiState {
   placing: BuildingKind | null;
   selected: Building | null;
   hover: { x: number; y: number } | null; // world coords under the cursor
+  cardsHidden: boolean; // skill popup closed with picks still waiting
 }
 
-export const createUiState = (): UiState => ({ tool: 'chop', view: 'build', placing: null, selected: null, hover: null });
+export const createUiState = (): UiState => ({
+  tool: 'chop',
+  view: 'build',
+  placing: null,
+  selected: null,
+  hover: null,
+  cardsHidden: false,
+});
