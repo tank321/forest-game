@@ -4,6 +4,7 @@ import type { Camera } from '../render/camera';
 export interface InputHandlers {
   tap(wx: number, wy: number, alt: boolean): void; // alt = right click
   hover(wx: number, wy: number): void;
+  leave(): void; // the mouse left the map
 }
 
 /** Pointer input: drag to pan, wheel/pinch to zoom, short press = tap (world coords). */
@@ -47,6 +48,7 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
     if (downAt) cam.panBy(p.x - downAt.x, p.y - downAt.y); // first move past the slop
     else cam.panBy(p.x - prev.x, p.y - prev.y);
     downAt = null;
+    if (e.pointerType === 'mouse') h.hover(...cam.toWorld(p.x, p.y)); // the map moved under the cursor
   });
 
   const end = (e: PointerEvent) => {
@@ -56,6 +58,7 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
   };
   el.addEventListener('pointerup', end);
   el.addEventListener('pointercancel', end);
+  el.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && h.leave());
   el.addEventListener('contextmenu', (e) => e.preventDefault());
   el.addEventListener(
     'wheel',
@@ -63,6 +66,7 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
       e.preventDefault();
       const p = local(e);
       cam.zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0015));
+      h.hover(...cam.toWorld(p.x, p.y));
     },
     { passive: false },
   );

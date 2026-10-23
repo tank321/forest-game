@@ -37,6 +37,7 @@ const panel = new Panel(document.getElementById('panel')!, () => world, ui);
 
 attachInput(canvas, cam, {
   hover: (x, y) => (ui.hover = { x, y }),
+  leave: () => (ui.hover = null),
   tap(wx, wy, alt) {
     ui.hover = { x: wx, y: wy };
     if (ui.placing) {

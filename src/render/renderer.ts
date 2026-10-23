@@ -1,12 +1,13 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
 import { canPlace } from '../core/commands';
-import { isChoppable, isCollectable, tileAt } from '../core/grid';
+import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import type { Building, GameState, Job, Villager } from '../core/types';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
+import { fmt } from '../ui/text';
 import { bake } from './bake';
 import type { Camera } from './camera';
 import {
@@ -52,6 +53,10 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   quarry: '#78909c',
   well: '#4fc3f7',
 };
+/** Health bar over a chopped tree, in art pixels from the tile's top-left (outline included). */
+const BAR = { x: 2, y: 3, w: 12, h: 4 };
+const BAR_COLOR = { outline: '#1b1a10', health: '#3fae4a', lost: '#8e2a2a' };
+const HOVER_FONT = 'bold 16px Silkscreen, monospace';
 const WALK_MS = 140; // per walk frame
 const SWING_MS = 260; // per tool-swing frame
 
@@ -138,6 +143,7 @@ export class Renderer {
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
     this.drawScene(world);
+    this.drawTreeHealth(world, ui);
 
     if (ui.selected) {
       const d = BUILDINGS[ui.selected.kind];
@@ -202,12 +208,7 @@ export class Renderer {
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     props.sort((a, b) => a.depth - b.depth);
 
-    const [wx0, wy0] = cam.toWorld(0, 0);
-    const [wx1, wy1] = cam.toWorld(cam.vw, cam.vh);
-    const x0 = Math.max(0, Math.floor(wx0));
-    const x1 = Math.min(s.w - 1, Math.floor(wx1));
-    const y0 = Math.max(0, Math.floor(wy0));
-    const y1 = Math.min(s.h - 1, Math.floor(wy1 + OVERHANG));
+    const { x0, x1, y0, y1 } = this.visibleTiles(s);
     const marked = new Set(s.marked);
     const glow = 0.6 + 0.4 * Math.sin(now / 250);
     let p = 0;
@@ -238,6 +239,70 @@ export class Renderer {
       }
     }
     while (p < props.length) props[p++].draw();
+  }
+
+  /** Tile range on screen, including the row whose sprites overhang into the bottom edge. */
+  private visibleTiles(s: GameState): { x0: number; x1: number; y0: number; y1: number } {
+    const [wx0, wy0] = this.cam.toWorld(0, 0);
+    const [wx1, wy1] = this.cam.toWorld(this.cam.vw, this.cam.vh);
+    return {
+      x0: Math.max(0, Math.floor(wx0)),
+      x1: Math.min(s.w - 1, Math.floor(wx1)),
+      y0: Math.max(0, Math.floor(wy0)),
+      y1: Math.min(s.h - 1, Math.floor(wy1 + OVERHANG)),
+    };
+  }
+
+  /**
+   * Overlay above the scene: a health bar on every visible tree that has been chopped, and the
+   * hovered tree's wood left / full-grown wood.
+   */
+  private drawTreeHealth(world: World, ui: UiState): void {
+    const s = world.state;
+    const { ctx, cam } = this;
+    const px = cam.zoom / SPRITE_W; // screen px per art px
+    const visible = (i: number) => s.tiles[i] === Tile.Tree && world.fog[i] <= CONFIG.fogRadius;
+    const barTop = (x: number, y: number) => cam.toScreen(x + BAR.x / SPRITE_W, y + BAR.y / SPRITE_W);
+
+    const { x0, x1, y0, y1 } = this.visibleTiles(s);
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const i = y * s.w + x;
+        if (!visible(i) || s.wood[i] >= world.maxWood[i]) continue;
+        const [sx, sy] = barTop(x, y);
+        // Whole screen pixels keep the bar crisp; the outline stays at least 1 px.
+        const l = Math.round(sx);
+        const t = Math.round(sy);
+        const w = Math.round(BAR.w * px);
+        const h = Math.max(3, Math.round(BAR.h * px));
+        const o = Math.max(1, Math.round(px));
+        const inner = w - 2 * o;
+        const fill = Math.ceil(inner * (s.wood[i] / world.maxWood[i]));
+        ctx.fillStyle = BAR_COLOR.outline;
+        ctx.fillRect(l, t, w, h);
+        ctx.fillStyle = BAR_COLOR.lost;
+        ctx.fillRect(l + o + fill, t + o, inner - fill, h - 2 * o);
+        ctx.fillStyle = BAR_COLOR.health;
+        ctx.fillRect(l + o, t + o, fill, h - 2 * o);
+      }
+    }
+
+    if (ui.placing || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
+    const i = tileAt(s, ui.hover.x, ui.hover.y);
+    if (!visible(i)) return;
+    const x = i % s.w;
+    const [cx] = cam.toScreen(x + 0.5, 0);
+    const [, ty] = barTop(x, (i / s.w) | 0);
+    const label = `${fmt(Math.ceil(s.wood[i]))}/${fmt(world.maxWood[i])}`;
+    ctx.font = HOVER_FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(27,26,16,.85)';
+    ctx.strokeText(label, cx, ty - 2);
+    ctx.fillStyle = '#f6dca0';
+    ctx.fillText(label, cx, ty - 2);
   }
 
   private drawBuilding(s: GameState, b: Building): void {

@@ -12,6 +12,8 @@ npm run build   # typecheck + production build to dist/
 
 ## Controls
 Drag to pan, wheel or pinch to zoom. In **Chop** mode, tap a tree next to your land for +1 wood.
+Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
+shows a health bar.
 In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood or food), a Lumber Camp upgrades the axe, a Barn
@@ -40,7 +42,7 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
-- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
+- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
 - `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – Silkscreen regular and bold (SIL Open Font License, `OFL.txt`)
@@ -48,6 +50,7 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 
 ## Changelog
 **Unreleased** – Art.
+- Tree health: a chopped tree shows a health bar (green left, red lost); hovering a tree shows its wood left / full-grown wood.
 - Pixel-art UI: Silkscreen pixel font (bold numbers), sized in multiples of 8 px so it stays on its pixel grid; wooden plank buttons that press down, gold for the active tool and skill picks, parchment for build cards; a wooden sidebar.
 - Icons for resources, stats, tools and menu buttons. Costs are icon chips, red where you are short.
 - Build cards show the building's sprite.
