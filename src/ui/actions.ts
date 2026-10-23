@@ -1,11 +1,12 @@
 import { CONFIG } from '../config';
-import { isActive, workersOf, type BuildingKind } from '../core/buildings';
+import { buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
 import { hireVillager, togglePause, upgrade } from '../core/commands';
-import { canAfford, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
+import { canAfford, commission, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { getStats, type Stats } from '../core/stats';
 import type { Building, Cost, GameState, HireResource, Job } from '../core/types';
 import type { World } from '../core/world';
 import { seasonName } from './seasonInfo';
+import { BUILDING_TEXT, fmt } from './text';
 
 export interface Action {
   label: string;
@@ -76,7 +77,7 @@ const SCOPE: Record<UpgradeKind, string> = {
 const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
 
 function pauseAction(w: World, b: Building): Action {
-  const active = isActive(w.state, b);
+  const active = !w.state.paused.includes(b.id);
   return {
     label: active ? 'Pause production' : 'Resume production',
     hint: active ? 'Workers finish deliveries, then return to chopping.' : 'Available villagers will return to this workplace.',
@@ -117,6 +118,7 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     pauseAction(w, b),
   ],
   sheepFarm: (w, b) => [pauseAction(w, b)],
+  tradingPost: (w, b) => [pauseAction(w, b)],
 };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -124,7 +126,9 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** Staffing line for a workplace. */
 function staffInfo(w: World, b: Building, worker: string): string {
   const s = w.state;
-  if (!isActive(s, b)) return 'Production paused.';
+  if (s.paused.includes(b.id)) return 'Production paused.';
+  const needs = NEEDS[b.kind];
+  if (!isActive(s, b) && needs) return `Needs a ${BUILDING_TEXT[needs].name} to work.`;
   const n = s.villagers.filter((v) => v.workplace === b.id).length;
   const max = workersOf(s, b);
   return `${n} of ${max} ${worker}${max === 1 ? '' : 's'} assigned.${n < max ? ' Waiting for an empty-handed villager.' : ''}`;
@@ -135,7 +139,7 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
     const st = getStats(w.state);
-    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')}`;
+    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('trade'), 'trader')}`;
     return st.eat ? `${jobs} · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : jobs;
   },
   farm: (w, b) => {
@@ -150,5 +154,21 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   sheepFarm: (w, b) => {
     const st = getStats(w.state);
     return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per leather' : '');
+  },
+  market: (w) => {
+    const c = commission(w.state);
+    const posts = countOf(w.state, 'tradingPost');
+    return `Selling pays ${Math.round(100 * (1 - c))}% of value, buying costs ${Math.round(100 * (1 + c))}% · ${plural(posts, 'trading post')} deliver${posts === 1 ? 's' : ''} here`;
+  },
+  taxOffice: (w) => {
+    const st = getStats(w.state);
+    return `${plural(st.taxedHouses.size, 'house')} taxed by all Tax Offices · +${fmt(st.tax * 60)} gold/min`;
+  },
+  tradingPost: (w, b) => {
+    const s = w.state;
+    const load = getStats(s).tradeLoads.get(b.id);
+    if (load === undefined) return staffInfo(w, b, 'trader');
+    const gap = Math.min(...s.buildings.filter((m) => m.kind === 'market').map((m) => buildingGap(b, m)));
+    return `${staffInfo(w, b, 'trader')} · ${plural(gap, 'tile')} to the nearest Market · ${load.toFixed(1)} gold per trip`;
   },
 };

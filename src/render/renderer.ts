@@ -55,6 +55,9 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   quarry: '#78909c',
   sheepFarm: '#9ccc65',
   well: '#4fc3f7',
+  market: '#b23b2e',
+  taxOffice: '#9aa3ac',
+  tradingPost: '#8f7149',
 };
 /** Health bar over a chopped tree, in art pixels from the tile's top-left (outline included). */
 const BAR = { x: 2, y: 3, w: 12, h: 4 };

@@ -1,11 +1,13 @@
 import { CONFIG } from '../config';
-import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, type BuildingKind } from './buildings';
-import { buildingCost, buildingRefund, gain, pay, popCap, upgradeCost, villagerCost, type UpgradeKind } from './economy';
+import { addBuilding, BUILDINGS, buildingAt, buildingById, CITY_KINDS, countOf, footprint, type BuildingKind } from './buildings';
+import {
+  buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
+} from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4 } from './grid';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { spawnVillager } from './state';
 import { getStats } from './stats';
-import { Tile, type Building, type HireResource, type ResourceKey } from './types';
+import { Tile, type Building, type GameState, type HireResource, type ResourceKey } from './types';
 import { goHome } from './systems/movement';
 import { jobResource } from './systems/workplace';
 import { claimTile, clearTree, onBuildingsChanged, type World } from './world';
@@ -49,6 +51,25 @@ export function upgrade(w: World, kind: UpgradeKind): boolean {
 }
 
 export const upgradeAxe = (w: World) => upgrade(w, 'axe');
+
+/** Sells `n` of a resource at a Market. Trades are exchanges, so lifetime totals are untouched. */
+export function sellResource(w: World, res: TradeResource, n: number): boolean {
+  const s = w.state;
+  if (!canTrade(s, n) || s.resources[res] < n) return false;
+  s.resources[res] -= n;
+  s.resources.gold += marketQuote(s, res, n, 'sell');
+  return true;
+}
+
+/** Buys `n` of a resource at a Market with gold. */
+export function buyResource(w: World, res: TradeResource, n: number): boolean {
+  const s = w.state;
+  if (!canTrade(s, n) || !pay(s, { gold: marketQuote(s, res, n, 'buy') })) return false;
+  s.resources[res] += n;
+  return true;
+}
+
+const canTrade = (s: GameState, n: number) => Number.isInteger(n) && n > 0 && countOf(s, 'market') > 0;
 
 /** Pause/resume a workplace; its workers return to lumberjacking while paused. */
 export function togglePause(w: World, id: number): boolean {

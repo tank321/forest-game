@@ -92,3 +92,6 @@ They are a reference to tune against, not something to copy.
 | Stone | Quarry workplace (never depletes), miners deliver to the TC | quarries with assigned villagers; stone in late costs | ✓ v5. No rock tiles: the map stays trees only |
 | Leather | Sheep Farm, 1 herder (0.5/s, carry 10); Fertile Herding adds equal food | Sheep Farm, 1 herder (0.67/s, carry 15) | ✓ v7 |
 | Farm adjacency | Well: farms within 1 tile get ×3 harvest, ×2 carry | Well next to a farm: ×3 harvest, ×2 carry | ✓ v5 |
+| Market | City building; sells at 80%, buys at 120% of value (wood 1, food 5, stone 20, leather 20) | City Market; wood 1, food 5, textiles 20, stone 50, flat 20% commission | ✓ v9 (stone cheaper: our quarries never deplete) |
+| Tax | Tax Office: 0.2 gold/s per house within 4 tiles | house tax via Tax Office; ×5 next to a Church | ✓ v9, no Church |
+| Trade | Trading Post → nearest Market, 1 trader; gold per trip 10·(gap/10)^1.5, straight-line gap | mules between Rural and City Market; superlinear in the gap between buildings | ✓ v9 |

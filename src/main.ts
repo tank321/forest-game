@@ -52,7 +52,7 @@ attachInput(canvas, cam, {
       if (moveBuilding(world, b.id, x, y)) {
         ui.moving = null;
         hud.message(`${BUILDING_TEXT[b.kind].name} moved.`);
-      } else hud.message('Cannot move there. Choose clear land; houses must touch the Town Center or another house.');
+      } else hud.message('Cannot move there. Choose clear land; city buildings must touch the Town Center or another city building.');
       return;
     }
     if (ui.placing) {
@@ -85,11 +85,12 @@ function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
   simulate(world, t, catchUpDt);
-  const change = (r: 'wood' | 'food') => {
+  const change = (r: 'wood' | 'food' | 'gold') => {
     const d = s.resources[r] - before[r];
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
   };
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}`, 8000);
+  const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}`, 8000);
 }
 if (loaded) catchUp((Date.now() - loaded.savedAt) / 1000);
 

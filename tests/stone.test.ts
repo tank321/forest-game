@@ -64,7 +64,7 @@ describe('quarries', () => {
     expect(upgradeCost(s, 'pick', 1)).toEqual({ wood: 500, stone: 50 });
     expect(upgradeCost(s, 'pick', 10)).toBeNull();
     const base = getStats(s);
-    s.resources = { wood: 1e9, food: 0, stone: 1e9, leather: 1e9 };
+    s.resources = { wood: 1e9, food: 0, stone: 1e9, leather: 1e9, gold: 0 };
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'pick')).toBe(true);
     expect(upgrade(w, 'pick')).toBe(false);
     const st = getStats(s);
@@ -93,8 +93,8 @@ describe('quarries', () => {
       upgrades: { axe: 2, farm: 1 },
     };
     const { state } = deserialize(JSON.stringify({ version: 4, savedAt: 1, state: v4state }));
-    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 0, leather: 0 });
-    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 0, leather: 0 });
+    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 0, leather: 0, gold: 0 });
+    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 0, leather: 0, gold: 0 });
     expect(state.upgrades).toEqual({ axe: 2, farm: 1, pick: 0, coats: 0 });
   });
 

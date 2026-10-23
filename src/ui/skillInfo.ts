@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { commission } from '../core/economy';
 import { lvl, SKILLS, type SkillDef, type SkillId } from '../core/skills';
 import type { GameState } from '../core/types';
 
@@ -10,6 +11,7 @@ export const SKILL_GROUP: Record<SkillId, SkillGroup> = {
   powerSwing: 'Gathering', campCrews: 'Gathering', teamwork: 'Gathering',
   greenThumbs: 'Gathering', stonecutters: 'Gathering', fertileHerding: 'Gathering',
   roomyHouses: 'Village', recruiters: 'Village', quarryCrews: 'Village',
+  taxCollectors: 'Village', packMules: 'Village', shrewdTraders: 'Village',
   masterBuilders: 'Building', masons: 'Building', deepWells: 'Building',
 };
 
@@ -40,6 +42,9 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'masons': return `${discount} lower stone costs`;
     case 'quarryCrews': return `+${level} miner${level === 1 ? '' : 's'} per quarry`;
     case 'fertileHerding': return level ? 'Herders deliver 1 food per leather' : 'Herders deliver leather only';
+    case 'taxCollectors': return `+${20 * level}% tax`;
+    case 'packMules': return `+${25 * level}% gold per trade trip`;
+    case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level } }))}% market commission`;
     case 'deepWells': return `Wells reach farms within ${CONFIG.well.radius + level} tile${CONFIG.well.radius + level === 1 ? '' : 's'}`;
   }
 }

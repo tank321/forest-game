@@ -100,6 +100,31 @@ button.danger { color: #ffb6a3; }
 .chip { display: inline-flex; align-items: center; gap: 2px; }
 .chip.short { color: #ff9a80; }
 .parchment .chip.short { color: #b3261e; }
+#panel h2.with-thumb { display: flex; align-items: center; gap: 10px; }
+
+/* Market: resource picker, rate, quick lots, custom amount. Icons stay at whole-pixel sizes (12, 24, 36). */
+.market { display: grid; gap: 8px; font-variant-numeric: tabular-nums; }
+.market-label { margin-top: 4px; color: var(--tan); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-shadow: var(--outline); }
+.market-tiles, .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.market button { justify-content: center; }
+.market-tile { flex-direction: column; gap: 0; min-height: 68px; padding: 2px; }
+.market-tile .ico { width: 36px; height: 36px; background-size: 36px; }
+.market-tile small { font-size: 12px; line-height: 16px; }
+.market-rate { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 18px; padding: 4px 8px; border-left: 3px solid #b28b48; background: #24170ecc; color: #e6d7b6; font-size: 14px; }
+.market-rate span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.market-lot { flex-direction: column; gap: 0; min-height: 50px; padding: 0 2px; }
+.market-lot b { font-size: 16px; line-height: 20px; }
+.market-lot small { display: inline-flex; align-items: center; gap: 2px; color: var(--tan); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.market-lot .ico { width: 12px; height: 12px; background-size: 12px; }
+.market-custom { display: flex; gap: 6px; }
+.market-custom input { flex: 1; min-width: 0; min-height: 46px; padding: 0 8px; background: none; color: var(--cream); font: inherit; font-size: 18px; font-variant-numeric: tabular-nums; appearance: textfield; }
+.market-custom input::-webkit-inner-spin-button, .market-custom input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.market-custom input::placeholder { color: var(--tan); opacity: .7; }
+.market-custom input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.market-confirm { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.market-confirm button { min-height: 46px; font-weight: 700; }
+.market-note { min-height: 20px; color: #d7edac; font-size: 13px; line-height: 20px; text-shadow: var(--outline); }
+
 #menu { display: flex; gap: 6px; padding: 8px 12px 12px; }
 #menu button { padding: 0 4px; }
 #devTap { margin-left: auto; color: #e9b8ff; }

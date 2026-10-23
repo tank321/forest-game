@@ -1,4 +1,4 @@
-# Forest Game (alpha v8)
+# Forest Game (alpha v9)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -17,11 +17,11 @@ shows a health bar.
 In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood, food or leather), a Lumber Camp upgrades the axe, a Barn
-upgrades farms, a Quarry upgrades picks. Esc cancels.
+upgrades farms, a Quarry upgrades picks, a Market trades goods for gold. Esc cancels.
 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
-Moves are free; a green footprint marks valid cleared land, and houses still need a neighboring
-house or Town Center. The original building stays until you place it; **Cancel move** or Escape cancels.
+Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
+Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
 **Remove…** shows the refund before **Remove permanently** confirms deletion. Removal returns 50%
 of the original construction materials, rounded down per resource; upgrade costs are excluded.
 Workers deliver carried resources before returning to lumberjacking. Removing houses reduces the
@@ -50,6 +50,18 @@ out the town slows down: **Hungry** (no food) halves chopping and mining, **Cold
 winter) halves farming, mining and herding. Food and wood rates on the plaque are net of upkeep.
 **Coats** at the Town Center (wood and leather, 3 levels) cut firewood by 25% per level.
 
+**Gold:** a **Market** (2×2, a city building) sells wood, food, stone and leather for gold at 80% of
+their value (wood 1, food 5, stone 20, leather 20) and sells them to you at 120%. Select the Market,
+pick a resource (each tile shows your stock), then tap a quick amount from 1 to 10M under **Sell** or
+**Buy** (each shows the gold it earns or costs), or type an amount (**Max** fills in your whole stock). Market trades don't count toward the production rates on the plaque. A **Tax Office**
+(2×2, a city building) collects 0.2 gold/s from every house within 4 tiles; a house pays once, however
+many offices reach it. A **Trading Post** (2×2, anywhere) takes one empty-handed lumberjack as its
+trader, who loads gold and carries it to the nearest Market. Gold per trip grows faster than the
+straight-line gap between the two buildings (10 gold at 10 tiles, 28 at 20), so put trading posts far
+from the Market. Without a Market the post stands idle. Gold pays for houses from the 13th. Skills:
+**Tax Collectors** (+20% tax per level), **Pack Mules** (+25% gold per trip per level) and
+**Shrewd Traders** (Market commission 5 points lower per level).
+
 Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
@@ -64,18 +76,30 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
-  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, miners, herders) · `movement.ts` shared walking
-  - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep)
-  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, miners, herders, traders) · `movement.ts` shared walking
+  - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
+  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
-  - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
+  - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `skillModal.ts` skill journal and relic choices, `skillInfo.ts` skill groups and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v9** – Gold.
+- Gold resource, shown on the stats plaque. The away message reports gold when it changed.
+- Market (2×2, city building): sell goods for gold at 80% of their value or buy them at 120%. Its panel has a resource picker with stock, the exchange rate, quick amounts from 1 to 10M with their gold, a custom amount with Max, and a note confirming the last trade. Trades don't count as production.
+- A selected building's panel heading shows its sprite.
+- Tax Office (2×2, city building): houses within 4 tiles pay 0.2 gold/s each.
+- Trading Post (2×2) with a trader job: the trader carries gold to the nearest Market. Gold per trip grows with the gap between the buildings to the power 1.5. The post needs a Market to work.
+- Markets and Tax Offices count as city buildings, so houses can be built against them.
+- Houses from the 13th cost gold.
+- Skills: Tax Collectors, Pack Mules, Shrewd Traders.
+- Sprites: market stall with a striped awning, stone tax office with a coin sign, trading post with a pack mule, trader in purple with a coin pouch, gold icon.
+- Saves migrate from v8 automatically.
+
 **v8** – Seasons and upkeep.
 - Four 3-minute seasons. Farms harvest ×1.5 in autumn and lie fallow in winter; the map turns snowy in winter.
 - Villagers beyond the first 5 eat food all year and burn firewood in winter. Running out makes the town Hungry (chopping and mining ×0.5) or Cold (farming, mining and herding ×0.5); nobody dies.

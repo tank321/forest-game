@@ -35,15 +35,18 @@ No linter or formatter is configured.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
   - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery. `nearestTree`
     picks marked trees first, then the shortest next trip: walk to the tree plus its walk home (`fields.wood`).
-  - Workplace jobs (`farm`, `mine`, `herd`) share `workplace.ts`. Its `WORK` table maps each job
-    to a resource and the stats that drive it, plus an optional `also` resource delivered alongside
+  - Workplace jobs (`farm`, `mine`, `herd`, `trade`) share `workplace.ts`. Its `WORK` table maps each job
+    to a resource and an `output(st, place)` giving the rate and carry at that workplace (Well-boosted
+    farms, gap-based trade loads), plus an optional `also` resource delivered alongside
     it (herders' food from Fertile Herding). Workplaces never run out.
+  - `NEEDS` (`buildings.ts`) names a building a workplace requires (Trading Post → Market). `isActive`
+    checks it, so an unmet need unstaffs the workplace like a pause.
   - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at
     `carry === 0`. That keeps resources conserved, and tests check the totals.
 - **Effective values.** Gameplay reads villager and production numbers from `getStats(s)`
   (`stats.ts`: config × upgrades × skills × season and upkeep), not from `CONFIG` directly.
-  Upkeep (`eat`, `burn`) and the `hungry`/`cold` shortages are derived there from villager count,
-  season and stock. Well-boosted farms are
+  Upkeep (`eat`, `burn`), tax and the `hungry`/`cold` shortages are derived there from villager count,
+  buildings, season and stock. Well-boosted farms are
   also computed there on demand, so there is no cache to invalidate.
 - **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`, `coats`) read per-resource
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and

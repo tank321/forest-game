@@ -14,11 +14,11 @@ function farmWorld(well?: [dx: number, dy: number]): { w: World; farmId: number 
   s.nextRelicAt = Infinity;
   const { x, y } = s.origin;
   clearArea(w, x - 6, y - 2, x - 1, y + 4);
-  s.resources = { wood: 1e4, food: 0, stone: 1e3, leather: 0 };
+  s.resources = { wood: 1e4, food: 0, stone: 1e3, leather: 0, gold: 0 };
   expect(placeBuilding(w, 'farm', x - 3, y)).toBe(true);
   const farmId = s.buildings[s.buildings.length - 1].id;
   if (well) expect(placeBuilding(w, 'well', x + well[0], y + well[1])).toBe(true);
-  s.resources = { wood: 0, food: 0, stone: 0, leather: 0 };
+  s.resources = { wood: 0, food: 0, stone: 0, leather: 0, gold: 0 };
   return { w, farmId };
 }
 

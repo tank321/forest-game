@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { distToBuilding } from './buildings';
+import { buildingGap, type BuildingKind } from './buildings';
 import { seasonOf, WINTER } from './seasons';
 import { lvl } from './skills';
 import type { GameState } from './types';
@@ -29,6 +29,9 @@ export interface Stats {
   winterBurn: number; // what `burn` is in winter
   hungry: boolean; // food ran out: chopping and mining slowed
   cold: boolean; // firewood ran out in winter: farming, mining and herding slowed
+  taxedHouses: ReadonlySet<number>; // ids of houses within reach of a Tax Office
+  tax: number; // gold/s from taxed houses
+  tradeLoads: ReadonlyMap<number, number>; // Trading Post id -> gold per trip (none without a Market)
 }
 
 /** Effective gameplay values: base config × upgrades × skills × season and upkeep (later: × legacy). */
@@ -50,6 +53,7 @@ export function getStats(s: GameState): Stats {
   // Producers of the missing resource are never slowed, so a shortage can always be worked off.
   const fed = hungry ? u.hungry : 1;
   const warm = cold ? u.cold : 1;
+  const taxedHouses = inRange(s, 'house', 'taxOffice', CONFIG.tax.radius);
   return {
     speed: speed * (1 + 0.1 * lvl(s, 'swiftFeet')),
     chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed,
@@ -66,7 +70,7 @@ export function getStats(s: GameState): Stats {
     herdCarry: (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm,
     herdFood: lvl(s, 'fertileHerding'),
     wellRadius,
-    wellFarms: wellFarms(s, wellRadius),
+    wellFarms: inRange(s, 'farm', 'well', wellRadius),
     wellHarvest: CONFIG.well.harvestMult,
     wellCarry: CONFIG.well.carryMult,
     season,
@@ -75,16 +79,34 @@ export function getStats(s: GameState): Stats {
     winterBurn,
     hungry,
     cold,
+    taxedHouses,
+    tax: taxedHouses.size * CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')),
+    tradeLoads: tradeLoads(s),
   };
 }
 
-/** Farms with any tile within `r` of a Well. Recomputed on demand: wells × farms is small. */
-function wellFarms(s: GameState, r: number): Set<number> {
-  const wells = s.buildings.filter((b) => b.kind === 'well');
+/** Ids of `kind` buildings within `r` (Chebyshev, tile to tile) of a `source` building. Recomputed on demand: sources × targets is small. */
+function inRange(s: GameState, kind: BuildingKind, source: BuildingKind, r: number): Set<number> {
+  const sources = s.buildings.filter((b) => b.kind === source);
   const out = new Set<number>();
-  if (!wells.length) return out;
-  for (const f of s.buildings) {
-    if (f.kind === 'farm' && wells.some((wl) => distToBuilding(f, wl.x, wl.y) <= r)) out.add(f.id);
+  if (!sources.length) return out;
+  for (const b of s.buildings) {
+    if (b.kind === kind && sources.some((src) => buildingGap(b, src) <= r)) out.add(b.id);
+  }
+  return out;
+}
+
+/** Gold per trip for each Trading Post, from the straight-line gap to the nearest Market. */
+function tradeLoads(s: GameState): Map<number, number> {
+  const markets = s.buildings.filter((b) => b.kind === 'market');
+  const out = new Map<number, number>();
+  if (!markets.length) return out;
+  const { goldAtRef, refGap, exponent } = CONFIG.trade;
+  const mules = 1 + 0.25 * lvl(s, 'packMules');
+  for (const b of s.buildings) {
+    if (b.kind !== 'tradingPost') continue;
+    const gap = Math.min(...markets.map((m) => buildingGap(b, m)));
+    out.set(b.id, goldAtRef * (gap / refGap) ** exponent * mules);
   }
   return out;
 }

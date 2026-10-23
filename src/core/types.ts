@@ -4,14 +4,14 @@ import type { SkillId } from './skills';
 export const Tile = { Grass: 0, Tree: 1, Building: 2, Relic: 3 } as const;
 export type Tile = (typeof Tile)[keyof typeof Tile];
 
-export const RESOURCES = ['wood', 'food', 'stone', 'leather'] as const;
+export const RESOURCES = ['wood', 'food', 'stone', 'leather', 'gold'] as const;
 export type ResourceKey = (typeof RESOURCES)[number];
 export type Resources = Record<ResourceKey, number>;
 export type Cost = Partial<Resources>;
 /** Resources villagers can be hired with, each on its own price track. */
 export type HireResource = 'wood' | 'food' | 'leather';
 
-export type Job = 'lumber' | 'farm' | 'mine' | 'herd';
+export type Job = 'lumber' | 'farm' | 'mine' | 'herd' | 'trade';
 /** Lumberjack: idle → toTree → chop → toHome. Workplace jobs: idle → toWork → work → toHome. */
 export type VillagerState = 'idle' | 'toTree' | 'chop' | 'toWork' | 'work' | 'toHome';
 
@@ -25,7 +25,7 @@ export interface Villager {
   target: number; // claimed tree tile, -1 if none (released at every delivery)
   carry: number; // of the job's resource
   job: Job;
-  workplace: number; // building id for workplace jobs (farm, mine, herd), -1 otherwise
+  workplace: number; // building id for workplace jobs (farm, mine, herd, trade), -1 otherwise
 }
 
 export interface Building {

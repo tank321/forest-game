@@ -4,7 +4,7 @@ import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
 import type { GameState } from './types';
 
-const VERSION = 8;
+const VERSION = 9;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -93,6 +93,14 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
     };
   },
   7: (f) => ({ ...f, version: 8, state: { ...f.state, upgrades: { ...f.state.upgrades, coats: 0 } } }),
+  8: (f) => {
+    const s = f.state;
+    return {
+      ...f,
+      version: 9,
+      state: { ...s, resources: { ...s.resources, gold: 0 }, totals: { ...s.totals, gold: 0 } },
+    };
+  },
 };
 
 export function serialize(s: GameState, savedAt = Date.now()): string {

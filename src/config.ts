@@ -63,6 +63,15 @@ export const CONFIG = {
     },
     burnCut: 0.25, // firewood −25% per level
   },
+  // gold value of each resource; sales pay value × (1 − commission), purchases cost value × (1 + commission)
+  market: {
+    prices: { wood: 1, food: 5, stone: 20, leather: 20 },
+    commission: 0.2,
+    lots: { wood: 100, food: 20, stone: 5, leather: 5 }, // base trade lot, ×1/×10/×100 in the UI
+  },
+  tax: { perHouse: 0.2, radius: 4 }, // gold/s per house within radius (Chebyshev) of a Tax Office
+  // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
+  trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6 }, // zoom = CSS px per tile
   save: { key: 'forest-game-save', intervalMs: 10_000 },

@@ -19,7 +19,7 @@ function town(villagers: number, time = 0): World {
   for (let k = 0; k < villagers; k++) spawnVillager(w.state);
   w.state.nextRelicAt = Infinity;
   w.state.time = time;
-  w.state.resources = { wood: 100, food: 100, stone: 0, leather: 0 };
+  w.state.resources = { wood: 100, food: 100, stone: 0, leather: 0, gold: 0 };
   return w;
 }
 
@@ -122,7 +122,7 @@ describe('upkeep', () => {
     expect(hungry.mineRate).toBeCloseTo(fed.mineRate * CONFIG.upkeep.hungry);
     expect([hungry.farmRate, hungry.herdRate]).toEqual([fed.farmRate, fed.herdRate]);
 
-    w.state.resources = { wood: 0, food: 100, stone: 0, leather: 0 };
+    w.state.resources = { wood: 0, food: 100, stone: 0, leather: 0, gold: 0 };
     w.state.time = WINTER_AT;
     const warm = getStats({ ...w.state, resources: { ...w.state.resources, wood: 1 } });
     const cold = getStats(w.state);

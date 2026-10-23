@@ -28,7 +28,7 @@ describe('sheep farms', () => {
   it('take one empty-handed villager and deliver only leather to the Town Center', () => {
     const { w, farmId } = withSheepFarm(2);
     const s = w.state;
-    expect(s.resources).toEqual({ wood: 0, food: 0, stone: 0, leather: 0 });
+    expect(s.resources).toEqual({ wood: 0, food: 0, stone: 0, leather: 0, gold: 0 });
     simulate(w, 120, 1 / 30);
     const herders = s.villagers.filter((v) => v.job === 'herd');
     expect(herders).toHaveLength(1);
@@ -79,7 +79,7 @@ describe('sheep farms', () => {
     s.skills = { fertileHerding: 1 };
     const { x, y } = s.origin;
     clearArea(w, x - 9, y, x - 1, y + 2); // sheep farm far west, barn between it and the Town Center
-    s.resources = { wood: 750, food: 150, stone: 0, leather: 0 };
+    s.resources = { wood: 750, food: 150, stone: 0, leather: 0, gold: 0 };
     expect(placeBuilding(w, 'sheepFarm', x - 9, y)).toBe(true);
     expect(placeBuilding(w, 'barn', x - 6, y)).toBe(true);
     const barn = s.buildings[s.buildings.length - 1];
@@ -146,8 +146,8 @@ describe('leather economy', () => {
       hires: { wood: 2, food: 1 },
     };
     const { state } = deserialize(JSON.stringify({ version: 6, savedAt: 1, state: v6state }));
-    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 2, leather: 0 });
-    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 2, leather: 0 });
+    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 2, leather: 0, gold: 0 });
+    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 2, leather: 0, gold: 0 });
     expect(state.hires).toEqual({ wood: 2, food: 1, leather: 0 });
   });
 });

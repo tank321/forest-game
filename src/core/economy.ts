@@ -37,6 +37,22 @@ export const buildingRefund = (b: Building): Cost =>
     }),
   );
 
+/** Resources the Market deals in. */
+export type TradeResource = Exclude<ResourceKey, 'gold'>;
+export const TRADE_RESOURCES = Object.keys(CONFIG.market.prices) as TradeResource[];
+
+/** Market fee as a fraction of value (Shrewd Traders lowers it). */
+export const commission = (s: Pick<GameState, 'skills'>) =>
+  Math.max(0, CONFIG.market.commission - 0.05 * lvl(s, 'shrewdTraders'));
+
+/** Gold received for selling `n` of `res`, or paid for buying it. */
+export function marketQuote(s: Pick<GameState, 'skills'>, res: TradeResource, n: number, side: 'sell' | 'buy'): number {
+  const value = n * CONFIG.market.prices[res];
+  const c = commission(s);
+  // Round in the Market's favor; the small epsilon keeps 100 × 0.8 from flooring to 79.
+  return side === 'sell' ? Math.floor(value * (1 - c) + 1e-9) : Math.ceil(value * (1 + c) - 1e-9);
+}
+
 export const popCap = (s: GameState) => basePop + (popPerHouse + lvl(s, 'roomyHouses')) * countOf(s, 'house');
 
 export type UpgradeKind = keyof GameState['upgrades'];

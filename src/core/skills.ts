@@ -23,6 +23,9 @@ export const SKILLS = {
   quarryCrews: { max: 2, requires: 'stonecutters' }, // +1 miner per quarry / lvl
   deepWells: { max: 1, requires: 'greenThumbs' }, // well radius +1
   fertileHerding: { max: 1 }, // herders also deliver food equal to their leather
+  taxCollectors: { max: 5 }, // +20% tax / lvl
+  packMules: { max: 3 }, // +25% gold per trade trip / lvl
+  shrewdTraders: { max: 2, requires: 'taxCollectors' }, // market commission −5 points / lvl
 } as const satisfies Record<string, SkillDef>;
 export type SkillId = keyof typeof SKILLS;
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];

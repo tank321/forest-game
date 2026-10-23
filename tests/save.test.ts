@@ -41,6 +41,18 @@ it('migrates v5 building costs from build order and saved discounts, then preser
   expect(deserialize(serialize(state)).state).toEqual(state);
 });
 
+it('migrates a v8 save to v9 with no gold', () => {
+  const w = smallWorld(30, 1);
+  simulate(w, 60, 1);
+  const old = JSON.parse(serialize(w.state, 9));
+  old.version = 8;
+  delete old.state.resources.gold;
+  delete old.state.totals.gold;
+  const { state } = deserialize(JSON.stringify(old));
+  expect(state.resources).toEqual({ ...w.state.resources, gold: 0 });
+  expect(state.totals).toEqual({ ...w.state.totals, gold: 0 });
+});
+
 it('migrates a v2 save to v3', () => {
   const a = smallWorld(30, 1);
   simulate(a, 60, 1);

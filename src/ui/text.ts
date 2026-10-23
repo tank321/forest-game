@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import type { BuildingKind } from '../core/buildings';
 import type { SkillId } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
@@ -5,13 +6,25 @@ import type { UiIcon } from '../render/sprites';
 
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
-  house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a house.' },
+  house: { name: 'House', desc: 'Raises the population cap. Must touch the Town Center or a city building.' },
   lumberCamp: { name: 'Lumber Camp', desc: 'Stores wood. Upgrade all lumberjacks here.' },
   barn: { name: 'Barn', desc: 'Stores food and leather. Upgrade all farms and sheep farms here.' },
   farm: { name: 'Farm', desc: 'Assigns a villager to grow food.' },
   quarry: { name: 'Quarry', desc: 'Miners gather stone and deliver it to the Town Center.' },
   sheepFarm: { name: 'Sheep Farm', desc: 'A herder gathers leather for the Town Center or the nearest Barn.' },
   well: { name: 'Well', desc: 'Nearby farms harvest ×3 and carry ×2.' },
+  market: {
+    name: 'Market',
+    desc: 'Sell goods for gold or buy them with gold. Traders deliver gold here. Must touch the Town Center or a city building.',
+  },
+  taxOffice: {
+    name: 'Tax Office',
+    desc: `Houses within ${CONFIG.tax.radius} tiles pay gold. Must touch the Town Center or a city building.`,
+  },
+  tradingPost: {
+    name: 'Trading Post',
+    desc: 'A trader carries gold to the nearest Market. The farther apart they are, the more gold per trip.',
+  },
 };
 
 export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiIcon }> = {
@@ -30,6 +43,9 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   quarryCrews: { name: 'Quarry Crews', desc: '+1 miner per quarry per level', icon: 'pair' },
   deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles', icon: 'drop' },
   fertileHerding: { name: 'Fertile Herding', desc: 'Herders also bring back as much food as leather', icon: 'food' },
+  taxCollectors: { name: 'Tax Collectors', desc: '+20% tax per level', icon: 'gold' },
+  packMules: { name: 'Pack Mules', desc: '+25% gold per trade trip per level', icon: 'basket' },
+  shrewdTraders: { name: 'Shrewd Traders', desc: 'Market commission 5 points lower per level', icon: 'gold' },
 };
 
 const UNITS = ['', 'k', 'M', 'B', 'T', 'Qa', 'Qi'];

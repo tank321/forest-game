@@ -3,6 +3,7 @@ import { removeBuilding } from '../core/commands';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import type { World } from '../core/world';
 import { ACTIONS, INFO, type Action } from './actions';
+import { MarketView } from './market';
 import type { UiState } from './state';
 import { BUILDING_TEXT, costHtml } from './text';
 
@@ -11,15 +12,19 @@ const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILD
 /** Bottom panel: placement prompt, selected building's actions, or the build menu. */
 export class Panel {
   private key = '';
+  private market: MarketView;
 
   constructor(
     private el: HTMLElement,
     private world: () => World,
     private ui: UiState,
-  ) {}
+  ) {
+    this.market = new MarketView(world, ui);
+  }
 
   update(): void {
-    const { title, sub, status, actions } = this.view();
+    const { title, thumb, sub, status, actions, custom } = this.view();
+    custom?.update(); // updates itself in place, so it stays out of the change key
     const have = this.world().state.resources;
     const html = actions.map((a) => {
       const thumb = a.thumb ? `<i class="thumb thumb-${a.thumb}"></i>` : '';
@@ -27,12 +32,13 @@ export class Panel {
       const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'}</span>` : '';
       return `${thumb}<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.moving?.id, this.ui.removing, title, sub, status, html,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.moving?.id, this.ui.removing, title, thumb, sub, status, html, !!custom,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) return;
     this.key = key;
-    this.el.innerHTML = `<h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
+    const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}</h2>` : `<h2>${title}</h2>`;
+    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
     const box = this.el.querySelector('.actions')!;
     actions.forEach((a, i) => {
       const b = document.createElement('button');
@@ -59,9 +65,10 @@ export class Panel {
         box.append(item);
       } else (a.secondary ? this.el.querySelector('.building-controls')! : box).append(b);
     });
+    if (custom) box.replaceWith(custom.el);
   }
 
-  private view(): { title: string; sub: string; status?: string; actions: Action[] } {
+  private view(): { title: string; thumb?: BuildingKind; sub: string; status?: string; actions: Action[]; custom?: MarketView } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
@@ -105,7 +112,8 @@ export class Panel {
       }
       actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => { ui.selected = null; ui.removing = null; } });
       const info = INFO[k]?.(w, ui.selected);
-      return { title: BUILDING_TEXT[k].name, sub: BUILDING_TEXT[k].desc, status: info, actions };
+      const custom = k === 'market' ? this.market : undefined;
+      return { title: BUILDING_TEXT[k].name, thumb: k, sub: BUILDING_TEXT[k].desc, status: info, actions, custom };
     }
     return {
       title: 'Build',
