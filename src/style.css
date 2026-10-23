@@ -1,0 +1,27 @@
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; background: #0b100b; color: #e8efe2; font: 14px/1.4 system-ui, sans-serif; overscroll-behavior: none; }
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 520px; margin: 0 auto; }
+#hud { padding: 8px 12px 4px; display: grid; gap: 6px; }
+.stats { display: flex; justify-content: space-between; }
+.stats b { font-variant-numeric: tabular-nums; }
+.stats small { display: block; font-size: 11px; color: #9fb197; font-variant-numeric: tabular-nums; }
+.tools { display: flex; gap: 6px; align-items: center; }
+#relic { flex: 1; text-align: right; color: #e6c75a; font-size: 13px; }
+#msg { min-height: 1.2em; color: #b9d6a5; font-size: 13px; }
+button { font: inherit; border: 0; border-radius: 6px; padding: 8px 12px; background: #2c3a2a; color: #e8efe2; cursor: pointer; }
+button.active { background: #c9a227; color: #1a1405; font-weight: 600; }
+button:disabled { background: #232823; color: #6f766c; cursor: default; }
+#world { flex: 1; width: 100%; min-height: 0; display: block; touch-action: none; }
+#panel { padding: 10px 12px 8px; display: grid; gap: 8px; border-top: 1px solid #253025; max-height: 45dvh; overflow-y: auto; }
+#panel h2 { font-size: 15px; }
+#panel .sub { color: #9fb197; font-size: 12px; }
+#panel .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+#panel .actions button { flex: 1 1 140px; text-align: left; }
+#panel .cost { display: block; font-size: 12px; opacity: .8; }
+#panel.cards { background: #1d1a0e; }
+#panel.cards .actions button { background: #3b3214; flex-basis: 100%; }
+#menu { display: flex; gap: 6px; padding: 0 12px 12px; }
+#menu button { padding: 6px 10px; font-size: 12px; background: #1c241b; }
+#devTap { margin-left: auto; background: #3a1f3a !important; }
+#panel ul { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 13px; color: #cfdac8; }
+#panel ul i { color: #8a9784; }
