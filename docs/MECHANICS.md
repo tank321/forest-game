@@ -53,7 +53,9 @@ They are a reference to tune against, not something to copy.
 
 ## Economy
 - **Resources:** wood, food, textiles (wool), stone, gold. Later: souls, relics, and decoration coins.
-- **Sheep Farm:** 1 herder (speed 1.2 tiles/s, carry 15, 0.67 leather/s). Bonus slots: Pair Herding, Fertile Herding, Workshop.
+- **Sheep Farm:** 1 herder (speed 1.2 tiles/s, carry 15, 0.67 textiles/s). Bonus slots: Pair Herding, Fertile Herding, Workshop.
+- **Fruit Orchard:** about 8×8 tiles of fruit trees, 3 workers delivering food. Bonus slots: Base bonus (×2 villager speed, ×2 harvest speed, ×5 carry), Adjacent orchard, Workshop. A worker shows speed 2.5 tiles/s, carry 145 and 2.43/s.
+- **Cotton Plantation:** about 10×10 tiles, 5 workers delivering textiles. Bonus slots: Plantation Bonus (×3 collection speed, ×3 carry), Workshop. Shares upgrades with the shepherd. A worker shows speed 1.3 tiles/s, carry 57 and 2.00/s, which is a shepherd's carry 19 and 0.67/s ×3.
 - **Market** (City Market): sell or buy at fixed values in gold (wood 1, food 5, textiles 20, stone 50) with a flat 20% commission.
 - **Gold** comes from house tax (Tax Office) and mule trade routes between the Rural Market and the City Market.
   - Mule gold per trip grows **faster than linearly** with the gap between the two markets.
@@ -90,7 +92,9 @@ They are a reference to tune against, not something to copy.
 | Offline | full simulation, 8 h cap | banked boost time ≤10 min, ×2–×10 | Decide: keep ours (more generous) or copy the boost mechanic |
 | Win | all trees cleared | all trees cleared | ✓ |
 | Stone | Quarry workplace (never depletes), miners deliver to the TC | quarries with assigned villagers; stone in late costs | ✓ v5. No rock tiles: the map stays trees only |
-| Leather | Sheep Farm, 1 herder (0.5/s, carry 10); Fertile Herding adds equal food | Sheep Farm, 1 herder (0.67/s, carry 15) | ✓ v7 |
+| Cloth (textiles) | Sheep Farm, 1 herder (0.5/s, carry 10); Fertile Herding adds equal food. Was leather until v10 | Sheep Farm, 1 herder (0.67/s, carry 15) | ✓ v7 |
+| Orchard | Fruit Orchard 5×5, 3 orchardists at ×2 farmer speed and harvest, ×5 carry; Barn upgrades and seasons apply; no adjacency bonus | Fruit Orchard ~8×8, 3 workers, ×2 speed and harvest, ×5 carry; Adjacent orchard and Workshop bonus slots | ✓ v10 |
+| Cotton | Cotton Plantation 6×6, 5 pickers at ×3 herder rate and carry, Barn upgrades shared; costs gold | Cotton Plantation ~10×10, 5 workers; Plantation Bonus ×3 speed and carry; shares upgrades with the shepherd | ✓ v10 |
 | Farm adjacency | Well: farms within 1 tile get ×3 harvest, ×2 carry | Well next to a farm: ×3 harvest, ×2 carry | ✓ v5 |
 | Market | City building; sells at 80%, buys at 120% of value (wood 1, food 5, stone 20, leather 20) | City Market; wood 1, food 5, textiles 20, stone 50, flat 20% commission | ✓ v9 (stone cheaper: our quarries never deplete) |
 | Tax | Tax Office: 0.2 gold/s per house within 4 tiles | house tax via Tax Office; ×5 next to a Church | ✓ v9, no Church |

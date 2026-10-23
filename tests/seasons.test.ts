@@ -19,7 +19,7 @@ function town(villagers: number, time = 0): World {
   for (let k = 0; k < villagers; k++) spawnVillager(w.state);
   w.state.nextRelicAt = Infinity;
   w.state.time = time;
-  w.state.resources = { wood: 100, food: 100, stone: 0, leather: 0, gold: 0 };
+  w.state.resources = { wood: 100, food: 100, stone: 0, cloth: 0, gold: 0 };
   return w;
 }
 
@@ -65,19 +65,19 @@ describe('season effects text', () => {
   it('describes farms and the town upkeep for each season', () => {
     const small = getStats(town(2).state);
     expect(seasonEffects(small, 0)).toEqual([
-      'Farms harvest normally',
+      'Farms and orchards harvest normally',
       'No food upkeep yet (the first 5 villagers are free)',
       'No firewood needed',
     ]);
     expect(seasonEffects(small, WINTER)[2]).toBe('No firewood needed yet');
     const big = getStats(town(8).state); // spring stats still describe winter's burn
-    expect(seasonEffects(big, 2)[0]).toBe('Farms harvest ×1.5');
+    expect(seasonEffects(big, 2)[0]).toBe('Farms and orchards harvest ×1.5');
     expect(seasonEffects(big, WINTER)).toEqual([
-      'Farms lie fallow',
+      'Farms and orchards lie fallow',
       'Villagers eat 0.30 food/s',
       'Fires burn 0.30 wood/s',
       'Out of food: chopping and mining ×0.5',
-      'Out of firewood: farming, mining and herding ×0.5',
+      'Out of firewood: farming, mining, herding and picking ×0.5',
     ]);
   });
 });
@@ -122,7 +122,7 @@ describe('upkeep', () => {
     expect(hungry.mineRate).toBeCloseTo(fed.mineRate * CONFIG.upkeep.hungry);
     expect([hungry.farmRate, hungry.herdRate]).toEqual([fed.farmRate, fed.herdRate]);
 
-    w.state.resources = { wood: 0, food: 100, stone: 0, leather: 0, gold: 0 };
+    w.state.resources = { wood: 0, food: 100, stone: 0, cloth: 0, gold: 0 };
     w.state.time = WINTER_AT;
     const warm = getStats({ ...w.state, resources: { ...w.state.resources, wood: 1 } });
     const cold = getStats(w.state);

@@ -35,10 +35,11 @@ No linter or formatter is configured.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
   - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery. `nearestTree`
     picks marked trees first, then the shortest next trip: walk to the tree plus its walk home (`fields.wood`).
-  - Workplace jobs (`farm`, `mine`, `herd`, `trade`) share `workplace.ts`. Its `WORK` table maps each job
+  - Workplace jobs (`farm`, `orchard`, `mine`, `herd`, `cotton`, `trade`) share `workplace.ts`. Its `WORK` table maps each job
     to a resource and an `output(st, place)` giving the rate and carry at that workplace (Well-boosted
     farms, gap-based trade loads), plus an optional `also` resource delivered alongside
-    it (herders' food from Fertile Herding). Workplaces never run out.
+    it (herders' food from Fertile Herding) and an optional walk `speed` stat (orchardists). Workplaces never run out. Workers walk to their own
+    spot (`pathToWork` in `movement.ts`), spread over the interior by their index among the staff.
   - `NEEDS` (`buildings.ts`) names a building a workplace requires (Trading Post → Market). `isActive`
     checks it, so an unmet need unstaffs the workplace like a pause.
   - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at

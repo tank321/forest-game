@@ -22,7 +22,7 @@ const def = (d: Partial<BuildingDef> & Pick<BuildingDef, 'w' | 'h' | 'cost'>): B
 });
 
 export const BUILDINGS = {
-  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food', 'stone', 'leather'], buildable: false, cost: () => ({}) }),
+  townCenter: def({ w: 4, h: 4, dropoff: ['wood', 'food', 'stone', 'cloth'], buildable: false, cost: () => ({}) }),
   house: def({
     w: 1,
     h: 1,
@@ -31,13 +31,20 @@ export const BUILDINGS = {
       wood: Math.round(100 * 1.5 ** n),
       food: n >= 3 ? Math.round(50 * 1.5 ** (n - 3)) : 0,
       stone: n >= 6 ? Math.round(30 * 1.5 ** (n - 6)) : 0,
-      leather: n >= 9 ? Math.round(20 * 1.5 ** (n - 9)) : 0,
+      cloth: n >= 9 ? Math.round(20 * 1.5 ** (n - 9)) : 0,
       gold: n >= 12 ? Math.round(200 * 1.5 ** (n - 12)) : 0,
     }),
   }),
   lumberCamp: def({ w: 2, h: 2, dropoff: ['wood'], cost: (n) => ({ wood: 100 * 2 ** n }) }),
-  barn: def({ w: 2, h: 2, dropoff: ['food', 'leather'], cost: (n) => ({ wood: 150 * 2 ** n }) }),
+  barn: def({ w: 2, h: 2, dropoff: ['food', 'cloth'], cost: (n) => ({ wood: 150 * 2 ** n }) }),
   farm: def({ w: 3, h: 3, workers: 1, job: 'farm', cost: (n) => ({ wood: Math.round(250 * 1.5 ** n) }) }),
+  orchard: def({
+    w: 5,
+    h: 5,
+    workers: 3,
+    job: 'orchard',
+    cost: (n) => ({ wood: Math.round(3000 * 1.5 ** n), stone: Math.round(300 * 1.5 ** n), cloth: Math.round(100 * 1.5 ** n) }),
+  }),
   quarry: def({ w: 2, h: 2, workers: 2, job: 'mine', cost: (n) => ({ wood: Math.round(400 * 1.5 ** n) }) }),
   sheepFarm: def({
     w: 3,
@@ -45,6 +52,13 @@ export const BUILDINGS = {
     workers: 1,
     job: 'herd',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
+  }),
+  cottonPlantation: def({
+    w: 6,
+    h: 6,
+    workers: 5,
+    job: 'cotton',
+    cost: (n) => ({ wood: Math.round(5000 * 1.5 ** n), stone: Math.round(500 * 1.5 ** n), gold: Math.round(250 * 1.5 ** n) }),
   }),
   well: def({ w: 1, h: 1, cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
   market: def({

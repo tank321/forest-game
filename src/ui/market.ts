@@ -8,7 +8,7 @@ import { fmt, icon } from './text';
 /** Quick-trade amounts, in units of the selected resource. */
 const LOTS = [1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7] as const;
 const LOT_LABEL = ['1', '10', '100', '1K', '10K', '100K', '1M', '10M'];
-const NAME: Record<TradeResource, string> = { wood: 'Wood', food: 'Food', stone: 'Stone', leather: 'Leather' };
+const NAME: Record<TradeResource, string> = { wood: 'Wood', food: 'Food', stone: 'Stone', cloth: 'Cloth' };
 
 type Side = 'sell' | 'buy';
 

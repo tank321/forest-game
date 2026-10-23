@@ -69,7 +69,7 @@ function upgradeAction(w: World, kind: UpgradeKind, title: string, preview: (st:
 
 const SCOPE: Record<UpgradeKind, string> = {
   axe: 'Per lumberjack',
-  farm: 'Per farmer or herder · Well bonuses apply to farms only',
+  farm: 'Per farmer, orchardist, herder or picker · Well bonuses apply to farms only',
   pick: 'Per miner',
   coats: 'Whole town · firewood is burned in winter',
 };
@@ -92,7 +92,7 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   townCenter: (w) => [
     hire(w, 'wood'),
     hire(w, 'food'),
-    hire(w, 'leather'),
+    hire(w, 'cloth'),
     upgradeAction(w, 'coats', 'Coats', (st) => [{ label: 'Winter firewood', value: perSec(st.winterBurn, 'wood') }]),
   ],
   lumberCamp: (w) => [
@@ -105,11 +105,16 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     upgradeAction(w, 'farm', 'Farm upgrades', (st) => [
       { label: 'Harvest', value: `${st.farmRate.toFixed(2)} food/s` },
       { label: 'Carry', value: `${Math.round(st.farmCarry)} food` },
-      { label: 'Herding', value: `${st.herdRate.toFixed(2)} leather/s` },
-      { label: 'Herder carry', value: `${Math.round(st.herdCarry)} leather` },
+      { label: 'Orchard harvest', value: perSec(st.orchardRate, 'food') },
+      { label: 'Orchardist carry', value: `${Math.round(st.orchardCarry)} food` },
+      { label: 'Herding', value: `${st.herdRate.toFixed(2)} cloth/s` },
+      { label: 'Herder carry', value: `${Math.round(st.herdCarry)} cloth` },
+      { label: 'Picking', value: perSec(st.cottonRate, 'cloth') },
+      { label: 'Picker carry', value: `${Math.round(st.cottonCarry)} cloth` },
     ]),
   ],
   farm: (w, b) => [pauseAction(w, b)],
+  orchard: (w, b) => [pauseAction(w, b)],
   quarry: (w, b) => [
     upgradeAction(w, 'pick', 'Pick upgrades', (st) => [
       { label: 'Mining', value: `${st.mineRate.toFixed(2)} stone/s` },
@@ -118,6 +123,7 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
     pauseAction(w, b),
   ],
   sheepFarm: (w, b) => [pauseAction(w, b)],
+  cottonPlantation: (w, b) => [pauseAction(w, b)],
   tradingPost: (w, b) => [pauseAction(w, b)],
 };
 
@@ -139,7 +145,7 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
     const st = getStats(w.state);
-    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('trade'), 'trader')}`;
+    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('orchard'), 'orchardist')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('cotton'), 'picker')} · ${plural(n('trade'), 'trader')}`;
     return st.eat ? `${jobs} · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : jobs;
   },
   farm: (w, b) => {
@@ -150,10 +156,20 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
     const note = season === 0 ? ` · ${name}: the fields lie fallow.` : season !== 1 ? ` · ${name}: harvest ×${season}` : '';
     return staffInfo(w, b, 'farmer') + well + note;
   },
+  orchard: (w, b) => {
+    const st = getStats(w.state);
+    const season = CONFIG.seasons.farm[st.season];
+    const note = season === 0 ? ` · ${seasonName(st.season)}: no fruit until spring.` : '';
+    return `${staffInfo(w, b, 'orchardist')} · Each walks ${st.orchardSpeed.toFixed(1)} tiles/s, picks ${perSec(st.orchardRate, 'food')} and carries ${Math.round(st.orchardCarry)}${note}`;
+  },
   quarry: (w, b) => staffInfo(w, b, 'miner'),
   sheepFarm: (w, b) => {
     const st = getStats(w.state);
-    return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per leather' : '');
+    return staffInfo(w, b, 'herder') + (st.herdFood ? ' · Fertile Herding: +1 food per cloth' : '');
+  },
+  cottonPlantation: (w, b) => {
+    const st = getStats(w.state);
+    return `${staffInfo(w, b, 'picker')} · Each picks ${perSec(st.cottonRate, 'cloth')} and carries ${Math.round(st.cottonCarry)}`;
   },
   market: (w) => {
     const c = commission(w.state);

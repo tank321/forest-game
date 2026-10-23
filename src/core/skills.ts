@@ -22,7 +22,7 @@ export const SKILLS = {
   masons: { max: 3, requires: 'stonecutters' }, // stone costs −15% / lvl
   quarryCrews: { max: 2, requires: 'stonecutters' }, // +1 miner per quarry / lvl
   deepWells: { max: 1, requires: 'greenThumbs' }, // well radius +1
-  fertileHerding: { max: 1 }, // herders also deliver food equal to their leather
+  fertileHerding: { max: 1 }, // herders also deliver food equal to their cloth
   taxCollectors: { max: 5 }, // +20% tax / lvl
   packMules: { max: 3 }, // +25% gold per trade trip / lvl
   shrewdTraders: { max: 2, requires: 'taxCollectors' }, // market commission −5 points / lvl

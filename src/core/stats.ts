@@ -14,11 +14,16 @@ export interface Stats {
   perTree: number; // villagers allowed on one tree
   farmRate: number; // farmer food/s
   farmCarry: number;
+  orchardSpeed: number; // orchardist tiles/s
+  orchardRate: number; // orchardist food/s
+  orchardCarry: number;
   mineRate: number; // miner stone/s
   mineCarry: number;
-  herdRate: number; // herder leather/s
+  herdRate: number; // herder cloth/s
   herdCarry: number;
-  herdFood: number; // food delivered per leather (Fertile Herding)
+  herdFood: number; // food delivered per cloth (Fertile Herding)
+  cottonRate: number; // picker cloth/s
+  cottonCarry: number;
   wellRadius: number; // Chebyshev reach of a Well
   wellFarms: ReadonlySet<number>; // ids of farms boosted by a Well
   wellHarvest: number; // farm rate multiplier from a Well
@@ -54,21 +59,31 @@ export function getStats(s: GameState): Stats {
   const fed = hungry ? u.hungry : 1;
   const warm = cold ? u.cold : 1;
   const taxedHouses = inRange(s, 'house', 'taxOffice', CONFIG.tax.radius);
+  const walk = speed * (1 + 0.1 * lvl(s, 'swiftFeet'));
+  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm;
+  const farmCarry = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
+  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm; // Barn upgrades cover herders too
+  const herdCarry = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm;
   return {
-    speed: speed * (1 + 0.1 * lvl(s, 'swiftFeet')),
+    speed: walk,
     chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed,
     carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe,
     manualChop: CONFIG.manualChop * 5 ** lvl(s, 'powerSwing'),
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
     campRadius: 3,
     perTree: lvl(s, 'teamwork') ? 2 : 1,
-    farmRate: f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * CONFIG.seasons.farm[season] * warm,
-    farmCarry: (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm,
+    farmRate,
+    farmCarry,
+    orchardSpeed: walk * CONFIG.orchard.speedMult,
+    orchardRate: farmRate * CONFIG.orchard.rateMult,
+    orchardCarry: farmCarry * CONFIG.orchard.carryMult,
     mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * warm,
     mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick,
-    herdRate: CONFIG.herd.rate * f.speedGrowth ** farm * warm, // Barn upgrades cover herders too
-    herdCarry: (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm,
+    herdRate,
+    herdCarry,
     herdFood: lvl(s, 'fertileHerding'),
+    cottonRate: herdRate * CONFIG.cotton.rateMult,
+    cottonCarry: herdCarry * CONFIG.cotton.carryMult,
     wellRadius,
     wellFarms: inRange(s, 'farm', 'well', wellRadius),
     wellHarvest: CONFIG.well.harvestMult,

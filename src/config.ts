@@ -11,7 +11,7 @@ export const CONFIG = {
       17000, 25000, 33000, 49000, 65000, 97000, 130000, 195000, 260000,
     ],
     villagerCostGrowth: 1.5, // beyond the table
-    hireOffset: { wood: 0, food: 1, leather: 2 }, // steps into the table each price track starts
+    hireOffset: { wood: 0, food: 1, cloth: 2 }, // steps into the table each price track starts
     basePop: 5,
     popPerHouse: 3,
     buildingRefund: 0.5, // fraction of original construction cost returned on removal
@@ -22,7 +22,7 @@ export const CONFIG = {
       wood: [100, 200, 350, 550, 850, 1300, 2000, 3000, 4500, 6500],
       food: [0, 0, 0, 0, 300, 500, 800, 1200, 1800, 2500],
       stone: [0, 0, 0, 0, 0, 0, 100, 200, 400, 800],
-      leather: [0, 0, 0, 0, 0, 0, 0, 0, 50, 150],
+      cloth: [0, 0, 0, 0, 0, 0, 0, 0, 50, 150],
     },
     speedGrowth: 1.05, // chop rate ×1.05^lvl
     carryPerLevel: 2, // carry (base + 2·lvl)·1.02^lvl
@@ -34,7 +34,7 @@ export const CONFIG = {
       wood: [200, 400, 700, 1100, 1700, 2600, 4000, 6000, 9000, 13000],
       food: [0, 0, 0, 0, 600, 1000, 1600, 2400, 3600, 5000],
       stone: [0, 0, 0, 0, 0, 0, 150, 300, 600, 1200],
-      leather: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
+      cloth: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
     },
     speedGrowth: 1.05,
     carryPerLevel: 2,
@@ -45,13 +45,16 @@ export const CONFIG = {
     costs: {
       wood: [300, 500, 800, 1200, 1800, 2700, 4000, 6000, 9000, 13000],
       stone: [0, 50, 100, 200, 350, 550, 850, 1300, 2000, 3000],
-      leather: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
+      cloth: [0, 0, 0, 0, 0, 0, 0, 0, 80, 200],
     },
     speedGrowth: 1.05,
     carryPerLevel: 2,
     carryGrowth: 1.02,
   },
-  herd: { rate: 0.5, carry: 10 }, // herder leather/s and base carry
+  herd: { rate: 0.5, carry: 10 }, // herder cloth/s and base carry
+  // orchardists: a farmer's walk speed, harvest (Barn upgrades and seasons included) and carry × these
+  orchard: { speedMult: 2, rateMult: 2, carryMult: 5 },
+  cotton: { rateMult: 3, carryMult: 3 }, // pickers: a herder's rate and carry (Barn upgrades included) × these
   well: { radius: 1, harvestMult: 3, carryMult: 2 }, // farms within radius (Chebyshev) of a Well
   seasons: { length: 180, farm: [1, 1, 1.5, 0] }, // s per season; farm multiplier: spring, summer, autumn, winter
   // food/wood per villager beyond freeVillagers per s (wood in winter only); work multipliers on shortage
@@ -59,15 +62,15 @@ export const CONFIG = {
   coats: {
     costs: {
       wood: [300, 800, 2000],
-      leather: [30, 100, 300],
+      cloth: [30, 100, 300],
     },
     burnCut: 0.25, // firewood −25% per level
   },
   // gold value of each resource; sales pay value × (1 − commission), purchases cost value × (1 + commission)
   market: {
-    prices: { wood: 1, food: 5, stone: 20, leather: 20 },
+    prices: { wood: 1, food: 5, stone: 20, cloth: 20 },
     commission: 0.2,
-    lots: { wood: 100, food: 20, stone: 5, leather: 5 }, // base trade lot, ×1/×10/×100 in the UI
+    lots: { wood: 100, food: 20, stone: 5, cloth: 5 }, // base trade lot, ×1/×10/×100 in the UI
   },
   tax: { perHouse: 0.2, radius: 4 }, // gold/s per house within radius (Chebyshev) of a Tax Office
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market

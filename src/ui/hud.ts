@@ -140,7 +140,7 @@ export class Hud {
     if (!h && !c) return;
     const [b, small] = this.shortage.children as unknown as [HTMLElement, HTMLElement];
     this.set(b, h && c ? 'Hungry & cold' : h ? 'Hungry' : 'Cold');
-    this.set(small, h && c ? 'Most work ×0.5' : h ? 'Chop & mine ×0.5' : 'Farm, mine, herd ×0.5');
+    this.set(small, h && c ? 'Most work ×0.5' : h ? 'Chop & mine ×0.5' : 'Farm, mine, herd, pick ×0.5');
     this.shortage.title = h ? 'Out of food: build farms.' + (c ? ' Out of firewood: chop wood.' : '') : 'Out of firewood: chop wood.';
   }
 

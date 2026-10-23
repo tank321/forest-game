@@ -2,9 +2,9 @@ import { CONFIG } from '../config';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
 import { relicGap } from './relics';
-import type { GameState } from './types';
+import type { GameState, Resources } from './types';
 
-const VERSION = 9;
+const VERSION = 10;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -86,9 +86,10 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
       version: 7,
       state: {
         ...s,
-        resources: { ...s.resources, leather: 0 },
-        totals: { ...s.totals, leather: 0 },
-        hires: { ...s.hires, leather: 0 },
+        // leather was renamed to cloth in v10
+        resources: { ...s.resources, leather: 0 } as Resources,
+        totals: { ...s.totals, leather: 0 } as Resources,
+        hires: { ...s.hires, leather: 0 } as GameState['hires'],
       },
     };
   },
@@ -101,7 +102,28 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
       state: { ...s, resources: { ...s.resources, gold: 0 }, totals: { ...s.totals, gold: 0 } },
     };
   },
+  9: (f) => {
+    const s = f.state;
+    return {
+      ...f,
+      version: 10,
+      state: {
+        ...s,
+        resources: leatherToCloth(s.resources),
+        totals: leatherToCloth(s.totals),
+        hires: leatherToCloth(s.hires),
+        buildings: s.buildings.map((b) => ({ ...b, paidCost: leatherToCloth(b.paidCost) })),
+      },
+    };
+  },
 };
+
+/** v10 renamed leather to cloth. */
+function leatherToCloth<T extends object>(r: T): T {
+  if (!('leather' in r)) return r;
+  const { leather, ...rest } = r;
+  return { ...rest, cloth: leather } as T;
+}
 
 export function serialize(s: GameState, savedAt = Date.now()): string {
   const state: Serialized = { ...s, tiles: Array.from(s.tiles), wood: Array.from(s.wood) };

@@ -41,7 +41,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'stonecutters': return `+${20 * level}% mining speed`;
     case 'masons': return `${discount} lower stone costs`;
     case 'quarryCrews': return `+${level} miner${level === 1 ? '' : 's'} per quarry`;
-    case 'fertileHerding': return level ? 'Herders deliver 1 food per leather' : 'Herders deliver leather only';
+    case 'fertileHerding': return level ? 'Herders deliver 1 food per cloth' : 'Herders deliver cloth only';
     case 'taxCollectors': return `+${20 * level}% tax`;
     case 'packMules': return `+${25 * level}% gold per trade trip`;
     case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level } }))}% market commission`;

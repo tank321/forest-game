@@ -1,7 +1,7 @@
-import { buildingById, footprint } from '../buildings';
+import { BUILDINGS, buildingById, footprint, workersOf } from '../buildings';
 import { tileAt } from '../grid';
 import { pathHome, pathToAny } from '../pathing';
-import type { ResourceKey, Villager } from '../types';
+import type { Building, GameState, ResourceKey, Villager } from '../types';
 import type { World } from '../world';
 
 /** Moves along the path for up to `t` seconds; returns unused time. */
@@ -37,6 +37,22 @@ export function goHome(w: World, v: Villager, res: ResourceKey): void {
   v.state = 'toHome';
 }
 
+/**
+ * Path to the worker's own tile in the workplace. Its staff spread evenly over the interior (the
+ * footprint minus its edge, when the building is at least 3×3), so pickers stand among the rows.
+ */
+export function pathToWork(s: GameState, v: Villager, b: Building): number[] | null {
+  const { w, h } = BUILDINGS[b.kind];
+  const inset = w >= 3 && h >= 3 ? 1 : 0;
+  const iw = w - 2 * inset;
+  const n = iw * (h - 2 * inset);
+  const staff = s.villagers.filter((u) => u.workplace === b.id);
+  const slots = Math.max(staff.length, workersOf(s, b));
+  const j = Math.min(n - 1, Math.floor(((Math.max(0, staff.indexOf(v)) + 0.5) * n) / slots));
+  const spot = (b.y + inset + Math.floor(j / iw)) * s.w + b.x + inset + (j % iw);
+  return pathToAny(s, tileAt(s, v.x, v.y), new Set([spot]));
+}
+
 /** Workplace worker after a delivery: reuse the reversed home path, or path to a moved workplace. */
 export function returnToWork(w: World, v: Villager): void {
   const s = w.state;
@@ -45,7 +61,7 @@ export function returnToWork(w: World, v: Villager): void {
   // A moved workplace or redirected delivery may invalidate the old return endpoint.
   if (goals.includes(v.path[0])) v.path.reverse();
   else {
-    const path = pathToAny(s, tileAt(s, v.x, v.y), new Set(goals));
+    const path = place && pathToWork(s, v, place);
     if (!path) { v.path = []; v.pathI = 0; v.state = 'idle'; return; }
     v.path = path;
   }

@@ -1,4 +1,4 @@
-# Forest Game (alpha v9)
+# Forest Game (alpha v10)
 
 Idle forest-clearing game modelled on Forest Nothing (see `docs/MECHANICS.md`).
 Vite + TypeScript, no runtime dependencies.
@@ -16,8 +16,8 @@ Hover over a tree to see its wood left out of its full-grown wood; a tree that h
 shows a health bar.
 In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
-the Town Center hires villagers (with wood, food or leather), a Lumber Camp upgrades the axe, a Barn
-upgrades farms, a Quarry upgrades picks, a Market trades goods for gold. Esc cancels.
+the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
+upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Market trades goods for gold. Esc cancels.
 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
@@ -28,7 +28,9 @@ Workers deliver carried resources before returning to lumberjacking. Removing ho
 population cap but keeps existing villagers. The Town Center cannot be moved or removed.
 
 **Food:** a Farm (3×3) takes one empty-handed lumberjack as its farmer; farmers deliver food to
-the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. Food pays for
+the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. A **Fruit Orchard** (5×5; wood, stone and cloth)
+takes three orchardists, each walking ×2 as fast, harvesting ×2 as fast and carrying ×5 as much as a
+farmer; Barn upgrades and seasons apply, Wells don't. Food pays for
 food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
 
 **Stone:** a Quarry (2×2) takes two empty-handed lumberjacks as miners; they mine on site and
@@ -36,22 +38,24 @@ carry stone to the Town Center. Pause a quarry to give its miners back. Stone pa
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
 within 1 tile harvest ×3 and carry ×2 (wells don't stack).
 
-**Leather:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
-gathers leather and carries it to the Town Center or the nearest Barn. Barn (farm) upgrades raise
-herding speed and carry too. Pause a sheep farm to give its herder back.
-The **Fertile Herding** skill makes herders bring back as much food as leather. Leather pays for
-leather-priced villagers, the last two axe/farm/pick levels, and houses from the 10th.
+**Cloth:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
+gathers cloth and carries it to the Town Center or the nearest Barn. A **Cotton Plantation** (6×6,
+wood, stone and gold) takes five pickers, each gathering ×3 as fast and carrying ×3 as much as a
+herder. Workers spread out over the field instead of crowding one edge. Barn (farm) upgrades raise
+herding and picking speed and carry too. Pause a sheep farm or plantation to give its workers back.
+The **Fertile Herding** skill makes herders (not pickers) bring back as much food as cloth. Cloth pays for
+cloth-priced villagers, the last two axe/farm/pick levels, and houses from the 10th.
 
 **Seasons & upkeep:** a year is four 3-minute seasons, shown on the stats plaque; hover over the
-season (or tap it, or press Enter on it) to see what this season and the next one do. Farms harvest
+season (or tap it, or press Enter on it) to see what this season and the next one do. Farms and orchards harvest
 ×1.5 in autumn and nothing in winter. The first 5 villagers live for free; every villager beyond
 them eats 0.1 food/s all year and burns 0.1 wood/s in winter. Nobody dies, but when a stock runs
 out the town slows down: **Hungry** (no food) halves chopping and mining, **Cold** (no firewood in
-winter) halves farming, mining and herding. Food and wood rates on the plaque are net of upkeep.
-**Coats** at the Town Center (wood and leather, 3 levels) cut firewood by 25% per level.
+winter) halves farming, mining, herding and picking. Food and wood rates on the plaque are net of upkeep.
+**Coats** at the Town Center (wood and cloth, 3 levels) cut firewood by 25% per level.
 
-**Gold:** a **Market** (2×2, a city building) sells wood, food, stone and leather for gold at 80% of
-their value (wood 1, food 5, stone 20, leather 20) and sells them to you at 120%. Select the Market,
+**Gold:** a **Market** (2×2, a city building) sells wood, food, stone and cloth for gold at 80% of
+their value (wood 1, food 5, stone 20, cloth 20) and sells them to you at 120%. Select the Market,
 pick a resource (each tile shows your stock), then tap a quick amount from 1 to 10M under **Sell** or
 **Buy** (each shows the gold it earns or costs), or type an amount (**Max** fills in your whole stock). Market trades don't count toward the production rates on the plaque. A **Tax Office**
 (2×2, a city building) collects 0.2 gold/s from every house within 4 tiles; a house pays once, however
@@ -76,7 +80,7 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
-  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, miners, herders, traders) · `movement.ts` shared walking
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking, each worker's spot in its workplace
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
   - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
@@ -88,6 +92,15 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v10** – Cotton, cloth and orchards.
+- Leather is now **cloth**, made by sheep farms and cotton plantations. Saves migrate from v9 automatically, including stock, totals, hires and recorded building costs.
+- Cotton Plantation (6×6; 5000 wood, 500 stone, 250 gold, ×1.5 each): five pickers, each ×3 a herder's speed and carry. Barn upgrades apply to them too, and Cold slows them like herders.
+- Fruit Orchard (5×5; 3000 wood, 300 stone, 100 cloth, ×1.5 each): three orchardists, each ×2 a farmer's walk speed, ×2 harvest and ×5 carry. Barn upgrades, Green Thumbs and seasons apply; Wells don't.
+- Workplace jobs can walk at their own speed.
+- Workplace workers walk to their own spot spread over the building's interior instead of the nearest edge tile.
+- Barn upgrade preview and Town Center job counts include orchardists and pickers. Season notes name orchards with farms.
+- Sprites: cotton field with a fenced gate, picker in a straw hat with a cotton sack, cloth (shirt) icon, fruit orchard, orchardist in orange with a basket of apples.
+
 **v9** – Gold.
 - Gold resource, shown on the stats plaque. The away message reports gold when it changed.
 - Market (2×2, city building): sell goods for gold at 80% of their value or buy them at 120%. Its panel has a resource picker with stock, the exchange rate, quick amounts from 1 to 10M with their gold, a custom amount with Max, and a note confirming the last trade. Trades don't count as production.

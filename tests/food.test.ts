@@ -103,7 +103,7 @@ describe('food economy', () => {
     expect(upgradeCost(s, 'axe', 3)).toEqual({ wood: 550 });
     expect(upgradeCost(s, 'axe', 4)).toEqual({ wood: 850, food: 300 });
     expect(upgradeCost(s, 'farm', 0)).toEqual({ wood: 200 });
-    expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200, leather: 200 });
+    expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200, cloth: 200 });
     expect(upgradeCost(s, 'farm', 10)).toBeNull();
     expect(buildingCost(s, 'house')).toEqual({ wood: 100 });
     for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
@@ -114,7 +114,7 @@ describe('food economy', () => {
     const w = smallWorld();
     const s = w.state;
     const base = getStats(s);
-    s.resources = { wood: 1e9, food: 1e9, stone: 1e9, leather: 1e9, gold: 0 };
+    s.resources = { wood: 1e9, food: 1e9, stone: 1e9, cloth: 1e9, gold: 0 };
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'farm')).toBe(true);
     expect(upgrade(w, 'farm')).toBe(false);
     s.skills = { greenThumbs: 1, bigBaskets: 1 };
@@ -135,9 +135,9 @@ describe('food economy', () => {
       villagers: rest.villagers.map(({ job: _j, workplace: _w, ...v }: Record<string, unknown>) => v),
     };
     const { state } = deserialize(JSON.stringify({ version: 3, savedAt: 1, state: v3state }));
-    expect(state.resources).toEqual({ wood: 5, food: 0, stone: 0, leather: 0, gold: 0 });
+    expect(state.resources).toEqual({ wood: 5, food: 0, stone: 0, cloth: 0, gold: 0 });
     expect(state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0 });
-    expect(state.hires).toEqual({ wood: 2, food: 0, leather: 0 });
+    expect(state.hires).toEqual({ wood: 2, food: 0, cloth: 0 });
     expect(state.villagers.every((v) => v.job === 'lumber' && v.workplace === -1)).toBe(true);
   });
 });

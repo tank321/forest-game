@@ -33,7 +33,7 @@ export function toggleMark(w: World, i: number): boolean {
   return true;
 }
 
-/** Hire a villager paid in wood, food or leather (separate price tracks, shared population cap). */
+/** Hire a villager paid in wood, food or cloth (separate price tracks, shared population cap). */
 export function hireVillager(w: World, res: HireResource = 'wood'): boolean {
   const s = w.state;
   if (s.villagers.length >= popCap(s) || !pay(s, villagerCost(s, res))) return false;

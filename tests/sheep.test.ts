@@ -21,44 +21,45 @@ function withSheepFarm(villagers = 2, seed = 1): { w: World; farmId: number } {
   return { w, farmId: s.buildings[s.buildings.length - 1].id };
 }
 
-const totalLeather = (w: World) =>
-  w.state.resources.leather + w.state.villagers.reduce((a, v) => a + (v.job === 'herd' ? v.carry : 0), 0);
+const totalCloth = (w: World) =>
+  w.state.resources.cloth + w.state.villagers.reduce((a, v) => a + (v.job === 'herd' ? v.carry : 0), 0);
 
 describe('sheep farms', () => {
-  it('take one empty-handed villager and deliver only leather to the Town Center', () => {
+  it('take one empty-handed villager and deliver only cloth to the Town Center', () => {
     const { w, farmId } = withSheepFarm(2);
     const s = w.state;
-    expect(s.resources).toEqual({ wood: 0, food: 0, stone: 0, leather: 0, gold: 0 });
+    expect(s.resources).toEqual({ wood: 0, food: 0, stone: 0, cloth: 0, gold: 0 });
     simulate(w, 120, 1 / 30);
     const herders = s.villagers.filter((v) => v.job === 'herd');
     expect(herders).toHaveLength(1);
     expect(herders[0].workplace).toBe(farmId);
-    expect(s.resources.leather).toBeGreaterThan(0);
-    expect(s.resources.leather).toBeLessThanOrEqual(120 * getStats(s).herdRate);
-    expect(s.totals.leather).toBe(s.resources.leather);
+    expect(s.resources.cloth).toBeGreaterThan(0);
+    expect(s.resources.cloth).toBeLessThanOrEqual(120 * getStats(s).herdRate);
+    expect(s.totals.cloth).toBe(s.resources.cloth);
     expect(s.totals.food).toBe(0);
   });
 
-  it('Fertile Herding delivers as much food as leather', () => {
+  it('Fertile Herding delivers as much food as cloth', () => {
     const { w } = withSheepFarm(1);
     const s = w.state;
     s.skills = { fertileHerding: 1 };
     simulate(w, 120, 1 / 30);
-    expect(s.totals.leather).toBeGreaterThan(0);
-    expect(s.totals.food).toBe(s.totals.leather);
+    expect(s.totals.cloth).toBeGreaterThan(0);
+    expect(s.totals.food).toBe(s.totals.cloth);
   });
 
-  it('pausing or removal returns the herder without losing carried leather', () => {
+  it('pausing or removal returns the herder without losing carried cloth', () => {
     for (const stop of [togglePause, removeBuilding]) {
       const { w, farmId } = withSheepFarm(1);
       const s = w.state;
-      simulate(w, 30, 1 / 30); // herder mid-trip
-      const total = totalLeather(w);
-      expect(total).toBeGreaterThan(s.resources.leather);
+      simulate(w, 30, 1 / 30);
+      while (totalCloth(w) === s.resources.cloth) simulate(w, 1, 1 / 30); // herder mid-trip
+      const total = totalCloth(w);
+      expect(total).toBeGreaterThan(s.resources.cloth);
       stop(w, farmId);
       simulate(w, 60, 1 / 30);
       expect(s.villagers.every((v) => v.job === 'lumber' && v.workplace === -1)).toBe(true);
-      expect(s.resources.leather).toBeCloseTo(total, 6);
+      expect(s.resources.cloth).toBeCloseTo(total, 6);
     }
   });
 
@@ -68,7 +69,7 @@ describe('sheep farms', () => {
     a.state.skills = b.state.skills = { fertileHerding: 1 };
     simulate(a, 600, 1 / 30);
     simulate(b, 600, 1);
-    expect(b.state.resources.leather).toBeCloseTo(a.state.resources.leather, 3);
+    expect(b.state.resources.cloth).toBeCloseTo(a.state.resources.cloth, 3);
     expect(b.state.resources.food).toBeCloseTo(a.state.resources.food, 3);
   });
 
@@ -79,11 +80,11 @@ describe('sheep farms', () => {
     s.skills = { fertileHerding: 1 };
     const { x, y } = s.origin;
     clearArea(w, x - 9, y, x - 1, y + 2); // sheep farm far west, barn between it and the Town Center
-    s.resources = { wood: 750, food: 150, stone: 0, leather: 0, gold: 0 };
+    s.resources = { wood: 750, food: 150, stone: 0, cloth: 0, gold: 0 };
     expect(placeBuilding(w, 'sheepFarm', x - 9, y)).toBe(true);
     expect(placeBuilding(w, 'barn', x - 6, y)).toBe(true);
     const barn = s.buildings[s.buildings.length - 1];
-    expect(w.fields.leather.dist[barn.y * s.w + barn.x]).toBe(0);
+    expect(w.fields.cloth.dist[barn.y * s.w + barn.x]).toBe(0);
     const herder = s.villagers[0];
     let delivered = false;
     for (let t = 0; t < 60 * 30 && !delivered; t++) {
@@ -95,7 +96,7 @@ describe('sheep farms', () => {
       }
     }
     expect(delivered).toBe(true);
-    expect(s.resources.food).toBe(s.resources.leather);
+    expect(s.resources.food).toBe(s.resources.cloth);
   });
 
   it('Barn upgrades raise herding speed and carry', () => {
@@ -112,28 +113,28 @@ describe('sheep farms', () => {
   });
 });
 
-describe('leather economy', () => {
-  it('leather hires use their own price track', () => {
+describe('cloth economy', () => {
+  it('cloth hires use their own price track', () => {
     const w = smallWorld(30);
     const s = w.state;
-    s.resources.leather = 1e6;
-    expect(villagerCost(s, 'leather')).toEqual({ leather: 40 });
-    expect(hireVillager(w, 'leather')).toBe(true);
-    expect(villagerCost(s, 'leather')).toEqual({ leather: 80 });
+    s.resources.cloth = 1e6;
+    expect(villagerCost(s, 'cloth')).toEqual({ cloth: 40 });
+    expect(hireVillager(w, 'cloth')).toBe(true);
+    expect(villagerCost(s, 'cloth')).toEqual({ cloth: 80 });
     expect(villagerCost(s, 'wood')).toEqual({ wood: 10 });
     expect(villagerCost(s, 'food')).toEqual({ food: 20 });
   });
 
-  it('the last two upgrade levels and houses from the 10th cost leather', () => {
+  it('the last two upgrade levels and houses from the 10th cost cloth', () => {
     const s = smallWorld().state;
-    expect(upgradeCost(s, 'axe', 7)?.leather).toBeUndefined();
-    expect(upgradeCost(s, 'axe', 8)?.leather).toBe(50);
-    expect(upgradeCost(s, 'farm', 9)?.leather).toBe(200);
-    expect(upgradeCost(s, 'pick', 8)?.leather).toBe(80);
+    expect(upgradeCost(s, 'axe', 7)?.cloth).toBeUndefined();
+    expect(upgradeCost(s, 'axe', 8)?.cloth).toBe(50);
+    expect(upgradeCost(s, 'farm', 9)?.cloth).toBe(200);
+    expect(upgradeCost(s, 'pick', 8)?.cloth).toBe(80);
     for (let k = 0; k < 8; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {} });
-    expect(buildingCost(s, 'house').leather).toBeUndefined();
+    expect(buildingCost(s, 'house').cloth).toBeUndefined();
     s.buildings.push({ id: 908, kind: 'house', x: 0, y: 8, paidCost: {} });
-    expect(buildingCost(s, 'house').leather).toBe(20);
+    expect(buildingCost(s, 'house').cloth).toBe(20);
   });
 
   it('migrates a v6 save to v7', () => {
@@ -146,8 +147,8 @@ describe('leather economy', () => {
       hires: { wood: 2, food: 1 },
     };
     const { state } = deserialize(JSON.stringify({ version: 6, savedAt: 1, state: v6state }));
-    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 2, leather: 0, gold: 0 });
-    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 2, leather: 0, gold: 0 });
-    expect(state.hires).toEqual({ wood: 2, food: 1, leather: 0 });
+    expect(state.resources).toEqual({ wood: 5, food: 3, stone: 2, cloth: 0, gold: 0 });
+    expect(state.totals).toEqual({ wood: 9, food: 4, stone: 2, cloth: 0, gold: 0 });
+    expect(state.hires).toEqual({ wood: 2, food: 1, cloth: 0 });
   });
 });

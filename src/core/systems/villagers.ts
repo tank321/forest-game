@@ -10,8 +10,10 @@ type Updater = (w: World, v: Villager, dt: number, st: Stats) => void;
 const UPDATERS: Record<Job, Updater> = {
   lumber: updateLumberjack,
   farm: updateWorker,
+  orchard: updateWorker,
   mine: updateWorker,
   herd: updateWorker,
+  cotton: updateWorker,
   trade: updateWorker,
 };
 

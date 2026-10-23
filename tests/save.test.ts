@@ -53,6 +53,19 @@ it('migrates a v8 save to v9 with no gold', () => {
   expect(state.totals).toEqual({ ...w.state.totals, gold: 0 });
 });
 
+it('migrates a v9 save to v10, renaming leather to cloth', () => {
+  const w = smallWorld(30, 1);
+  addBuilding(w.state, 'house', 0, 0, { wood: 100, cloth: 20 });
+  addBuilding(w.state, 'well', 1, 0, { wood: 150, stone: 40 });
+  w.state.resources.cloth = 7;
+  w.state.totals.cloth = 9;
+  w.state.hires.cloth = 2;
+  const old = JSON.parse(serialize(w.state, 9).replaceAll('"cloth"', '"leather"'));
+  old.version = 9;
+  const { state } = deserialize(JSON.stringify(old));
+  expect(state).toEqual(w.state);
+});
+
 it('migrates a v2 save to v3', () => {
   const a = smallWorld(30, 1);
   simulate(a, 60, 1);

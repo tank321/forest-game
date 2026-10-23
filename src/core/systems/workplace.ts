@@ -1,12 +1,10 @@
 import { CONFIG } from '../../config';
-import { buildingById, footprint, isActive } from '../buildings';
+import { buildingById, isActive } from '../buildings';
 import { gain } from '../economy';
-import { tileAt } from '../grid';
-import { pathToAny } from '../pathing';
 import type { Stats } from '../stats';
 import type { Building, Job, ResourceKey, Villager } from '../types';
 import type { World } from '../world';
-import { arrived, goHome, returnToWork, walk } from './movement';
+import { arrived, goHome, pathToWork, returnToWork, walk } from './movement';
 
 export type WorkplaceJob = Exclude<Job, 'lumber'>;
 
@@ -16,6 +14,7 @@ interface Work {
   res: ResourceKey;
   output: (st: Stats, place: Building) => { rate: number; carry: number }; // gather rate and load at this workplace
   also?: { res: ResourceKey; per: NumericStat }; // delivered on top, per unit of `res`
+  speed?: NumericStat; // walk speed, if not the villagers' usual one
 }
 
 /** What each workplace job produces, and how fast and how much at a given workplace. */
@@ -26,8 +25,10 @@ const WORK: Record<WorkplaceJob, Work> = {
       ? { rate: st.farmRate * st.wellHarvest, carry: st.farmCarry * st.wellCarry }
       : { rate: st.farmRate, carry: st.farmCarry },
   },
+  orchard: { res: 'food', output: (st) => ({ rate: st.orchardRate, carry: st.orchardCarry }), speed: 'orchardSpeed' },
   mine: { res: 'stone', output: (st) => ({ rate: st.mineRate, carry: st.mineCarry }) },
-  herd: { res: 'leather', output: (st) => ({ rate: st.herdRate, carry: st.herdCarry }), also: { res: 'food', per: 'herdFood' } },
+  herd: { res: 'cloth', output: (st) => ({ rate: st.herdRate, carry: st.herdCarry }), also: { res: 'food', per: 'herdFood' } },
+  cotton: { res: 'cloth', output: (st) => ({ rate: st.cottonRate, carry: st.cottonCarry }) },
   // Loading takes the same time on every route, so a longer route also pays more per second.
   trade: {
     res: 'gold',
@@ -42,13 +43,14 @@ const WORK: Record<WorkplaceJob, Work> = {
 export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : WORK[job].res);
 
 /**
- * Workplace worker (farmer, miner, herder, trader): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
+ * Workplace worker (farmer, orchardist, miner, herder, picker, trader): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
  * Workplaces never run out. If the workplace is paused the worker delivers what it carries and goes
  * idle, where the job system hands it back to lumberjacking. dt-independent like the lumberjack.
  */
 export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void {
   const s = w.state;
-  const { res, output, also } = WORK[v.job as WorkplaceJob];
+  const { res, output, also, speed: speedKey } = WORK[v.job as WorkplaceJob];
+  const speed = speedKey ? st[speedKey] : st.speed;
   const place = buildingById(s, v.workplace);
   const active = isActive(s, place);
   // Only read in states that require an active (so existing) workplace.
@@ -62,7 +64,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
           else return;
           break;
         }
-        const path = pathToAny(s, tileAt(s, v.x, v.y), new Set(footprint(s, place)));
+        const path = pathToWork(s, v, place);
         if (!path) return;
         v.path = path;
         v.pathI = 0;
@@ -74,7 +76,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
           v.state = 'idle';
           break;
         }
-        t = walk(w, v, t, st.speed);
+        t = walk(w, v, t, speed);
         if (!arrived(v)) return;
         v.state = 'work';
         break;
@@ -96,7 +98,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
         break;
       }
       case 'toHome':
-        t = walk(w, v, t, st.speed);
+        t = walk(w, v, t, speed);
         if (!arrived(v)) return;
         gain(s, res, v.carry);
         if (also && st[also.per] > 0) gain(s, also.res, v.carry * st[also.per]);

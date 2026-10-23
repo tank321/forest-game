@@ -14,7 +14,7 @@ function ready(villagers = 0) {
   const w = smallWorld(30, villagers);
   w.state.nextRelicAt = Infinity;
   clearArea(w, 3, 3, 26, 26);
-  w.state.resources = { wood: 1e7, food: 1e7, stone: 1e7, leather: 1e7, gold: 0 };
+  w.state.resources = { wood: 1e7, food: 1e7, stone: 1e7, cloth: 1e7, gold: 0 };
   return w;
 }
 
@@ -109,7 +109,7 @@ describe('building refunds', () => {
     moveBuilding(w, b.id, 20, 20);
     const before = { ...w.state.resources };
     removeBuilding(w, b.id);
-    expect(w.state.resources).toEqual({ wood: before.wood + 60, food: before.food, stone: before.stone + 11, leather: before.leather, gold: before.gold });
+    expect(w.state.resources).toEqual({ wood: before.wood + 60, food: before.food, stone: before.stone + 11, cloth: before.cloth, gold: before.gold });
   });
 
   it('refunds wood, food and stone for a late house and keeps existing villagers', () => {
@@ -121,7 +121,7 @@ describe('building refunds', () => {
     const population = w.state.villagers.length;
     const before = { ...w.state.resources };
     expect(removeBuilding(w, last.id)).toBe(true);
-    expect(w.state.resources).toEqual({ wood: before.wood + 569, food: before.food + 84, stone: before.stone + 15, leather: before.leather, gold: before.gold });
+    expect(w.state.resources).toEqual({ wood: before.wood + 569, food: before.food + 84, stone: before.stone + 15, cloth: before.cloth, gold: before.gold });
     expect(w.state.villagers).toHaveLength(population);
     expect(hireVillager(w)).toBe(false);
     expect(footprint(w.state, last).every((i) => w.state.tiles[i] === Tile.Grass)).toBe(true);

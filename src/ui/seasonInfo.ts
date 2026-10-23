@@ -10,10 +10,10 @@ export function seasonEffects(st: Stats, i: number): string[] {
   const { freeVillagers, hungry, cold } = CONFIG.upkeep;
   const winter = i === WINTER;
   return [
-    farm === 0 ? 'Farms lie fallow' : farm === 1 ? 'Farms harvest normally' : `Farms harvest ×${farm}`,
+    farm === 0 ? 'Farms and orchards lie fallow' : farm === 1 ? 'Farms and orchards harvest normally' : `Farms and orchards harvest ×${farm}`,
     st.eat ? `Villagers eat ${st.eat.toFixed(2)} food/s` : `No food upkeep yet (the first ${freeVillagers} villagers are free)`,
     !winter ? 'No firewood needed' : st.winterBurn ? `Fires burn ${st.winterBurn.toFixed(2)} wood/s` : 'No firewood needed yet',
     ...(st.eat ? [`Out of food: chopping and mining ×${hungry}`] : []),
-    ...(winter && st.winterBurn ? [`Out of firewood: farming, mining and herding ×${cold}`] : []),
+    ...(winter && st.winterBurn ? [`Out of firewood: farming, mining, herding and picking ×${cold}`] : []),
   ];
 }
