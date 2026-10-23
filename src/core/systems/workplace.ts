@@ -89,7 +89,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
         gain(s, res, v.carry);
         if (also && st[also.per] > 0) gain(s, also.res, v.carry * st[also.per]);
         v.carry = 0;
-        if (active) returnToWork(w, v, 'toWork');
+        if (active) returnToWork(w, v);
         else v.state = 'idle';
         break;
       default: // a state from another job (just reassigned)

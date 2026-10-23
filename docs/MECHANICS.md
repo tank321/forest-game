@@ -80,7 +80,7 @@ They are a reference to tune against, not something to copy.
 | Territory | implicit (grass tiles) | explicit owned set; build only on owned | Keep `Grass` = owned; add a choppable = 4-adjacent rule (same as our frontier) |
 | Fog | none | visibility ring around territory | Add a `visible` mask; frontier ∩ visible |
 | Player input | buy button only | tap/click tree = +1 wood; click = mark priority | Add input layer (screen→tile), manual chop, marked set |
-| Villager targeting | nearest by BFS distance from TC | marked first, then Euclidean nearest to villager | Switch to nearest-to-villager; marked set |
+| Villager targeting | marked first, then nearest to a wood drop-off by path, ties nearest the villager | marked first, then Euclidean nearest to villager; after a drop-off, nearest the lumber camp | ✓ v7 (drop-off-first, re-picked after every delivery) |
 | Movement | BFS paths on grass | straight lines | BFS is more correct and costs us little. Keep it, but target nearest to the villager |
 | Carry / chop | 5 / 1 per s | 5 / 1 per s | ✓ matches |
 | Speed | 2.5 tiles/s | ≈1.2 tiles/s | Lower to ~1.2 |

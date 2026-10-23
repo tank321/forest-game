@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chopTree, placeBuilding, toggleMark } from '../src/core/commands';
 import { simulate } from '../src/core/sim';
 import { Tile } from '../src/core/types';
-import { smallWorld, totalWood } from './helpers';
+import { clearArea, smallWorld, totalWood } from './helpers';
 
 describe('villager simulation', () => {
   it('conserves wood, clears trees, and claims are unique', () => {
@@ -18,6 +18,15 @@ describe('villager simulation', () => {
     expect(w.state.resources.wood).toBeGreaterThan(0);
     expect(w.state.treesLeft).toBeLessThan(trees);
     expect(totalWood(w)).toBeCloseTo(total, 6);
+  });
+
+  it('with Teamwork, two villagers share the best tree but never three', () => {
+    const w = smallWorld(30, 3);
+    w.state.skills = { teamwork: 1 };
+    simulate(w, 1 / 30, 1 / 30);
+    const [a, b, c] = w.state.villagers.map((v) => v.target);
+    expect(a).toBe(b);
+    expect(c).not.toBe(a);
   });
 
   it('is independent of step size (live vs catch-up)', () => {
@@ -40,6 +49,29 @@ describe('villager simulation', () => {
     toggleMark(w, far);
     simulate(w, 40, 1 / 30);
     expect(v.target).toBe(far);
+  });
+
+  it('chooses a tree again after every delivery, leaving the half-chopped one', () => {
+    const w = smallWorld(30, 1);
+    const s = w.state;
+    s.nextRelicAt = Infinity;
+    const { x, y } = s.origin;
+    clearArea(w, x - 6, y, x - 1, y + 1);
+    simulate(w, 2, 1 / 30);
+    const v = s.villagers[0];
+    const first = v.target;
+    s.resources.wood = 100;
+    expect(placeBuilding(w, 'lumberCamp', x - 6, y)).toBe(true); // its neighbors are now the best trees
+    let delivered = false;
+    for (let k = 0; k < 60 * 30 && !delivered; k++) {
+      const carry = v.carry;
+      simulate(w, 1 / 30, 1 / 30);
+      delivered = carry > 0 && v.carry === 0;
+    }
+    expect(delivered).toBe(true);
+    expect(s.tiles[first]).toBe(Tile.Tree); // released, not felled
+    expect(v.target).not.toBe(first);
+    expect(w.fields.wood.dist[v.target]).toBe(1);
   });
 
   it('recovers when the player fells the tree a villager is working', () => {

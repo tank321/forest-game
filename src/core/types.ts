@@ -22,7 +22,7 @@ export interface Villager {
   state: VillagerState;
   path: number[]; // tile indices to walk through
   pathI: number; // next waypoint
-  target: number; // claimed tree tile, -1 if none (kept across trips until it falls)
+  target: number; // claimed tree tile, -1 if none (released at every delivery)
   carry: number; // of the job's resource
   job: Job;
   workplace: number; // building id for workplace jobs (farm, mine, herd), -1 otherwise

@@ -32,7 +32,8 @@ No linter or formatter is configured.
   stored in `GameState`. Never use `Math.random` in core. The save test round-trips a mid-game
   state and checks that the continued simulation matches exactly.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
-  - `lumber` uses `lumberjack.ts`. A lumberjack keeps its claimed tree across trips; marked trees come first.
+  - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery. `nearestTree`
+    picks marked trees first, then the shortest walk to a wood drop-off (`fields.wood`), then nearest the villager.
   - Workplace jobs (`farm`, `mine`, `herd`) share `workplace.ts`. Its `WORK` table maps each job
     to a resource and the stats that drive it, plus an optional `also` resource delivered alongside
     it (herders' food from Fertile Herding). Workplaces never run out.

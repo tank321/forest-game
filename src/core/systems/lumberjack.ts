@@ -1,17 +1,19 @@
 import { distToBuilding } from '../buildings';
 import { gain } from '../economy';
-import { isChoppable, tileAt } from '../grid';
+import { tileAt } from '../grid';
 import { nearestTree } from '../pathing';
 import type { Stats } from '../stats';
 import type { Villager } from '../types';
 import { Tile } from '../types';
 import { clearTree, type World } from '../world';
-import { arrived, goHome, returnToWork, walk } from './movement';
+import { arrived, goHome, walk } from './movement';
+
+const EPS = 1e-9; // wood amounts closer than this are equal (float drift across step sizes)
 
 /**
- * Lumberjack: idle -> toTree -> chop -> toHome -> (deposit) -> toTree ...
- * Keeps its claimed tree across trips until it falls, so the tree search only runs when a tree
- * falls or a mark appears. Consumes its whole time budget across transitions (dt-independent).
+ * Lumberjack: idle -> toTree -> chop -> toHome -> (deposit) -> idle ...
+ * Picks its tree afresh when idle (spawned, reassigned, or after every delivery), so a half-chopped
+ * tree is released at the drop-off. Consumes its whole time budget across transitions (dt-independent).
  */
 export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): void {
   const s = w.state;
@@ -40,7 +42,8 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         }
         const rate = st.chopRate * (st.campBonus > 1 && nearCamp(w, tree, st.campRadius) ? st.campBonus : 1);
         const have = s.wood[tree];
-        const amt = Math.min(have, st.carry - v.carry);
+        const room = st.carry - v.carry;
+        const amt = have - room < EPS ? have : room; // don't leave a rounding error standing
         const need = amt / rate;
         if (need > t) {
           const a = rate * t;
@@ -54,7 +57,8 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         if (amt === have) {
           clearTree(w, tree);
           v.target = -1;
-          v.state = 'idle'; // chain to the next tree with the remaining capacity
+          if (isFull(v, st)) goHome(w, v, 'wood');
+          else v.state = 'idle'; // chain to the next tree with the remaining capacity
         } else goHome(w, v, 'wood');
         break;
       }
@@ -63,16 +67,17 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         if (!arrived(v)) return;
         gain(s, 'wood', v.carry);
         v.carry = 0;
-        if (v.target === -1 || s.tiles[v.target] !== Tile.Tree || markWaiting(w, v, st)) {
-          v.target = -1;
-          v.state = 'idle';
-        } else returnToWork(w, v, 'toTree');
+        v.target = -1; // choose again from here
+        v.state = 'idle';
         break;
       default: // a state from another job (just reassigned)
         v.state = 'idle';
     }
   }
 }
+
+/** Load can't take more (within rounding), so the next stop is a drop-off. */
+const isFull = (v: Villager, st: Stats) => st.carry - v.carry < EPS;
 
 /** Predicate: tree already has as many villagers as allowed. */
 function fullTrees(w: World, st: Stats): (tree: number) => boolean {
@@ -83,7 +88,7 @@ function fullTrees(w: World, st: Stats): (tree: number) => boolean {
 
 function assignTree(w: World, v: Villager, st: Stats): boolean {
   const s = w.state;
-  const found = nearestTree(s, tileAt(s, v.x, v.y), fullTrees(w, st));
+  const found = nearestTree(s, w.fields.wood, tileAt(s, v.x, v.y), fullTrees(w, st));
   if (!found) return false;
   v.target = found.tree;
   v.path = found.path;
@@ -96,15 +101,7 @@ function assignTree(w: World, v: Villager, st: Stats): boolean {
 function lostTarget(w: World, v: Villager, st: Stats): void {
   v.target = -1;
   v.state = 'idle';
-  if (v.carry > 0 && !assignTree(w, v, st)) goHome(w, v, 'wood');
-}
-
-/** A choppable marked tree with room for a villager: worth abandoning an unmarked tree for. */
-function markWaiting(w: World, v: Villager, st: Stats): boolean {
-  const s = w.state;
-  if (s.marked.length === 0 || s.marked.includes(v.target)) return false;
-  const full = fullTrees(w, st);
-  return s.marked.some((m) => !full(m) && isChoppable(s, m));
+  if (v.carry > 0 && (isFull(v, st) || !assignTree(w, v, st))) goHome(w, v, 'wood');
 }
 
 /** Tree within `r` tiles (Chebyshev) of any Lumber Camp. */

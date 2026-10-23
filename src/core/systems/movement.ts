@@ -1,5 +1,5 @@
 import { buildingById, footprint } from '../buildings';
-import { isWalkable, neighbors4, tileAt } from '../grid';
+import { tileAt } from '../grid';
 import { pathHome, pathToAny } from '../pathing';
 import type { ResourceKey, Villager } from '../types';
 import type { World } from '../world';
@@ -37,12 +37,11 @@ export function goHome(w: World, v: Villager, res: ResourceKey): void {
   v.state = 'toHome';
 }
 
-/** After a delivery: reuse the reversed home path, or find the relocated work destination. */
-export function returnToWork(w: World, v: Villager, state: 'toTree' | 'toWork'): void {
+/** Workplace worker after a delivery: reuse the reversed home path, or path to a moved workplace. */
+export function returnToWork(w: World, v: Villager): void {
   const s = w.state;
   const place = buildingById(s, v.workplace);
-  const goals = state === 'toTree' ? neighbors4(s, v.target).filter((i) => isWalkable(s, i))
-    : place ? footprint(s, place) : [];
+  const goals = place ? footprint(s, place) : [];
   // A moved workplace or redirected delivery may invalidate the old return endpoint.
   if (goals.includes(v.path[0])) v.path.reverse();
   else {
@@ -51,5 +50,5 @@ export function returnToWork(w: World, v: Villager, state: 'toTree' | 'toWork'):
     v.path = path;
   }
   v.pathI = 0;
-  v.state = state;
+  v.state = 'toWork';
 }
