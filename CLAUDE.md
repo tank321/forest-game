@@ -52,7 +52,7 @@ No linter or formatter is configured.
 ## Rendering
 - **Sprites are data.** `render/sprites.ts` holds pixel art as string grids (one char per pixel,
   `.` transparent), each category with its own palette (`TREE_`, `GROUND_`, `BUILDING_`,
-  `RELIC_`, `FLAG_`, `VILLAGER_PALETTE`). The grids were generated once by throwaway scripts that
+  `RELIC_`, `FLAG_`, `VILLAGER_`, `UI_PALETTE`). The grids were generated once by throwaway scripts that
   are not in the repo, so edit the grids directly. `tests/sprites.test.ts` checks their sizes and
   palette chars. `renderer.ts` bakes every grid to a canvas at startup, once per fog brightness
   where fog applies.
@@ -69,6 +69,10 @@ No linter or formatter is configured.
 - **Render-only state.** Animation runs on wall-clock time, and facing is kept in the renderer.
   Visual variety comes from tile-index hashes. None of it touches `GameState` or `rand`, which
   keeps the simulation deterministic.
+
+- **UI skin.** UI art (9-slice frames, icons, sidebar wood) is also grid data in `sprites.ts`.
+  `ui/skin.ts` bakes it once at startup into CSS variables (`--frame-<name>[-down]`, `--wood`) and
+  `.ico-<name>` / `.thumb-<building>` classes that `style.css` uses. One art pixel is 2 CSS px.
 
 ## Extending
 Most content is data-driven, and `Record<…>` maps make TypeScript flag every place a new key

@@ -3,7 +3,7 @@ import type { Job } from '../core/types';
 
 /**
  * Pixel-art sprites as character grids: one char per pixel, '.' transparent, other chars looked up
- * in the matching TREE_/GROUND_/BUILDING_PALETTE. Ground tiles are 16×16. Tree sprites are 16×20;
+ * in the matching TREE_/GROUND_/BUILDING_/UI_PALETTE. Ground tiles are 16×16. Tree sprites are 16×20;
  * the bottom 16 rows cover the tile and the top 4 overhang the tile above, so a forest reads as
  * dense canopy. Building sprites overhang the same way. The shapes were generated from simple
  * primitives lit from the top left; they are plain grids so they can be hand-edited.
@@ -1314,3 +1314,261 @@ export function composeVillager(job: Job, frame: VillagerFrame): string[] {
   for (let x = 3; x <= 8; x++) if (out[VILLAGER_FEET.y][x] === '.') out[VILLAGER_FEET.y][x] = 'z';
   return out.map((r) => r.join(''));
 }
+
+/** RGBA per UI grid char: button and panel frames, icons, the sidebar's wood. */
+export const UI_PALETTE: Record<string, Rgba> = {
+  o: [36, 22, 12, 255], // #24160c outline
+  h: [176, 136, 80, 255], // #b08850 plank
+  m: [138, 90, 48, 255], // #8a5a30
+  d: [107, 68, 38, 255], // #6b4426
+  D: [78, 52, 28, 255], // #4e341c
+  Y: [242, 215, 122, 255], // #f2d77a gold
+  y: [217, 169, 60, 255], // #d9a93c
+  v: [168, 128, 46, 255], // #a8802e
+  V: [110, 82, 24, 255], // #6e5218
+  W: [248, 239, 214, 255], // #f8efd6 parchment
+  w: [234, 217, 178, 255], // #ead9b2
+  k: [194, 171, 130, 255], // #c2ab82
+  K: [138, 99, 56, 255], // #8a6338
+  b: [58, 38, 22, 255], // #3a2616 sidebar wood
+  B: [74, 46, 24, 255], // #4a2e18
+  q: [46, 30, 16, 255], // #2e1e10
+  Q: [28, 18, 10, 255], // #1c120a
+  S: [195, 202, 210, 255], // #c3cad2 stone
+  a: [154, 163, 172, 255], // #9aa3ac
+  s: [120, 131, 142, 255], // #78838e
+  Z: [64, 71, 79, 255], // #40474f
+  f: [240, 196, 154, 255], // #f0c49a skin
+  l: [90, 58, 31, 255], // #5a3a1f hair, bark
+  n: [224, 184, 120, 255], // #e0b878 log end
+  r: [192, 57, 43, 255], // #c0392b cloth
+  R: [126, 35, 24, 255], // #7e2318
+  g: [111, 158, 79, 255], // #6f9e4f grass
+  G: [148, 196, 100, 255], // #94c464
+  z: [79, 125, 60, 255], // #4f7d3c
+  e: [31, 82, 40, 255], // #1f5228 pine
+  E: [46, 122, 51, 255], // #2e7a33
+  j: [79, 156, 60, 255], // #4f9c3c
+};
+
+/**
+ * 9-slice frame faces, UI_FRAME_W × UI_FRAME_H with a UI_FRAME_SLICE border on every side and a
+ * uniform center. `lip` is the shade of the UI_LIP rows under the face that make it look raised.
+ */
+export const UI_FRAME_W = 8;
+export const UI_FRAME_H = 7;
+export const UI_FRAME_SLICE = 3;
+export const UI_LIP = 2;
+export const UI_FRAMES: Record<'plank' | 'gold' | 'parchment', { face: readonly string[]; lip: string }> = {
+  plank: {
+    face: ['.oooooo.', 'ohhhhhho', 'ohmmmmdo', 'ohmmmmdo', 'ohmmmmdo', 'oddddddo', '.oooooo.'],
+    lip: 'D',
+  },
+  gold: {
+    face: ['.oooooo.', 'oYYYYYYo', 'oYyyyyvo', 'oYyyyyvo', 'oYyyyyvo', 'ovvvvvvo', '.oooooo.'],
+    lip: 'V',
+  },
+  parchment: {
+    face: ['.oooooo.', 'oWWWWWWo', 'oWwwwwko', 'oWwwwwko', 'oWwwwwko', 'okkkkkko', '.oooooo.'],
+    lip: 'K',
+  },
+};
+export type UiFrame = keyof typeof UI_FRAMES;
+
+/** A frame raised on its lip, or pressed flat: the face over UI_LIP empty rows. */
+export function composeFrame(frame: UiFrame, pressed: boolean): string[] {
+  const { face, lip } = UI_FRAMES[frame];
+  const filler = pressed ? '.'.repeat(UI_FRAME_W) : `o${lip.repeat(UI_FRAME_W - 2)}o`;
+  const rows = Array<string>(UI_LIP).fill(filler);
+  return pressed ? [...face, ...rows] : [...face.slice(0, -1), ...rows, face[face.length - 1]];
+}
+
+/** Sidebar background: dark wooden boards, tiled. */
+export const UI_WOOD: readonly string[] = [
+  'QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ',
+  'BBBbbbbbbbbBBbbbbbbbbQbbbbBBbbbb',
+  'bbbbbqqqbbbbbbbbbbqqbQbbbbbbbbqq',
+  'bbBBbbbbbbbbqqbbbbbbbQbqqqbbbbbb',
+  'bbbbbbbbBBBbbbbbbBBbbQbbbbbbbBBb',
+  'bqqbbbbbbbbbbbbbbbbbbQbbbBBBbbbb',
+  'bbbbbbqqqqbbbbBbbbbqqQbbbbbbqqqb',
+  'qqbbbbbbbbbbbbqqbbbbbQbbbbbbbbbb',
+];
+
+export const UI_ICON_W = 12;
+export const UI_ICON_NAMES = [
+  'wood', 'food', 'stone', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',
+] as const;
+export type UiIcon = (typeof UI_ICON_NAMES)[number];
+
+/** UI_ICON_W-square icons for resources, stats, tools and menu buttons. */
+export const UI_ICONS: Record<UiIcon, readonly string[]> = {
+  wood: [
+    '............',
+    '............',
+    '..ooooooooo.',
+    '.onnnohhhhho',
+    'onhdhnommmmo',
+    'onddhnodmmmo',
+    'onhhhnommmdo',
+    '.onnnoddddo.',
+    '..ooooooooo.',
+    '............',
+    '............',
+    '............',
+  ],
+  food: [
+    '......o.....',
+    '.....oYo....',
+    '...o.oyo.o..',
+    '..oYooYooYo.',
+    '..oyYoyoYyo.',
+    '...ooYyYoo..',
+    '..oYooyooYo.',
+    '..oyYoyoYyo.',
+    '...ooovooo..',
+    '.....ovo....',
+    '.....ovo....',
+    '......o.....',
+  ],
+  stone: [
+    '............',
+    '............',
+    '....ooooo...',
+    '...oSSSaaoo.',
+    '..oSSaaaasso',
+    '.oSSaaaaasso',
+    '.oSaaaasssZo',
+    '.oaaaasssZZo',
+    '..osssssZZo.',
+    '...oooooooo.',
+    '............',
+    '............',
+  ],
+  pop: [
+    '............',
+    '....oooo....',
+    '...ollllo...',
+    '...ollllo...',
+    '...offffo...',
+    '...offffo...',
+    '....oooo....',
+    '..oorrrroo..',
+    '.orrrrrrrro.',
+    '.oRrrrrrrRo.',
+    '.oRRRRRRRRo.',
+    '.oooooooooo.',
+  ],
+  land: [
+    '............',
+    '.oooooooooo.',
+    '.oGGGGGGGgo.',
+    '.oGggGgggzo.',
+    '.oGggggGgzo.',
+    '.ogGggggGzo.',
+    '.oGgggGggzo.',
+    '.oggggggzzo.',
+    '.ozzzzzzzzo.',
+    '.oddddddddo.',
+    '.oooooooooo.',
+    '............',
+  ],
+  trees: [
+    '.....oo.....',
+    '....ojEo....',
+    '...ojjEEo...',
+    '..ojjEEEeo..',
+    '...ojEEeo...',
+    '..ojEEEEeo..',
+    '.ojjEEEEEeo.',
+    '.ojEEEEEeeo.',
+    '.oooommoooo.',
+    '....omdo....',
+    '....oooo....',
+    '............',
+  ],
+  relic: [
+    '............',
+    '....oooo....',
+    '...oSSaao...',
+    '..oSaaaaso..',
+    '..oSaYaaso..',
+    '..oSaYYaso..',
+    '..oSaYaaso..',
+    '..oSaaYaso..',
+    '..oaaaasso..',
+    '.ozzgggzzzo.',
+    '.oooooooooo.',
+    '............',
+  ],
+  skills: [
+    '.....o......',
+    '....oYo.....',
+    '....oYo.....',
+    'ooooYYyoooo.',
+    'oYYYYYyyyyo.',
+    '.oYYYyyyyo..',
+    '..oYYyyyo...',
+    '..oYyyyyo...',
+    '.oYyyoyyyo..',
+    '.oYyo.oyyo..',
+    'oyyo...ovvo.',
+    'ooo.....ooo.',
+  ],
+  export: [
+    '....oooo....',
+    '....oWwo....',
+    '....oWwo....',
+    '....oWwo....',
+    '..oooWwooo..',
+    '...oWWwko...',
+    '....oWko....',
+    '.ooo.oo.ooo.',
+    '.owo....owo.',
+    '.owwwwwwwwo.',
+    '.oooooooooo.',
+    '............',
+  ],
+  import: [
+    '.....oo.....',
+    '....oWko....',
+    '...oWWwko...',
+    '..oooWwooo..',
+    '....oWwo....',
+    '....oWwo....',
+    '....oooo....',
+    '.ooo....ooo.',
+    '.owo....owo.',
+    '.owwwwwwwwo.',
+    '.oooooooooo.',
+    '............',
+  ],
+  chop: [
+    '.....oooo...',
+    '.ooooohmo...',
+    'oSSSaahmo...',
+    'oSSaaahmo...',
+    'oSaaaahmo...',
+    '.osssshmo...',
+    '..oooohmo...',
+    '.....ohmo...',
+    '.....ohmo...',
+    '.....ohmo...',
+    '.....odmo...',
+    '.....oooo...',
+  ],
+  mark: [
+    '..ooo.......',
+    '..ohoooooo..',
+    '..ohorrrrro.',
+    '..ohorrrrrro',
+    '..ohorrrrRRo',
+    '..ohoRRRRRo.',
+    '..ohoooooo..',
+    '..oho.......',
+    '..oho.......',
+    '..oho.......',
+    '..omo.......',
+    '..ooo.......',
+  ],
+};

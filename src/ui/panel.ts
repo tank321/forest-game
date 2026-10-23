@@ -5,7 +5,7 @@ import { lvl, SKILL_IDS, SKILLS, type SkillDef, type SkillId } from '../core/ski
 import type { World } from '../core/world';
 import { ACTIONS, INFO, type Action } from './actions';
 import type { UiState } from './state';
-import { BUILDING_TEXT, fmtCost, SKILL_TEXT } from './text';
+import { BUILDING_TEXT, costHtml, SKILL_TEXT } from './text';
 
 const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILDINGS[k].buildable);
 
@@ -21,20 +21,27 @@ export class Panel {
 
   update(): void {
     const { title, sub, actions, rows = [], cls = '' } = this.view();
-    const key = JSON.stringify([title, sub, cls, rows, actions.map((a) => [a.label, a.cost, a.enabled])]);
+    const have = this.world().state.resources;
+    const html = actions.map((a) => {
+      const thumb = a.thumb ? `<i class="thumb thumb-${a.thumb}"></i>` : '';
+      const cost = a.cost ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
+      return `${thumb}<span class="label">${a.label}${cost}</span>`;
+    });
+    const key = JSON.stringify([title, sub, cls, rows, html, actions.map((a) => a.enabled)]);
     if (key === this.key) return;
     this.key = key;
     this.el.className = cls;
-    const list = rows.length ? `<ul>${rows.map((r) => `<li>${r}</li>`).join('')}</ul>` : '';
+    const list = rows.length ? `<ul class="frame parchment">${rows.map((r) => `<li>${r}</li>`).join('')}</ul>` : '';
     this.el.innerHTML = `<h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${list}<div class="actions"></div>`;
     const box = this.el.querySelector('.actions')!;
-    for (const a of actions) {
+    actions.forEach((a, i) => {
       const b = document.createElement('button');
-      b.innerHTML = a.cost ? `${a.label}<span class="cost">${fmtCost(a.cost)}</span>` : a.label;
+      b.innerHTML = html[i];
+      if (a.thumb) b.className = 'parchment';
       b.disabled = !a.enabled;
       b.onclick = a.run;
       box.append(b);
-    }
+    });
   }
 
   private view(): { title: string; sub: string; actions: Action[]; rows?: string[]; cls?: string } {
@@ -90,6 +97,7 @@ export class Panel {
           cost,
           enabled: canAfford(s, cost),
           run: () => (ui.placing = k),
+          thumb: k,
         };
       }),
     };

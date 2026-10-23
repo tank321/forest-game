@@ -2,7 +2,7 @@ import { popCap } from '../core/economy';
 import { RESOURCES, type Resources } from '../core/types';
 import type { World } from '../core/world';
 import type { UiState } from './state';
-import { duration, fmt } from './text';
+import { duration, fmt, icon } from './text';
 
 const $ = (id: string) => document.getElementById(id)!;
 const RATE_WINDOW = 60; // sim seconds
@@ -11,7 +11,8 @@ const RATE_WINDOW = 60; // sim seconds
 export class Hud {
   private res = RESOURCES.map((r) => {
     const span = document.createElement('span');
-    span.innerHTML = `${r[0].toUpperCase()}${r.slice(1)} <b>0</b><small></small>`;
+    span.title = `${r[0].toUpperCase()}${r.slice(1)}`;
+    span.innerHTML = `${icon(r)}<b>0</b><small></small>`;
     return { r, amount: span.querySelector('b')!, rate: span.querySelector('small')!, span };
   });
   private els = {

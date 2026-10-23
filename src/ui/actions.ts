@@ -10,6 +10,7 @@ export interface Action {
   cost: Cost | null;
   enabled: boolean;
   run: () => void;
+  thumb?: BuildingKind; // shown as a parchment card with the building's sprite
 }
 
 type Selected = (w: World, b: Building) => Action[];
@@ -36,7 +37,7 @@ function upgradeAction(w: World, kind: UpgradeKind, name: string, preview: (st: 
   const nxt: GameState = { ...s, upgrades: { ...s.upgrades, [kind]: lvl + 1 } };
   const [a, b] = [preview(getStats(s)), preview(getStats(nxt))];
   return {
-    label: `${name} Lv ${lvl} → ${lvl + 1}/${maxLevel(kind)} · ${a} → ${b}`,
+    label: `${name} Lv ${lvl} > ${lvl + 1}/${maxLevel(kind)} · ${a} > ${b}`,
     cost,
     enabled: canAfford(s, cost),
     run: () => upgrade(w, kind),

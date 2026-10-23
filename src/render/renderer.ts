@@ -7,6 +7,7 @@ import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
+import { bake } from './bake';
 import type { Camera } from './camera';
 import {
   BUILDING_PALETTE,
@@ -22,7 +23,6 @@ import {
   RELIC,
   RELIC_GLOW,
   RELIC_PALETTE,
-  type Rgba,
   SPRITE_W,
   STUMP,
   TREE_PALETTE,
@@ -309,24 +309,4 @@ function hash(n: number): number {
   n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
   n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
   return (n ^ (n >>> 16)) >>> 0;
-}
-
-/** Rasterizes a sprite grid at the given brightness. */
-function bake(grid: readonly string[], palette: Record<string, Rgba>, light: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = grid[0].length;
-  c.height = grid.length;
-  const g = c.getContext('2d')!;
-  const img = g.createImageData(c.width, c.height);
-  grid.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
-      const rgba = palette[row[x]];
-      if (!rgba) continue; // '.' is transparent
-      const p = (y * c.width + x) * 4;
-      for (let j = 0; j < 3; j++) img.data[p + j] = rgba[j] * light;
-      img.data[p + 3] = rgba[3];
-    }
-  });
-  g.putImageData(img, 0, 0);
-  return c;
 }

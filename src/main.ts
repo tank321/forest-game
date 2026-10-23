@@ -14,11 +14,13 @@ import { Hud } from './ui/hud';
 import { Panel } from './ui/panel';
 import { placementAt } from './ui/placement';
 import { createUiState } from './ui/state';
+import { applySkin } from './ui/skin';
 import { duration, fmt } from './ui/text';
 import './style.css';
 
 const { dt, catchUpDt, maxFrameSeconds, maxOfflineSeconds } = CONFIG.sim;
 
+applySkin();
 const loaded = loadGame();
 const world = createWorld(loaded?.state ?? createInitialState());
 const s = world.state;

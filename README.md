@@ -40,13 +40,19 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
-- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, `sprites.ts` pixel-art grids and palettes
+- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` top bar, `panel.ts` build menu / selection, `actions.ts` per-building actions, `text.ts` labels
+- `src/ui/` – `hud.ts` stats plaque and tools, `panel.ts` build menu / selection, `actions.ts` per-building actions, `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/assets/fonts/` – Silkscreen regular and bold (SIL Open Font License, `OFL.txt`)
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
 **Unreleased** – Art.
+- Pixel-art UI: Silkscreen pixel font (bold numbers), sized in multiples of 8 px so it stays on its pixel grid; wooden plank buttons that press down, gold for the active tool and skill picks, parchment for build cards; a wooden sidebar.
+- Icons for resources, stats, tools and menu buttons. Costs are icon chips, red where you are short.
+- Build cards show the building's sprite.
+- Stats float over the top of the map on a parchment plaque; messages pop up over the map. Tools moved into the sidebar; Export/Import are icon buttons.
+- Wide screens (900 px and up): the map fills the window, with the HUD, build panel and menu in a sidebar on the right. Narrow screens keep the single-column layout.
 - Tree sprites: oak, lime, birch and pine, chosen per tile; canopies overhang the tile above.
 - Grass tiles (plain, tufts, flowers, pebbles) under trees and on cleared land.
 - Lumber Camp sprite: log cabin, log pile and chopping block.

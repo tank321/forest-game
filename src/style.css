@@ -1,27 +1,99 @@
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('./assets/fonts/silkscreen-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('./assets/fonts/silkscreen-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/*
+ * Pixel art is drawn at 2 CSS px per art pixel; frames/icons/--wood come from ui/skin.ts.
+ * Silkscreen (regular and bold) is drawn on an 8-pixel em, so text sizes are multiples of 8px.
+ */
+:root {
+  --t1: 16px; /* body, buttons, small print */
+  --t2: 24px; /* headings */
+  --t3: 32px; /* resource numbers on wide screens */
+  --ink: #24160c; /* outlines, text on parchment */
+  --cream: #f6ecd4; /* text on wood */
+  --tan: #c9b48a; /* secondary text on wood */
+  --gold: #f2d77a;
+  --outline: 2px 0 var(--ink), -2px 0 var(--ink), 0 -2px var(--ink), 0 2px var(--ink), 2px 2px var(--ink);
+}
 * { box-sizing: border-box; margin: 0; }
-html, body { height: 100%; background: #0b100b; color: #e8efe2; font: 14px/1.4 system-ui, sans-serif; overscroll-behavior: none; }
+html, body { height: 100%; background: #070a07; color: var(--cream); font: var(--t1)/24px 'Silkscreen', system-ui, sans-serif; font-synthesis: none; overscroll-behavior: none; image-rendering: pixelated; }
+[hidden] { display: none !important; }
+b, h2, .chip { font-weight: 700; }
 #app { display: flex; flex-direction: column; height: 100dvh; max-width: 520px; margin: 0 auto; }
-#hud { padding: 8px 12px 4px; display: grid; gap: 6px; }
-.stats { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.stats b { font-variant-numeric: tabular-nums; }
-.stats small { display: block; font-size: 11px; color: #9fb197; font-variant-numeric: tabular-nums; }
-.tools { display: flex; gap: 6px; align-items: center; }
-#relic { flex: 1; text-align: right; color: #e6c75a; font-size: 13px; }
-#msg { min-height: 1.2em; color: #b9d6a5; font-size: 13px; }
-button { font: inherit; border: 0; border-radius: 6px; padding: 8px 12px; background: #2c3a2a; color: #e8efe2; cursor: pointer; }
-button.active { background: #c9a227; color: #1a1405; font-weight: 600; }
-button:disabled { background: #232823; color: #6f766c; cursor: default; }
-#world { flex: 1; width: 100%; min-height: 0; display: block; touch-action: none; }
-#panel { padding: 10px 12px 8px; display: grid; gap: 8px; border-top: 1px solid #253025; max-height: 45dvh; overflow-y: auto; }
-#panel h2 { font-size: 15px; }
-#panel .sub { color: #9fb197; font-size: 12px; }
+
+/* Map, with the stats plaque and message toast floating over it. */
+#map { position: relative; flex: 1; min-height: 0; }
+#world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#hud { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: center; pointer-events: none; }
+.stats { display: grid; grid-template-columns: repeat(3, auto); gap: 2px 14px; padding: 0 6px; }
+.stats > span { display: grid; grid-template-columns: auto auto; column-gap: 6px; align-items: center; justify-content: start; }
+.stats .ico { grid-row: span 2; }
+.stats b { line-height: 20px; }
+.stats small { grid-column: 2; line-height: 20px; color: #7a5530; }
+#msg { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; max-width: calc(100% - 32px); padding: 2px 10px; text-align: center; pointer-events: none; }
+#msg:empty { display: none; }
+
+/* Icons and building thumbnails. */
+/* Longhands only: skin.ts sets each one's background-image (and a thumb's size). */
+.ico { display: inline-block; width: 24px; height: 24px; flex: none; background-position: center; background-size: 24px; background-repeat: no-repeat; vertical-align: middle; }
+.thumb { display: block; width: 48px; height: 48px; flex: none; background-position: center; background-repeat: no-repeat; }
+
+/* 9-sliced frames: raised on a lip; buttons press flat and 2 art px down. */
+button, .frame {
+  --f: var(--frame-plank);
+  --f-down: var(--frame-plank-down);
+  border: solid transparent;
+  border-width: 6px 6px 10px;
+  border-image: var(--f) 3 3 5 fill / 6px 6px 10px stretch;
+}
+.parchment { --f: var(--frame-parchment); --f-down: var(--frame-parchment-down); color: var(--ink); }
+.gold, button.active, #panel.cards button { --f: var(--frame-gold); --f-down: var(--frame-gold-down); color: var(--ink); text-shadow: none; }
+button { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; font: inherit; color: var(--cream); background: none; text-shadow: var(--outline); cursor: pointer; }
+button.parchment { text-shadow: none; }
+button:active:not(:disabled) { border-image-source: var(--f-down); transform: translateY(4px); }
+button:disabled { filter: saturate(.35) brightness(.7); cursor: default; }
+
+/* Sidebar on wooden boards: tools, panel, menu. */
+#side { display: flex; flex-direction: column; min-height: 0; background: #3a2616 var(--wood) 0 0 / 64px 16px; border-top: 4px solid var(--ink); }
+#tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 12px 4px; }
+#relicInfo { flex: 1 1 auto; display: flex; justify-content: flex-end; align-items: center; gap: 4px; color: var(--gold); text-align: right; text-shadow: var(--outline); }
+#panel { padding: 8px 12px; display: grid; gap: 8px; align-content: start; max-height: 45dvh; overflow-y: auto; }
+#panel h2 { font-size: var(--t2); line-height: 32px; color: var(--gold); text-shadow: var(--outline); }
+#panel .sub { color: var(--tan); text-shadow: 0 2px var(--ink); }
 #panel .actions { display: flex; flex-wrap: wrap; gap: 6px; }
-#panel .actions button { flex: 1 1 140px; text-align: left; }
-#panel .cost { display: block; font-size: 12px; opacity: .8; }
-#panel.cards { background: #1d1a0e; }
-#panel.cards .actions button { background: #3b3214; flex-basis: 100%; }
-#menu { display: flex; gap: 6px; padding: 0 12px 12px; }
-#menu button { padding: 6px 10px; font-size: 12px; background: #1c241b; }
-#devTap { margin-left: auto; background: #3a1f3a !important; }
-#panel ul { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 13px; color: #cfdac8; }
-#panel ul i { color: #8a9784; }
+#panel .actions button { flex: 1 1 150px; text-align: left; }
+#panel .actions button.parchment { gap: 8px; }
+#panel .label { display: grid; gap: 2px; }
+#panel ul { list-style: none; padding: 4px 8px; display: grid; gap: 6px; }
+#panel ul i { color: #7a5530; }
+.cost { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.chip { display: inline-flex; align-items: center; gap: 2px; }
+.chip.short { color: #ff9a80; }
+.parchment .chip.short { color: #b3261e; }
+#menu { display: flex; gap: 6px; padding: 8px 12px 12px; }
+#menu button { padding: 0 4px; }
+#devTap { margin-left: auto; color: #e9b8ff; }
+
+/* Wide screens: the map fills the window, the sidebar sits on the right. */
+@media (min-width: 900px) {
+  #app { display: grid; grid-template-columns: minmax(0, 1fr) 380px; max-width: none; }
+  #side { border-top: 0; border-left: 4px solid var(--ink); }
+  #panel { flex: 1; min-height: 0; max-height: none; }
+  #hud { top: 12px; }
+  .stats { column-gap: 24px; padding: 2px 12px; }
+  .stats .ico { width: 36px; height: 36px; background-size: 36px; } /* 3× art pixels */
+  .stats b { font-size: var(--t3); line-height: 32px; }
+}
+@media (min-width: 1600px) {
+  .stats { grid-template-columns: repeat(6, auto); column-gap: 28px; }
+}

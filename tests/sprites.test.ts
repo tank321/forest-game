@@ -18,11 +18,23 @@ import {
   TREE_PALETTE,
   TREE_SPECIES,
   TREES,
+  UI_FRAME_H,
+  UI_FRAME_SLICE,
+  UI_FRAME_W,
+  UI_FRAMES,
+  UI_ICON_NAMES,
+  UI_ICON_W,
+  UI_ICONS,
+  UI_LIP,
+  UI_PALETTE,
+  UI_WOOD,
+  type UiFrame,
   VILLAGER_CLOTH,
   VILLAGER_FRAMES,
   VILLAGER_H,
   VILLAGER_PALETTE,
   VILLAGER_W,
+  composeFrame,
   composeVillager,
 } from '../src/render/sprites';
 import type { Job } from '../src/core/types';
@@ -94,5 +106,34 @@ describe('sprites', () => {
 
   it('ground variants have positive weights', () => {
     for (const { weight } of ground) expect(weight).toBeGreaterThan(0);
+  });
+
+  it('UI frames are 9-sliceable and compose raised and pressed at the same size', () => {
+    const inPalette = (g: readonly string[]) => g.join('').split('').every((ch) => ch === '.' || ch in UI_PALETTE);
+    for (const frame of Object.keys(UI_FRAMES) as UiFrame[]) {
+      const { face, lip } = UI_FRAMES[frame];
+      expect(face).toHaveLength(UI_FRAME_H);
+      for (const row of face) expect(row).toHaveLength(UI_FRAME_W);
+      expect(lip in UI_PALETTE).toBe(true);
+      // the stretched center is one solid color
+      const center = new Set(face.slice(UI_FRAME_SLICE, -UI_FRAME_SLICE).map((r) => r.slice(UI_FRAME_SLICE, -UI_FRAME_SLICE)).join(''));
+      expect(center.size).toBe(1);
+      for (const pressed of [false, true]) {
+        const g = composeFrame(frame, pressed);
+        expect(g).toHaveLength(UI_FRAME_H + UI_LIP);
+        expect(inPalette(g)).toBe(true);
+      }
+    }
+  });
+
+  it('UI icons are UI_ICON_W square and the wood tile is regular, all in the UI palette', () => {
+    for (const name of UI_ICON_NAMES) {
+      const g = UI_ICONS[name];
+      expect(g).toHaveLength(UI_ICON_W);
+      for (const row of g) expect(row).toHaveLength(UI_ICON_W);
+      for (const ch of g.join('')) expect(ch === '.' || ch in UI_PALETTE).toBe(true);
+    }
+    for (const row of UI_WOOD) expect(row).toMatch(new RegExp(`^[^.]{${UI_WOOD[0].length}}$`));
+    for (const ch of UI_WOOD.join('')) expect(ch in UI_PALETTE).toBe(true);
   });
 });

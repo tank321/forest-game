@@ -1,6 +1,7 @@
 import type { BuildingKind } from '../core/buildings';
 import type { SkillId } from '../core/skills';
-import type { Cost } from '../core/types';
+import type { Cost, ResourceKey, Resources } from '../core/types';
+import type { UiIcon } from '../render/sprites';
 
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },
@@ -37,8 +38,14 @@ export function fmt(n: number): string {
   const v = n / 1000 ** e;
   return `${v.toFixed(v < 10 ? 2 : v < 100 ? 1 : 0)}${UNITS[e]}`;
 }
-export const fmtCost = (c: Cost | null) =>
-  c ? Object.entries(c).map(([k, v]) => `${fmt(v)} ${k}`).join(' · ') : '—';
+export const icon = (name: UiIcon) => `<i class="ico ico-${name}"></i>`;
+
+/** A cost as icon chips; chips the player can't afford yet are marked short. */
+export const costHtml = (c: Cost, have: Resources) =>
+  (Object.entries(c) as [ResourceKey, number][])
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => `<span class="chip${have[k] < v ? ' short' : ''}" title="${k}">${icon(k)}${fmt(v)}</span>`)
+    .join('');
 
 export function duration(sec: number): string {
   const h = Math.floor(sec / 3600);
