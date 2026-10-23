@@ -1,20 +1,48 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, type BuildingKind } from '../core/buildings';
+import { BUILDINGS, type BuildingKind, buildingAt } from '../core/buildings';
 import { canPlace } from '../core/commands';
-import { isCollectable } from '../core/grid';
-import type { Job, VillagerState } from '../core/types';
+import { isChoppable, isCollectable, tileAt } from '../core/grid';
+import type { Building, GameState, Job, Villager } from '../core/types';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
 import type { Camera } from './camera';
+import {
+  BUILDING_PALETTE,
+  BUILDING_SPRITES,
+  composeVillager,
+  FLAG,
+  FLAG_CLOTH,
+  FLAG_PALETTE,
+  GRASS,
+  GROUND_PALETTE,
+  type GroundTile,
+  OVERHANG_PX,
+  RELIC,
+  RELIC_GLOW,
+  RELIC_PALETTE,
+  type Rgba,
+  SPRITE_W,
+  STUMP,
+  TREE_PALETTE,
+  TREE_SPECIES,
+  TREES,
+  VILLAGER_CLOTH,
+  VILLAGER_FEET,
+  VILLAGER_FRAMES,
+  VILLAGER_H,
+  VILLAGER_PALETTE,
+  VILLAGER_W,
+  type VillagerFrame,
+} from './sprites';
 
-// Placeholder palette: everything is a colored rectangle at this stage.
-const GRASS = [0x6f, 0x9e, 0x4f];
-const TREE_LIGHT = [0x8c, 0xb8, 0x5a]; // nearly chopped
-const TREE_DARK = [0x2a, 0x6b, 0x2c]; // full
+// Everything is a sprite except buildings that have none yet (colored rectangles).
 const VOID = [0x07, 0x0a, 0x07]; // fog beyond the visible radius
+const VOID_KEY = -2; // terrain cache key for a fogged-out cell
 const FOG_LIGHT = [1, 1, 0.75, 0.5]; // brightness by fog distance 0..R
+const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
+const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
   house: '#d8b47a',
@@ -24,20 +52,49 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   quarry: '#78909c',
   well: '#4fc3f7',
 };
-const VILLAGER_COLOR: Record<Exclude<VillagerState, 'toHome'>, string> = {
-  idle: '#9aa0a6',
-  toTree: '#f2f2f2',
-  chop: '#ffd54a',
-  toWork: '#b3e5fc',
-  work: '#29b6f6',
-};
-const CARRY_COLOR: Record<Job, string> = { lumber: '#ff8a3d', farm: '#f48fb1', mine: '#cfd8dc' }; // toHome
+const WALK_MS = 140; // per walk frame
+const SWING_MS = 260; // per tool-swing frame
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
-  private terrain: HTMLCanvasElement; // 1 px per tile, scaled up by the camera
+  private terrain: HTMLCanvasElement; // SPRITE_W px per tile, scaled by the camera
   private tctx: CanvasRenderingContext2D;
-  private img: ImageData;
+  /** Ground key last drawn per cell into `terrain` (-1 = never), so only changed cells redraw. */
+  private drawn: Int16Array;
+  /** Fixed grass variant per cell (index into GRASS), under trees and cleared land alike. */
+  private grassAt: Uint8Array;
+  /** Baked grass tiles: [fog][variant]. */
+  private ground = FOG_LIGHT.map((light) => GRASS.map((t) => bake(t.grid, GROUND_PALETTE, light)));
+  /** Baked building sprites (buildings sit in territory, so never fogged). */
+  private buildingSprites = Object.fromEntries(
+    Object.entries(BUILDING_SPRITES).map(([kind, grid]) => [kind, bake(grid, BUILDING_PALETTE, 1)]),
+  ) as Partial<Record<BuildingKind, HTMLCanvasElement>>;
+  /** Baked relic stone per fog level, and its glow (only drawn in territory, so never fogged). */
+  private relics = FOG_LIGHT.map((light) => bake(RELIC, RELIC_PALETTE, light));
+  private relicGlow = bake(RELIC_GLOW, RELIC_PALETTE, 1);
+  /** Baked mark flags: red where villagers can reach the tree, yellow until then. */
+  private flags = {
+    reachable: bake(FLAG, { ...FLAG_PALETTE, ...FLAG_CLOTH.reachable }, 1),
+    unreachable: bake(FLAG, { ...FLAG_PALETTE, ...FLAG_CLOTH.unreachable }, 1),
+  };
+  /** Baked tree sprites: [fog][species][stage], the last stage being the stump. */
+  private trees = FOG_LIGHT.map((light) =>
+    TREE_SPECIES.map((sp) => [...TREES[sp], STUMP].map((grid) => bake(grid, TREE_PALETTE, light))),
+  );
+  /** Baked villager frames: [job][frame] = [facing right, facing left]. */
+  private villagers = Object.fromEntries(
+    (Object.keys(VILLAGER_CLOTH) as Job[]).map((job) => {
+      const palette = { ...VILLAGER_PALETTE, ...VILLAGER_CLOTH[job] };
+      const frames = VILLAGER_FRAMES.map((f) => {
+        const grid = composeVillager(job, f);
+        const mirrored = grid.map((r) => [...r].reverse().join(''));
+        return [f, [bake(grid, palette, 1), bake(mirrored, palette, 1)]];
+      });
+      return [job, Object.fromEntries(frames)];
+    }),
+  ) as Record<Job, Record<VillagerFrame, [HTMLCanvasElement, HTMLCanvasElement]>>;
+  /** Last horizontal facing per villager id (true = left), kept while walking straight up/down. */
+  private facing = new Map<number, boolean>();
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -47,10 +104,11 @@ export class Renderer {
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.terrain = document.createElement('canvas');
-    this.terrain.width = w;
-    this.terrain.height = h;
+    this.terrain.width = w * SPRITE_W;
+    this.terrain.height = h * SPRITE_W;
     this.tctx = this.terrain.getContext('2d')!;
-    this.img = this.tctx.createImageData(w, h);
+    this.drawn = new Int16Array(w * h).fill(-1);
+    this.grassAt = pickVariants(w * h, GRASS);
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
   }
@@ -76,35 +134,10 @@ export class Renderer {
     this.drawTerrain(world);
     ctx.fillStyle = `rgb(${VOID})`;
     ctx.fillRect(0, 0, cam.vw, cam.vh);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = k < SPRITE_W; // crisp pixels when magnified, averaged when shrunk
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
-
-    ctx.fillStyle = '#e53935';
-    for (const i of s.marked) rect((i % s.w) + 0.35, ((i / s.w) | 0) + 0.1, 0.3, 0.3);
-
-    const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 250);
-    for (const i of s.relics) {
-      if (world.fog[i] > CONFIG.fogRadius) continue;
-      ctx.fillStyle = isCollectable(s, i) ? `rgba(255,215,64,${pulse})` : '#b8962e';
-      rect((i % s.w) + 0.2, ((i / s.w) | 0) + 0.2, 0.6, 0.6);
-    }
-
-    for (const b of s.buildings) {
-      const d = BUILDINGS[b.kind];
-      ctx.fillStyle = BUILDING_COLOR[b.kind];
-      rect(b.x + 0.05, b.y + 0.05, d.w - 0.1, d.h - 0.1);
-      if (s.paused.includes(b.id)) {
-        ctx.fillStyle = 'rgba(0,0,0,.45)';
-        rect(b.x + 0.05, b.y + 0.05, d.w - 0.1, d.h - 0.1);
-      }
-    }
-
-    const vs = 0.35;
-    for (const v of s.villagers) {
-      ctx.fillStyle = v.state === 'toHome' ? CARRY_COLOR[v.job] : VILLAGER_COLOR[v.state];
-      rect(v.x - vs / 2, v.y - vs / 2, vs, vs);
-    }
+    this.drawScene(world);
 
     if (ui.selected) {
       const d = BUILDINGS[ui.selected.kind];
@@ -122,28 +155,178 @@ export class Renderer {
     }
   }
 
-  /** Rewrites the per-tile image (w*h pixels; negligible even at 100×100). */
+  /** Redraws the ground of cells whose fog level changed since the last frame. */
   private drawTerrain(world: World): void {
     const s = world.state;
-    const d = this.img.data;
-    const R = CONFIG.fogRadius;
+    const { tctx } = this;
     for (let i = 0; i < s.tiles.length; i++) {
-      const tree = s.tiles[i] === Tile.Tree || s.tiles[i] === Tile.Relic; // relic sits in a clearing-less thicket
       const fog = world.fog[i];
-      const p = i * 4;
-      d[p + 3] = 255;
-      if (fog > R) {
-        d[p] = VOID[0];
-        d[p + 1] = VOID[1];
-        d[p + 2] = VOID[2];
-        continue;
-      }
-      const f = s.tiles[i] === Tile.Tree ? s.wood[i] / world.maxWood[i] : 1;
-      const light = FOG_LIGHT[fog] * (tree && (i + ((i / s.w) | 0)) & 1 ? 0.9 : 1); // checker
-      for (let j = 0; j < 3; j++) {
-        d[p + j] = (tree ? TREE_LIGHT[j] + (TREE_DARK[j] - TREE_LIGHT[j]) * f : GRASS[j]) * light;
+      const v = this.grassAt[i];
+      const key = fog > CONFIG.fogRadius ? VOID_KEY : v * FOG_LIGHT.length + fog;
+      if (this.drawn[i] === key) continue;
+      this.drawn[i] = key;
+      const x = (i % s.w) * SPRITE_W;
+      const y = ((i / s.w) | 0) * SPRITE_W;
+      if (key === VOID_KEY) {
+        tctx.fillStyle = `rgb(${VOID})`;
+        tctx.fillRect(x, y, SPRITE_W, SPRITE_W);
+      } else tctx.drawImage(this.ground[fog][v], x, y);
+    }
+  }
+
+  /** Faces the next waypoint, the tree being chopped or the workplace; else keeps the last facing. */
+  private faceLeft(world: World, v: Villager): boolean {
+    const s = world.state;
+    let tx: number | undefined;
+    if (v.state === 'chop' && v.target >= 0) tx = (v.target % s.w) + 0.5;
+    else if (v.state === 'work') {
+      const b = s.buildings.find((b) => b.id === v.workplace);
+      if (b) tx = b.x + BUILDINGS[b.kind].w / 2;
+    } else if (v.pathI < v.path.length) tx = (v.path[v.pathI] % s.w) + 0.5;
+    if (tx !== undefined && Math.abs(tx - v.x) > 0.05) this.facing.set(v.id, tx < v.x);
+    return this.facing.get(v.id) ?? false;
+  }
+
+  /**
+   * Everything standing on the ground, back to front by where it meets the ground: trees (with
+   * their flags) and relics by tile row, buildings by their bottom edge, villagers by their feet.
+   * Whatever is lower on screen is drawn later, so it overlaps sprites reaching up behind it.
+   */
+  private drawScene(world: World): void {
+    const s = world.state;
+    const { ctx, cam } = this;
+    const k = cam.zoom;
+    const now = performance.now();
+    const props: { depth: number; draw: () => void }[] = [];
+    for (const b of s.buildings) props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b) });
+    for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
+    props.sort((a, b) => a.depth - b.depth);
+
+    const [wx0, wy0] = cam.toWorld(0, 0);
+    const [wx1, wy1] = cam.toWorld(cam.vw, cam.vh);
+    const x0 = Math.max(0, Math.floor(wx0));
+    const x1 = Math.min(s.w - 1, Math.floor(wx1));
+    const y0 = Math.max(0, Math.floor(wy0));
+    const y1 = Math.min(s.h - 1, Math.floor(wy1 + OVERHANG));
+    const marked = new Set(s.marked);
+    const glow = 0.6 + 0.4 * Math.sin(now / 250);
+    let p = 0;
+    for (let y = y0; y <= y1; y++) {
+      while (p < props.length && props[p].depth < y + 1) props[p++].draw(); // trees in row y meet the ground at y + 1
+      for (let x = x0; x <= x1; x++) {
+        const i = y * s.w + x;
+        const tile = s.tiles[i];
+        if ((tile !== Tile.Tree && tile !== Tile.Relic) || world.fog[i] > CONFIG.fogRadius) continue;
+        const [sx, sy] = cam.toScreen(x, y - OVERHANG);
+        const w = k;
+        const h = k * (1 + OVERHANG);
+        if (tile === Tile.Relic) {
+          ctx.drawImage(this.relics[world.fog[i]], sx, sy, w, h);
+          if (isCollectable(s, i)) {
+            ctx.globalAlpha = glow;
+            ctx.drawImage(this.relicGlow, sx, sy, w, h);
+            ctx.globalAlpha = 1;
+          }
+          continue;
+        }
+        const f = s.wood[i] / world.maxWood[i];
+        let stage = 0;
+        while (stage < STAGE_AT.length && f <= STAGE_AT[stage]) stage++;
+        const species = (Math.imul(i, 0x9e3779b1) >>> 16) % TREE_SPECIES.length; // fixed per tile
+        ctx.drawImage(this.trees[world.fog[i]][species][stage], sx, sy, w, h);
+        if (marked.has(i)) ctx.drawImage(isChoppable(s, i) ? this.flags.reachable : this.flags.unreachable, sx, sy, w, h);
       }
     }
-    this.tctx.putImageData(this.img, 0, 0);
+    while (p < props.length) props[p++].draw();
   }
+
+  private drawBuilding(s: GameState, b: Building): void {
+    const { ctx, cam } = this;
+    const k = cam.zoom;
+    const d = BUILDINGS[b.kind];
+    const footprint = () => {
+      const [sx, sy] = cam.toScreen(b.x + 0.05, b.y + 0.05);
+      ctx.fillRect(sx, sy, (d.w - 0.1) * k, (d.h - 0.1) * k);
+    };
+    const sprite = this.buildingSprites[b.kind];
+    if (sprite) {
+      const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
+      ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);
+    } else {
+      ctx.fillStyle = BUILDING_COLOR[b.kind];
+      footprint();
+    }
+    if (s.paused.includes(b.id)) {
+      ctx.fillStyle = 'rgba(0,0,0,.45)';
+      footprint();
+    }
+  }
+
+  private drawVillager(world: World, v: Villager, now: number): void {
+    const { ctx, cam } = this;
+    const k = cam.zoom;
+    const sprite = this.villagers[v.job][villagerFrame(v, now)][this.faceLeft(world, v) ? 1 : 0];
+    const [sx, sy] = cam.toScreen(v.x - VILLAGER_FEET.x / SPRITE_W, v.y - VILLAGER_FEET.y / SPRITE_W);
+    ctx.drawImage(sprite, sx, sy, (VILLAGER_W / SPRITE_W) * k, (VILLAGER_H / SPRITE_W) * k);
+  }
+}
+
+/**
+ * A villager's ground line is its feet, except on a building's tiles (a farmer in the field, a
+ * miner in the pit, a delivery in the yard), where it is drawn over that building.
+ */
+function villagerDepth(s: GameState, v: Villager): number {
+  const i = tileAt(s, v.x, v.y);
+  const b = s.tiles[i] === Tile.Building ? buildingAt(s, i) : undefined;
+  return b ? b.y + BUILDINGS[b.kind].h + 0.01 : v.y;
+}
+
+/** Animation frame from state and wall-clock time; the id offsets each villager's cycle. */
+function villagerFrame(v: Villager, now: number): VillagerFrame {
+  if (v.state === 'idle') return 'stand';
+  const working = v.state === 'chop' || v.state === 'work';
+  const odd = Math.floor(now / (working ? SWING_MS : WALK_MS) + v.id * 0.37) % 2 === 1;
+  if (working) return odd ? 'work2' : 'work1';
+  if (v.state === 'toHome' && v.carry > 0) return odd ? 'carry2' : 'carry1';
+  return odd ? 'walk2' : 'walk1';
+}
+
+/** A fixed weighted variant per cell, from a hash of its index. */
+function pickVariants(n: number, tiles: readonly GroundTile[]): Uint8Array {
+  const total = tiles.reduce((t, g) => t + g.weight, 0);
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    let r = (hash(i) / 2 ** 32) * total;
+    let v = 0;
+    while (r >= tiles[v].weight) r -= tiles[v++].weight;
+    out[i] = v;
+  }
+  return out;
+}
+
+/** murmur3 finalizer: well-mixed 32 bits from consecutive integers. */
+function hash(n: number): number {
+  n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+  n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+  return (n ^ (n >>> 16)) >>> 0;
+}
+
+/** Rasterizes a sprite grid at the given brightness. */
+function bake(grid: readonly string[], palette: Record<string, Rgba>, light: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = grid[0].length;
+  c.height = grid.length;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(c.width, c.height);
+  grid.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const rgba = palette[row[x]];
+      if (!rgba) continue; // '.' is transparent
+      const p = (y * c.width + x) * 4;
+      for (let j = 0; j < 3; j++) img.data[p + j] = rgba[j] * light;
+      img.data[p + 3] = rgba[3];
+    }
+  });
+  g.putImageData(img, 0, 0);
+  return c;
 }

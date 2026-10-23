@@ -49,16 +49,38 @@ No linter or formatter is configured.
 - **Saves.** `save.ts` keeps a `VERSION` and a chain of `migrations[v]` (v → v+1). Any change to
   the `GameState` shape needs a version bump, a migration, and a migration test.
 
+## Rendering
+- **Sprites are data.** `render/sprites.ts` holds pixel art as string grids (one char per pixel,
+  `.` transparent), each category with its own palette (`TREE_`, `GROUND_`, `BUILDING_`,
+  `RELIC_`, `FLAG_`, `VILLAGER_PALETTE`). The grids were generated once by throwaway scripts that
+  are not in the repo, so edit the grids directly. `tests/sprites.test.ts` checks their sizes and
+  palette chars. `renderer.ts` bakes every grid to a canvas at startup, once per fog brightness
+  where fog applies.
+- **Scale.** One tile is `SPRITE_W` (16) px. Tree, relic and building sprites are
+  `OVERHANG_PX` (4) rows taller than their footprint and reach into the tile above, so a building
+  sprite is `w·16 × h·16 + 4`. Villagers are composed from layers (`composeVillager`: pose + hat +
+  tool or load) and anchored at `VILLAGER_FEET`.
+- **Ground.** Grass is drawn into an offscreen canvas at 16 px per tile, and only cells whose fog
+  level changed are redrawn. Variants are picked by a hash of the tile index.
+- **Draw order.** `drawScene` draws everything on the ground back to front by where it meets the
+  ground: trees and relics by tile row, buildings by bottom edge, villagers by feet. A villager
+  standing on a building's tiles is drawn over that building. Flags and the relic glow are drawn
+  right after their tree or stone.
+- **Render-only state.** Animation runs on wall-clock time, and facing is kept in the renderer.
+  Visual variety comes from tile-index hashes. None of it touches `GameState` or `rand`, which
+  keeps the simulation deterministic.
+
 ## Extending
 Most content is data-driven, and `Record<…>` maps make TypeScript flag every place a new key
 must be handled:
 - **Building:** add it to `BUILDINGS` (`buildings.ts`), `BUILDING_COLOR` (`render/renderer.ts`)
   and `BUILDING_TEXT` (`ui/text.ts`). Selection actions and info lines go in `ACTIONS`/`INFO`
-  (`ui/actions.ts`).
+  (`ui/actions.ts`). An optional pixel-art sprite (`w·16 × h·16 + 4`) goes in `BUILDING_SPRITES`
+  (`render/sprites.ts`). Without one, the building is drawn as a `BUILDING_COLOR` rectangle.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up
   automatically. Then add a save migration.
 - **Workplace job:** extend `Job`, then add entries to `WORK` (`workplace.ts`), `UPDATERS`
-  (`villagers.ts`) and `CARRY_COLOR` (`render/renderer.ts`).
+  (`villagers.ts`), and `VILLAGER_CLOTH`/`VILLAGER_GEAR` (`render/sprites.ts`).
 - **Skill:** add it to `SKILLS` (`skills.ts`, with an optional `requires`), apply its effect in
   `stats.ts` or `economy.ts`, and add its text to `SKILL_TEXT`.
 - **Tunables:** all of them live in `src/config.ts`.

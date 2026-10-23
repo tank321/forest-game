@@ -12,7 +12,8 @@ npm run build   # typecheck + production build to dist/
 
 ## Controls
 Drag to pan, wheel or pinch to zoom. In **Chop** mode, tap a tree next to your land for +1 wood.
-In **Mark** mode (or right-click), a tap flags a priority tree. Tap a building to select it:
+In **Mark** mode (or right-click), a tap flags a priority tree: a red flag once your land reaches it,
+yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood or food), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, a Quarry upgrades picks. Esc cancels.
 
@@ -25,7 +26,7 @@ carry stone to the Town Center. Pause a quarry to give its miners back. Stone pa
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
 within 1 tile harvest ×3 and carry ×2 (wells don't stack).
 
-Every few felled trees a **relic** appears in the forest (gold square). Chop until your land
+Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it). Chop until your land
 touches it, tap it, and pick one of three skills. **Skills** lists levels; **Export/Import** move
 saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps ×1/×10/×100/×1000.
 
@@ -39,12 +40,26 @@ saves as JSON files. In `npm run dev` a **DEV tap** button multiplies your taps 
   - `sim.ts` system list, `tick`, `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms)
   - `skills.ts` skill defs, prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `economy.ts` costs, population cap, `pay`/`gain` · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
-- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` colored rectangles
+- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, `sprites.ts` pixel-art grids and palettes
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
 - `src/ui/` – `hud.ts` top bar, `panel.ts` build menu / selection, `actions.ts` per-building actions, `text.ts` labels
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**Unreleased** – Art.
+- Tree sprites: oak, lime, birch and pine, chosen per tile; canopies overhang the tile above.
+- Grass tiles (plain, tufts, flowers, pebbles) under trees and on cleared land.
+- Lumber Camp sprite: log cabin, log pile and chopping block.
+- Farm sprite: fenced wheat field with a gate and a scarecrow.
+- House sprite: thatched cottage with a chimney.
+- Quarry sprite: terraced pit with a ladder, boulders and cut stone blocks.
+- Town Center sprite: timber hall with a bell tower and banner, and a dirt yard with log, grain and stone piles.
+- Relics are mossy rune stones instead of gold squares; the rune lights and a halo pulses once one can be collected.
+- Barn sprite (red barn with a hayloft and a hay bale) and Well sprite (stone well with a roof and bucket).
+- Marked trees carry a flag: red when villagers can reach the tree, yellow until the land touches it.
+- Villager sprites: outfit and tool by job (lumberjack, farmer, miner); they walk, swing tools, carry their load home, and face where they are going.
+- Trees shrink through three growth stages to a stump as they are chopped (replaces the light/dark shading).
+
 **v5** – Stone.
 - Quarry building with a miner job; stone resource delivered to the Town Center.
 - Pick upgrades (10 levels) at the Quarry.
