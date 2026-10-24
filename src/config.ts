@@ -148,6 +148,9 @@ export const CONFIG = {
     caravan: { deals: 3, seconds: 600, min: 100, buyMult: 0.5, sellMult: 2 },
   },
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
+  achievements: { checksPerSecond: 4 }, // how often earned tiers are checked, in simulated time
+  sound: { volume: 0.6, key: 'forest-game-sound' }, // chime volume (0–1); browser storage key for the on/off setting
+  music: { volume: 0.5, key: 'forest-game-music' }, // background music volume (0–1); browser storage key for the on/off setting
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900 }, // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic
   save: { key: 'forest-game-save', intervalMs: 10_000 },
 } as const;

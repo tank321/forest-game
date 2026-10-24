@@ -125,6 +125,10 @@ must be handled:
 - **Legacy perk:** add it to `PERK_IDS` and `LEGACY` (`legacy.ts`; `requires` places it in the tree), its numbers
   to `CONFIG.legacy.perks`, its effect in `stats.ts`, `economy.ts` or `state.ts` (via `perk`/`perkMult`), and its
   text and icon to `LEGACY_TEXT`. `prestige` (`commands.ts`) returns the next run's state, and `main.ts` saves it and reloads.
+- **Achievement:** add it to `ACHIEVEMENTS` (`achievements.ts`; a metric and its tiers, usually through `lifetime` of a
+  `COUNTERS` entry) and its text and icon to `ACHIEVEMENT_TEXT`. An event nothing else records gets an `EVENTS` key
+  (`types.ts`, plus a save migration), bumped with `count`/`record` where it happens. `career` (earned tiers and past runs' counters)
+  survives rebuilds; `achievementSystem` checks a few times per simulated second and emits `fx` the toasts read.
 - **Tunables:** all of them live in `src/config.ts`.
 
 ## Tests

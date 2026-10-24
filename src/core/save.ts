@@ -1,11 +1,12 @@
 import { CONFIG } from '../config';
+import { newCareer, newCounts } from './achievements';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
 import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 17;
+const VERSION = 18;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -135,6 +136,11 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   },
   // v17 adds Guild Contracts and the Merchant Caravan: an empty board, no caravan in town.
   16: (f) => ({ ...f, version: 17, state: { ...f.state, contracts: [], caravan: null } }),
+  // v18 adds achievements: an empty career, and the run's relics collected so far.
+  17: (f) => {
+    const s = f.state;
+    return { ...f, version: 18, state: { ...s, counts: { ...newCounts(), relics: s.relicsSpawned - s.relics.length }, career: newCareer() } };
+  },
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */

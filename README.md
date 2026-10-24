@@ -23,6 +23,14 @@ While placing a building, **Cancel**, Escape or a right-click anywhere stops pla
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
 Tax Offices, Trading Posts) and joins the build menu once learned.
+**Guide** (in the menu under the panel) lists every building with a one-line description, its size,
+workers, drop-offs and road needs. Locked buildings are dimmed and name the skill that unlocks them.
+**Achievements** pop up as toasts while you play; higher tiers and secrets get a bigger, longer one. The sidebar
+shows the achievement you are closest to; tap it (or **Achievements** in the menu) to see every one with its progress.
+Each one plays a bell chime; the speaker button in the menu turns sound off or on.
+**Music** plays in the background and follows the season: each has its own chords, tempo and instruments, crossfading as the
+season turns. The note button in the menu turns it off or on. Audio starts after your first tap or key press, and the music pauses while the tab is hidden.
+They give no rewards and are kept across rebuilds; most count over all your runs.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
 Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
@@ -122,14 +130,28 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
+  - `achievements.ts` achievement table, lifetime counters (career), tier checks, next-up pick
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `audio.ts` the shared audio context and on/off settings, `sound.ts` synthesized achievement chimes, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v20** – Achievements.
+- 42 achievements with 100 tiers, and no rewards: ladders for gathering and the town (trees felled, each resource, taps, population, land, buildings, upgrades, relics, skill levels, winters, Guild Contracts, rebuilds), a first-building achievement for each building plus the first road, feats, and six secrets shown as ??? until earned.
+- A toast drops in for each one with a confetti burst and the medal spinning into place; ladder toasts show the tier pips with the new one popping in. The bigger the achievement, the bigger the show: tier 1s are plain, later tiers and feats are gold with rays turning behind the medal, and tier 4+, a ladder's last tier and secrets ("Mastered!", "Secret found!") throw a second burst, flash the map gold, wobble, glow and stay longest. Reduced-motion settings turn the effects off. Tap a toast to open the list.
+- Each toast plays a bell chime, synthesized in the browser with no sound files: two notes for rank 1, a rising run for rank 2, and a fanfare with a held chord and sparkles for rank 3. Toasts that appear together play only the biggest chime. Sound starts after your first tap or key press (a browser rule); the speaker button in the menu mutes it, remembered in this browser.
+- Background music, generated as it plays so it never repeats the same way twice and synthesized with no audio files. Each season has its own chords, tempo, lead and ambience, all in C major so the chimes fit on top: spring is a kalimba with birdsong (C · G · Am · F, 72 bpm), summer is brighter and busier (Fmaj7 · C · G · Am, 84 bpm), autumn is slower and lower with a breeze (Am · F · C · G, 64 bpm), and winter is sparse glass bells over the wind (Am · Em · F · C, 54 bpm). It crossfades as the season turns, pauses while the tab is hidden, and the note button in the menu turns it off or on.
+- The sidebar shows the achievement you are closest to, with a progress bar. **Achievements** in the menu lists every one by group, with tier pips and progress.
+- Achievements and lifetime counters are kept across rebuilds. Gathering, trees, taps, relics and winters add up over all runs; population, land, buildings, upgrades and skill levels count your best run.
+- Saves migrate to v18 with an empty record, and on first load you are quietly credited with everything you already qualify for.
+
+**v19** – Building guide.
+- A **Guide** button opens a list of every building: what it does, its size, workers, what it takes as a drop-off, and whether it needs a road. Locked buildings are dimmed and name the skill (and track) that unlocks them.
+- Escape no longer cancels placing or road mode while any window is open (it already didn't for Skills).
+
 **v18** – Later-game skills wait for their track; Felling Crews.
 - **Felling Crews** (Forestry, after Teamwork): three villagers can work the same flagged tree. Unflagged trees still take two.
 - Six skills are offered only once enough levels are learned in their track, on top of their parent: **Orchards** and **Greenhouses** (4 Farming), **Cotton Fields** (5 Herding), **Teamwork** (4 Forestry), **Tax Offices** (3 Trade) and **Guild Contracts** (5 Trade). Their lock text shows the progress, e.g. "Requires Tailoring and 5 levels in Herding (2/5)".

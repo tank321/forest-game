@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { count, nextCareer, record } from './achievements';
 import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, type BuildingKind } from './buildings';
 import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
@@ -32,6 +33,7 @@ export function chopTree(w: World, i: number): boolean {
     mult = 1 + Math.min(k.combo.step * c.n, k.combo.capPerLevel * momentum);
     if (c.n) w.fx.push({ kind: 'combo', i, n: mult });
   }
+  count(s, 'taps');
   const hit = getStats(s).manualChop * w.dev.manualMult * mult;
   const around = lvl(s, 'sweepingStrike') ? neighbors8(s, i) : [];
   hitTree(w, i, hit);
@@ -66,13 +68,18 @@ export function blast(w: World, id: number): boolean {
   if (stone) gainBonus(w, 'stone', stone);
   const { w: bw, h: bh } = BUILDINGS[b.kind];
   w.fx.push({ kind: 'blast', i: (b.y + (bh >> 1)) * s.w + b.x + (bw >> 1), n: stone });
+  count(s, 'blasts');
   const hit = st.manualChop * k.taps;
+  let trees = 0;
   for (let y = Math.max(0, b.y - k.radius); y <= Math.min(s.h - 1, b.y + bh - 1 + k.radius); y++) {
     for (let x = Math.max(0, b.x - k.radius); x <= Math.min(s.w - 1, b.x + bw - 1 + k.radius); x++) {
       const i = y * s.w + x;
-      if (s.tiles[i] === Tile.Tree) hitTree(w, i, hit, 'bonus');
+      if (s.tiles[i] !== Tile.Tree) continue;
+      trees++;
+      hitTree(w, i, hit, 'bonus');
     }
   }
+  record(s, 'blastTrees', trees);
   return true;
 }
 
@@ -103,6 +110,7 @@ export function claimContract(w: World, k: number): boolean {
   if (!c || !lvl(s, 'guildContracts') || !hasMarket(s) || !contractDone(s, c)) return false;
   gainBonus(w, 'gold', c.reward);
   s.contracts[k] = newContract(s);
+  count(s, 'contracts');
   return true;
 }
 
@@ -113,6 +121,7 @@ export function takeDeal(w: World, k: number): boolean {
   if (!d || !hasMarket(s) || !pay(s, d.give)) return false;
   for (const [r, n] of Object.entries(d.get) as [ResourceKey, number][]) s.resources[r] += n; // an exchange, like Market trades
   s.caravan = null;
+  count(s, 'deals');
   return true;
 }
 
@@ -287,6 +296,7 @@ export function collectRelic(w: World, i: number): boolean {
   if (!isCollectable(s, i)) return false;
   s.relics = s.relics.filter((r) => r !== i);
   claimTile(w, i);
+  count(s, 'relics');
   s.picksPending++;
   if (!s.cards.length) dealCards(s, cardsPerPick(s));
   if (!s.cards.length) s.picksPending = 0; // every skill maxed
@@ -307,7 +317,7 @@ export function pickSkill(w: World, id: SkillId): boolean {
 const cardsPerPick = (s: GameState) => (perk(s, 'relicHunters') ? CONFIG.legacy.perks.relicHunters.cards : 3);
 
 /**
- * Rebuild (prestige): a fresh run on a new map, keeping the Legacy plus one more level of `id`.
+ * Rebuild (prestige): a fresh run on a new map, keeping the Legacy plus one more level of `id`, and the career (achievements).
  * Returns the new state for the caller to load, or null if the rebuild isn't allowed.
  */
 export function prestige(w: World, id: PerkId): GameState | null {
@@ -317,5 +327,5 @@ export function prestige(w: World, id: PerkId): GameState | null {
   return createInitialState(seed, s.w, CONFIG.map.start, {
     runs: s.legacy.runs + 1,
     perks: { ...s.legacy.perks, [id]: perk(s, id) + 1 },
-  });
+  }, nextCareer(s));
 }

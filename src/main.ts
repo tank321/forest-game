@@ -1,21 +1,28 @@
 import { CONFIG } from './config';
+import { checkAchievements } from './core/achievements';
 import { buildingAt } from './core/buildings';
 import { chopTree, collectRelic, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
 import { inBounds, tileAt } from './core/grid';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
+import { SEASONS, seasonOf } from './core/seasons';
 import { simulate, tick } from './core/sim';
 import { createInitialState } from './core/state';
 import { Tile } from './core/types';
 import { createWorld } from './core/world';
 import { attachInput } from './input/input';
 import { Camera } from './render/camera';
+import { AchievementsModal } from './ui/achievementsModal';
 import { Renderer } from './render/renderer';
 import { Hud } from './ui/hud';
+import { GuideModal } from './ui/guideModal';
 import { Panel } from './ui/panel';
 import { LegacyModal } from './ui/legacyModal';
+import { Music } from './ui/music';
 import { placementAt } from './ui/placement';
 import { SkillModal } from './ui/skillModal';
+import { Sound } from './ui/sound';
+import { Toasts } from './ui/toast';
 import { createUiState } from './ui/state';
 import { applySkin } from './ui/skin';
 import { BUILDING_TEXT, duration, fmt } from './ui/text';
@@ -50,6 +57,20 @@ const legacyModal = new LegacyModal(
     location.reload();
   },
 );
+new GuideModal(document.getElementById('guideModal') as HTMLDialogElement, document.getElementById('guideBtn') as HTMLButtonElement, () => world);
+const achievementsModal = new AchievementsModal(
+  document.getElementById('achievementsModal') as HTMLDialogElement,
+  document.getElementById('achievementsBtn') as HTMLButtonElement,
+  document.getElementById('nextUpBtn') as HTMLButtonElement,
+  () => world,
+);
+const sound = new Sound(document.getElementById('soundBtn') as HTMLButtonElement);
+const music = new Music(document.getElementById('musicBtn') as HTMLButtonElement);
+const toasts = new Toasts(document.getElementById('toasts')!, () => achievementsModal.open(), (rank) => sound.chime(rank));
+// Anything reached before load (a save from before achievements, a rebuild) is granted now: a few one by one, many as a summary.
+const already = checkAchievements(s);
+if (already.length > 3) toasts.summary(`You've already earned ${already.length} achievements!`);
+else for (const { id, tier } of already) toasts.achievement(id, tier);
 
 // A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
 let lifting = false;
@@ -118,7 +139,7 @@ attachInput(canvas, cam, {
   },
 });
 addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape' || document.getElementById('skillModal')!.matches('[open]')) return;
+  if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
   if (ui.moving) ui.moving = null;
   else if (ui.movingRoad) ui.movingRoad = false;
   else if (ui.paving) ui.paving = false;
@@ -136,7 +157,9 @@ function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
   simulate(world, t, catchUpDt);
+  const earned = world.fx.filter((fx) => fx.kind === 'achievement').length;
   world.fx.length = 0; // effects from time away are summed up below, not replayed
+  if (earned) toasts.summary(`${earned} earned while you were away`);
   const change = (r: 'wood' | 'food' | 'gold') => {
     const d = s.resources[r] - before[r];
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
@@ -179,6 +202,7 @@ function frame(now: number): void {
   for (const fx of world.fx.splice(0)) {
     if (fx.kind === 'festival') hud.message(`Harvest Festival! Farms and orchards bring in ${fmt(fx.n)} food.`, 6000);
     else if (fx.kind === 'fair') hud.message('The Midsummer Fair is open! No market commission and Trading Posts pay more all summer.', 6000);
+    else if (fx.kind === 'achievement') toasts.achievement(fx.id!, fx.n);
     else if (fx.kind === 'caravan') hud.message('A merchant caravan has come to the Market. Take one deal before spring.', 6000);
     else renderer.addFx(fx, now);
     if (fx.kind === 'shearing') wool += fx.n;
@@ -190,6 +214,8 @@ function frame(now: number): void {
   panel.update();
   skillModal.update();
   legacyModal.update();
+  achievementsModal.update();
+  music.setSeason(SEASONS[seasonOf(s.time)]);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

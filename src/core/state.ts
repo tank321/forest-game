@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { newCareer, newCounts, type Career } from './achievements';
 import { addBuilding, BUILDINGS } from './buildings';
 import { newLegacy, perk, startVillagers, type Legacy } from './legacy';
 import { relicSpacing } from './relics';
@@ -11,6 +12,7 @@ export function createInitialState(
   size: number = CONFIG.map.size,
   start: number = CONFIG.map.start,
   legacy: Legacy = newLegacy(),
+  career: Career = newCareer(),
 ): GameState {
   if (perk({ legacy }, 'urbanCore')) start = Math.max(start, CONFIG.legacy.perks.urbanCore.start);
   const n = size * size;
@@ -44,6 +46,8 @@ export function createInitialState(
     legacy,
     contracts: [],
     caravan: null,
+    counts: newCounts(),
+    career,
   };
   s.wood.set(maxWoodTable(s));
   for (let y = o; y < o + start; y++) s.tiles.fill(Tile.Grass, y * size + o, y * size + o + start);

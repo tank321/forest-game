@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { achievementSystem } from './achievements';
 import { BUILDINGS, buildingById } from './buildings';
 import { fillContracts, rollDeals } from './guild';
 import { seasonLeft, seasonOf, SUMMER, WINTER } from './seasons';
@@ -21,10 +22,13 @@ const systems: System[] = [jobSystem, upkeepSystem, villagerSystem, grazingSyste
  * pays out on the step that ends autumn, at the harvest rates of autumn; Shearing Day on the step
  * that ends winter, at the wool rates of winter. The Midsummer Fair opens and the Merchant Caravan
  * comes and goes on these steps too, and the Guild Contracts board is topped up after every step.
+ * Achievements are checked after `dt` has run, a few times per simulated second.
  */
 export function tick(w: World, dt: number): void {
   const s = w.state;
   const k = CONFIG.skills;
+  const checks = CONFIG.achievements.checksPerSecond;
+  const checkedAt = Math.floor(s.time * checks);
   while (dt > 0) {
     const left = seasonLeft(s.time);
     const d = Math.min(dt, left);
@@ -55,6 +59,7 @@ export function tick(w: World, dt: number): void {
     if (ending === WINTER) s.caravan = null;
     if (lvl(s, 'guildContracts')) fillContracts(s);
   }
+  if (Math.floor(s.time * checks) !== checkedAt) achievementSystem(w);
 }
 
 /** Advance `seconds` in steps of at most `step` (offline / background catch-up). */

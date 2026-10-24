@@ -146,26 +146,27 @@ button.danger { color: #ffb6a3; }
 
 #menu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 12px 12px; }
 #menu button { padding: 0 4px; }
+#soundBtn.muted .ico, #musicBtn.muted .ico { opacity: .4; }
 /* Dev buttons stay together on their own row. */
 #devTools { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .dev-tag { color: #e9b8ff; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-shadow: var(--outline); }
 #menu .dev { color: #e9b8ff; }
 
 /* Skills: a tree of tracks to browse, a detail panel, and a deliberate relic reward action. */
-#skillModal, #legacyModal { margin: auto; width: 960px; max-width: calc(100% - 32px); height: min(800px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); flex-direction: column; gap: 12px; overflow: hidden; padding: 16px; color: var(--cream); background: #3a2616 var(--wood) 0 0 / 64px 16px; box-shadow: 0 16px 64px #0009; }
-#skillModal[open], #legacyModal[open] { display: flex; }
+#skillModal, #legacyModal, #guideModal, #achievementsModal { margin: auto; width: 960px; max-width: calc(100% - 32px); height: min(800px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); flex-direction: column; gap: 12px; overflow: hidden; padding: 16px; color: var(--cream); background: #3a2616 var(--wood) 0 0 / 64px 16px; box-shadow: 0 16px 64px #0009; }
+#skillModal[open], #legacyModal[open], #guideModal[open], #achievementsModal[open] { display: flex; }
 #skillModal { width: 1600px; height: calc(100dvh - 32px); gap: 8px; padding: 10px 12px 12px; }
 #legacyModal { width: 720px; height: fit-content; }
 #legacyModal .skill-layout { flex: 0 1 auto; }
 #skillModal.is-choosing { width: 620px; height: fit-content; }
 #skillModal.is-choosing .skill-layout { flex: 0 1 auto; grid-template-columns: minmax(0, 1fr) 300px; }
 .skill-next { font-size: 12px; font-weight: 600; color: #365b29; }
-#skillModal::backdrop, #legacyModal::backdrop { background: rgb(7 10 7 / .75); }
-#skillModal .close, #legacyModal .close { flex: none; padding: 0 8px; font-size: 22px; line-height: 1; min-height: 36px; }
+#skillModal::backdrop, #legacyModal::backdrop, #guideModal::backdrop, #achievementsModal::backdrop { background: rgb(7 10 7 / .75); }
+#skillModal .close, #legacyModal .close, #guideModal .close, #achievementsModal .close { flex: none; padding: 0 8px; font-size: 22px; line-height: 1; min-height: 36px; }
 /* One bar: title, view tabs, summary, close. */
 .skill-header { display: flex; align-items: center; gap: 12px; flex: none; }
 .skill-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-#skillTitle, #legacyTitle { flex: none; font-size: 22px; line-height: 1.2; color: var(--gold); text-shadow: var(--outline); }
+#skillTitle, #legacyTitle, #guideTitle, #achievementsTitle { flex: none; font-size: 22px; line-height: 1.2; color: var(--gold); text-shadow: var(--outline); }
 .skill-summary { flex: 1; min-width: 0; color: var(--tan); font-size: 13px; line-height: 1.3; }
 .skill-tabs { display: flex; flex: none; gap: 6px; }
 .skill-tabs button { justify-content: center; min-height: 32px; padding-block: 0; font-size: 14px; }
@@ -248,7 +249,92 @@ button.danger { color: #ffb6a3; }
 .skill-choose { width: 100%; justify-content: center; min-height: 48px; font-weight: 700; text-align: center; }
 .skill-feedback { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; width: max-content; max-width: calc(100% - 32px); padding: 10px 16px; border: 1px solid #8b9b54; background: #23301b; box-shadow: 0 4px 16px #0008; color: #d7edac; font-size: 14px; font-weight: 600; text-align: center; pointer-events: none; z-index: 3; }
 .skill-feedback:empty { display: none; }
-#skillModal :focus-visible, #legacyModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
+#skillModal :focus-visible, #legacyModal :focus-visible, #guideModal :focus-visible, #achievementsModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
+/* Guide: one card per building, locked ones dimmed. */
+#guideModal { width: 880px; }
+.guide-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 8px; min-height: 0; padding: 4px; overflow-y: auto; list-style: none; scrollbar-color: #a27b48 #291b11; }
+.guide-card { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; font-size: 14px; line-height: 1.4; }
+.guide-card h3 { font-size: 16px; line-height: 1.25; }
+.guide-facts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.guide-facts span { display: inline-flex; align-items: center; gap: 2px; padding: 0 6px; background: #d7c392; border-left: 3px solid #8b6c34; font-size: 12px; font-weight: 600; color: #654222; }
+.guide-facts .ico { width: 16px; height: 16px; background-size: 16px; }
+.guide-lock { margin-top: 6px; font-size: 13px; color: #654222; }
+.guide-card.locked .thumb { filter: grayscale(1); opacity: .45; }
+.guide-card.locked h3 { color: #6f5d43; }
+/* Achievements: the next-up button in the sidebar, toasts over the map, and the window. */
+.next-up { flex: 1; min-width: 0; gap: 8px; padding: 2px 8px; text-align: left; }
+.next-up-copy { display: grid; flex: 1; min-width: 0; gap: 2px; }
+.next-up-copy small { color: #654222; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.next-up-copy b { overflow: hidden; font-size: 14px; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
+.next-up-count { flex: none; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ach-bar { display: block; height: 6px; border: 1px solid #937b52; background: #c6b58e; }
+.ach-bar > i { display: block; height: 100%; background: #527c38; transition: width .3s; }
+#toasts { position: absolute; top: 64px; left: 50%; translate: -50% 0; display: grid; justify-items: center; gap: 10px; width: max-content; max-width: calc(100% - 32px); pointer-events: none; z-index: 3; }
+.toast-wrap { position: relative; }
+.toast { --f: var(--frame-parchment); position: relative; display: flex; gap: 12px; align-items: center; min-width: 260px; padding: 6px 14px 6px 8px; color: var(--ink); pointer-events: auto; cursor: pointer; box-shadow: 0 8px 24px #0009; animation: toast-in .45s cubic-bezier(.2, 1.5, .4, 1) both; }
+.toast > div { display: grid; line-height: 1.25; }
+.toast small { color: #654222; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.toast b { font-size: 17px; }
+.toast > div > span { font-size: 13px; }
+.toast-medal { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; }
+.toast-medal::before { content: ''; position: absolute; inset: -16px; border-radius: 50%; background: repeating-conic-gradient(#fff3c4 0 9deg, transparent 9deg 30deg); mask: radial-gradient(closest-side, #000 35%, transparent); opacity: 0; }
+.toast-medal .ico { position: relative; width: 40px; height: 40px; background-size: 40px; animation: medal-pop .55s .15s cubic-bezier(.3, 1.8, .5, 1) both; }
+.toast-medal .ico.skill-thumb { background-size: contain; }
+.toast-pips { display: flex; gap: 3px; margin-top: 3px; }
+.toast-pips i { width: 14px; height: 6px; border: 1px solid #937b52; background: #c6b58e; }
+.toast-pips .filled { border-color: #365b29; background: #527c38; }
+.toast-pips .new { animation: pip-pop .45s .55s cubic-bezier(.3, 1.8, .5, 1) both; }
+/* Rank 2: gold card, rays turning behind the medal. */
+.rank-2 .toast, .rank-3 .toast { --f: var(--frame-gold); }
+.rank-2 .toast-medal::before, .rank-3 .toast-medal::before { opacity: .9; animation: rays 6s linear infinite; }
+/* Rank 3: bigger, a harder drop, a wobble on landing, a pulsing glow and a shine across the card. */
+.rank-3 .toast { gap: 14px; min-width: 300px; padding: 10px 18px 10px 12px; animation: toast-in .6s cubic-bezier(.2, 1.7, .4, 1) both, toast-wobble .5s .6s ease-in-out, toast-glow .9s ease-in-out .6s 6 alternate; }
+.rank-3 .toast b { font-size: 21px; }
+.rank-3 .toast-medal { width: 52px; height: 52px; }
+.rank-3 .toast-medal::before { inset: -22px; animation-duration: 3s; }
+.rank-3 .toast-medal .ico { width: 48px; height: 48px; background-size: 48px; }
+.rank-3 .toast::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, #fff9 50%, transparent 65%) -150% 0 / 200% 100% no-repeat; animation: toast-shine 1.3s ease-in-out .4s 3; pointer-events: none; }
+.toast-wrap.leaving { animation: toast-out .3s ease-in forwards; }
+/* Confetti: pixel squares flung from the middle of the card, then falling. */
+.toast-burst { position: absolute; top: 50%; left: 50%; width: 0; height: 0; pointer-events: none; }
+.toast-burst i { position: absolute; width: 6px; height: 6px; margin: -3px; background: var(--c); box-shadow: 0 0 0 1px #24160c66; opacity: 0; animation: confetti var(--t) cubic-bezier(.15, .75, .35, 1) both; }
+.toast-burst i.tall { width: 4px; height: 9px; }
+.toast-flash { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 90px, #fff6d0d0, #f2d77a55 35%, transparent 70%); animation: toast-flash .9s ease-out forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-48px) scale(.6) rotate(-4deg); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-16px) scale(.95); } }
+@keyframes toast-wobble { 25% { transform: rotate(-2.5deg) scale(1.04); } 50% { transform: rotate(2deg); } 75% { transform: rotate(-1deg); } }
+@keyframes toast-glow { to { box-shadow: 0 8px 24px #0009, 0 0 24px 6px #f2d77a; } }
+@keyframes toast-shine { to { background-position: 250% 0; } }
+@keyframes toast-flash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes medal-pop { from { transform: scale(0) rotate(-120deg); } }
+@keyframes pip-pop { from { transform: scale(0); } 60% { transform: scale(1.6); background: #f2d77a; } }
+@keyframes rays { to { rotate: 360deg; } }
+@keyframes confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(.3); }
+  55% { opacity: 1; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) + 90px)) rotate(calc(var(--r) * 2)); }
+}
+#achievementsModal { width: 960px; }
+.ach-body { min-height: 0; padding: 4px; overflow-y: auto; scrollbar-color: #a27b48 #291b11; }
+.ach-group { margin: 8px 0 6px; color: var(--gold); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; text-shadow: var(--outline); }
+.ach-body section:first-child .ach-group { margin-top: 0; }
+.ach-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 8px; padding: 0; list-style: none; }
+.ach-card { display: flex; gap: 10px; align-items: flex-start; padding: 6px 10px 6px 6px; font-size: 13px; line-height: 1.35; }
+.ach-card > div { display: grid; flex: 1; gap: 3px; min-width: 0; }
+.ach-card h4 { font-size: 15px; line-height: 1.25; }
+.ach-icon { display: grid; place-items: center; flex: none; width: 40px; height: 40px; }
+.ach-icon .ico { width: 36px; height: 36px; background-size: 36px; }
+.ach-icon .ico.skill-thumb { background-size: contain; }
+.ach-card.locked .ach-icon { filter: grayscale(1); opacity: .45; }
+.ach-card.locked h4 { color: #6f5d43; }
+.ach-progress { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.ach-progress small { font-size: 12px; font-weight: 700; color: #654222; font-variant-numeric: tabular-nums; }
+.ach-card .skill-pips { padding: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .toast, .rank-3 .toast, .rank-3 .toast::after, .toast-medal::before, .toast-medal .ico, .toast-pips .new, .toast-wrap.leaving { animation: none; }
+  .toast-wrap.leaving { opacity: 0; }
+  .ach-bar > i { transition: none; }
+}
 /* Legacy: the trunk spans both columns; the city and commerce branches run side by side. */
 .legacy-tree { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 8px; justify-items: center; padding: 4px 2px 8px; }
 .legacy-tree .skill-node { width: 112px; }
@@ -258,11 +344,11 @@ button.danger { color: #ffb6a3; }
   .skill-node.is-offered .skill-node-tile { animation: none; filter: drop-shadow(0 0 6px #f2d77a); }
 }
 @media (max-width: 640px) {
-  #skillModal, #legacyModal { max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; gap: 8px; }
+  #skillModal, #legacyModal, #guideModal, #achievementsModal { max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; gap: 8px; }
   #skillModal { padding: 8px; }
   .skill-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; }
   .skill-summary { grid-area: 1 / 2; font-size: 12px; }
-  #skillModal .close, #legacyModal .close { grid-area: 1 / 3; min-height: 40px; }
+  #skillModal .close, #legacyModal .close, #guideModal .close, #achievementsModal .close { grid-area: 1 / 3; min-height: 40px; }
   .skill-tabs { grid-area: 2 / 1 / 3 / -1; }
   .skill-layout { display: block; overflow-y: auto; }
   .skill-gallery { overflow: visible; }

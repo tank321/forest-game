@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { ACHIEVEMENTS, tiersOf, type AchievementDef, type AchievementGroup, type AchievementId } from '../core/achievements';
 import { unlocks, type BuildingKind } from '../core/buildings';
 import type { PerkId } from '../core/legacy';
 import type { SkillId, Track } from '../core/skills';
@@ -170,4 +171,66 @@ export function duration(sec: number): string {
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.floor(sec % 60);
   return h ? `${h}h ${m}m` : m ? `${m}m ${s}s` : `${s}s`;
+}
+
+const pl = (n: number, one: string, many = `${one}s`) => `${fmt(n)} ${n === 1 ? one : many}`;
+const firstOf = (kind: BuildingKind) => `Build your first ${BUILDING_TEXT[kind].name}`;
+
+export const ACHIEVEMENT_GROUP_TEXT: Record<AchievementGroup, string> = { gathering: 'Gathering', town: 'Town', firsts: 'Firsts', feats: 'Feats' };
+
+/** Each achievement's name, what a tier asks for (from that tier's goal), and icon. A first-building achievement shows the building instead. */
+export const ACHIEVEMENT_TEXT: Record<AchievementId, { name: string; desc: (n: number) => string; icon: UiIcon }> = {
+  trees: { name: 'Timberrr!', desc: (n) => `Fell ${pl(n, 'tree')}`, icon: 'trees' },
+  wood: { name: 'Woodpile', desc: (n) => `Gather ${fmt(n)} wood`, icon: 'wood' },
+  food: { name: 'Full Pantry', desc: (n) => `Gather ${fmt(n)} food`, icon: 'food' },
+  stone: { name: 'Stone Cold', desc: (n) => `Gather ${fmt(n)} stone`, icon: 'stone' },
+  cloth: { name: 'Fine Threads', desc: (n) => `Gather ${fmt(n)} cloth`, icon: 'cloth' },
+  gold: { name: 'Treasure Trove', desc: (n) => `Earn ${fmt(n)} gold`, icon: 'gold' },
+  taps: { name: 'Busy Hands', desc: (n) => `Chop trees by hand ${pl(n, 'time')}`, icon: 'chop' },
+  pop: { name: 'Village Elder', desc: (n) => `Have ${pl(n, 'villager')} at once`, icon: 'pop' },
+  land: { name: 'Landholder', desc: (n) => `Claim ${pl(n, 'tile')} of land in one run`, icon: 'land' },
+  buildings: { name: 'Architect', desc: (n) => `Have ${pl(n, 'building')} standing at once`, icon: 'hammer' },
+  upgrades: { name: 'Well Equipped', desc: (n) => `Buy ${pl(n, 'upgrade')} in one run`, icon: 'pick' },
+  relics: { name: 'Relic Hunter', desc: (n) => `Collect ${pl(n, 'relic')}`, icon: 'relic' },
+  skills: { name: 'Scholar', desc: (n) => `Learn ${pl(n, 'skill level')} in one run`, icon: 'skills' },
+  winters: { name: 'Weathered', desc: (n) => `Live through ${pl(n, 'winter')}`, icon: 'barrel' },
+  contracts: { name: 'Contractor', desc: (n) => `Finish ${pl(n, 'Guild Contract')}`, icon: 'scroll' },
+  rebuilds: { name: 'Founder', desc: (n) => (n === 1 ? 'Rebuild once' : `Rebuild ${n} times`), icon: 'house' },
+  firstRoad: { name: 'All Roads Lead Home', desc: () => 'Lay your first road', icon: 'cobble' },
+  firstHouse: { name: 'Home Sweet Home', desc: () => firstOf('house'), icon: 'house' },
+  firstLumberCamp: { name: 'Camp Out', desc: () => firstOf('lumberCamp'), icon: 'wood' },
+  firstBarn: { name: 'Barn Raising', desc: () => firstOf('barn'), icon: 'food' },
+  firstFarm: { name: 'Green Acres', desc: () => firstOf('farm'), icon: 'food' },
+  firstQuarry: { name: 'Rock On', desc: () => firstOf('quarry'), icon: 'stone' },
+  firstWell: { name: 'Wishing Well', desc: () => firstOf('well'), icon: 'drop' },
+  firstOrchard: { name: 'Apple of My Eye', desc: () => firstOf('orchard'), icon: 'food' },
+  firstSheepFarm: { name: 'Shepherd', desc: () => firstOf('sheepFarm'), icon: 'sheep' },
+  firstTailor: { name: 'Made to Measure', desc: () => firstOf('tailor'), icon: 'cloth' },
+  firstCotton: { name: 'Soft Touch', desc: () => firstOf('cottonPlantation'), icon: 'cloth' },
+  firstMarket: { name: 'Open for Business', desc: () => firstOf('market'), icon: 'gold' },
+  firstTaxOffice: { name: 'Death and Taxes', desc: () => firstOf('taxOffice'), icon: 'purse' },
+  firstTradingPost: { name: 'Trade Route', desc: () => firstOf('tradingPost'), icon: 'wagon' },
+  firstOutpost: { name: 'Frontier Spirit', desc: () => firstOf('outpost'), icon: 'house' },
+  clearCut: { name: 'Clear-Cut', desc: () => 'Fell every tree on the map', icon: 'fall' },
+  allBuildings: { name: 'Master Plan', desc: () => 'Unlock every building in one run', icon: 'hammer' },
+  maxSkill: { name: 'Grandmaster', desc: () => 'Max out a skill that has several levels', icon: 'skills' },
+  caravan: { name: 'Caravan Trader', desc: () => 'Take a Merchant Caravan deal', icon: 'wagon' },
+  dynamite: { name: 'Fire in the Hole', desc: () => 'Blast a Quarry with Dynamite', icon: 'tnt' },
+  domino: { name: 'Domino Effect', desc: () => 'Topple 5 trees in one Timber! chain', icon: 'fall' },
+  goldenTouch: { name: 'Golden Touch', desc: () => 'Shear a Golden Fleece', icon: 'fleece' },
+  hiddenGem: { name: 'Hidden Gem', desc: () => 'Find a geode in a Quarry', icon: 'gem' },
+  bigBang: { name: 'Big Bang', desc: () => 'Hit 10 trees with one Dynamite blast', icon: 'tnt' },
+  eagerBeaver: { name: 'Eager Beaver', desc: () => 'Fell 20 trees in the first minute of a run', icon: 'run' },
+  hardTimes: { name: 'Hard Times', desc: () => 'Run out of food and firewood at the same time', icon: 'bowl' },
+};
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+/** The name, with a tier numeral on a ladder once a tier is earned. */
+export const achievementName = (id: AchievementId, tier: number) =>
+  tiersOf(id).length > 1 && tier > 0 ? `${ACHIEVEMENT_TEXT[id].name} ${ROMAN[tier - 1]}` : ACHIEVEMENT_TEXT[id].name;
+/** What tier `tier` (1-based) asks for. */
+export const achievementDesc = (id: AchievementId, tier: number) => ACHIEVEMENT_TEXT[id].desc(tiersOf(id)[tier - 1]);
+export function achievementIcon(id: AchievementId): string {
+  const kind = (ACHIEVEMENTS[id] as AchievementDef).building;
+  return kind && BUILDING_SPRITES[kind] ? `<i class="ico skill-thumb thumb-${kind}"></i>` : icon(ACHIEVEMENT_TEXT[id].icon);
 }

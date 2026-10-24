@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { record, type AchievementId } from './achievements';
 import { gain } from './economy';
 import { isTerritory, neighbors8 } from './grid';
 import { buildField, type Field } from './pathing';
@@ -16,9 +17,10 @@ const SOURCE_KEYS: Record<Source, true> = { lumber: true, farm: true, orchard: t
 
 /** A moment for the UI to show: floating text over tile `i` (a combo multiplier or an amount `n`), or the festival's food `n`. */
 export interface Fx {
-  kind: 'combo' | 'heartwood' | 'timber' | 'festival' | 'shearing' | 'fleece' | 'geode' | 'grazed' | 'blast' | 'fair' | 'caravan';
+  kind: 'combo' | 'heartwood' | 'timber' | 'festival' | 'shearing' | 'fleece' | 'geode' | 'grazed' | 'blast' | 'fair' | 'caravan' | 'achievement';
   i: number; // -1 for the festival
-  n: number;
+  n: number; // an achievement's tier
+  id?: AchievementId; // the achievement earned
 }
 
 /** Fog is measured this far, so Keen Eyes can widen the view without restamping. */
@@ -84,7 +86,7 @@ export function claimTile(w: World, i: number): void {
  * The single place a tree is felled. Heartwood may pay bonus wood, and Timber! topples it onto a
  * random neighbouring tree, which can fell that one too (a chain).
  */
-export function clearTree(w: World, i: number): void {
+export function clearTree(w: World, i: number, chain = 0): void {
   const s = w.state;
   const k = CONFIG.skills;
   s.treesLeft--;
@@ -105,7 +107,9 @@ export function clearTree(w: World, i: number): void {
   s.wood[hit] -= n;
   gainBonus(w, 'wood', n);
   w.fx.push({ kind: 'timber', i: hit, n });
-  if (s.wood[hit] === 0) clearTree(w, hit);
+  if (s.wood[hit] > 0) return;
+  record(s, 'chain', chain + 1);
+  clearTree(w, hit, chain + 1);
 }
 
 /** Goods from a skill bonus, counted under the 'bonus' source. */

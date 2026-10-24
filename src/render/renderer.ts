@@ -77,6 +77,7 @@ const FX_TEXT: Record<Fx['kind'], (n: string, raw: number) => string> = {
   blast: (n) => (n === '0' ? 'BOOM!' : `BOOM! +${n} stone`),
   fair: () => 'Midsummer Fair!', // shown as toasts
   caravan: () => 'Caravan!',
+  achievement: () => '',
 };
 const FX_COLOR: Partial<Record<Fx['kind'], string>> = { combo: '#bfe6ff', blast: '#ff9a4a', shearing: '#f2efe6' };
 const WINTER_FADE = 10; // s the winter tint takes to fade in or out

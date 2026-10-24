@@ -20,15 +20,21 @@
           <div id="resourceInfo" class="frame parchment" role="tooltip" hidden></div>
         </header>
         <p id="msg" class="frame parchment"></p>
+        <div id="toasts" role="status" aria-live="polite"></div>
       </main>
       <aside id="side">
         <div id="tools">
           <button id="pickSkillBtn" class="gold" hidden><i class="ico ico-skills"></i><span></span></button>
+          <button id="nextUpBtn" class="next-up parchment" aria-haspopup="dialog" aria-controls="achievementsModal" hidden></button>
         </div>
         <section id="panel"></section>
         <nav id="menu">
           <button id="skillsBtn" aria-haspopup="dialog" aria-controls="skillModal" aria-expanded="false"><i class="ico ico-skills"></i>Skills</button>
           <button id="legacyBtn" aria-haspopup="dialog" aria-controls="legacyModal" aria-expanded="false"><i class="ico ico-relic"></i>Legacy</button>
+          <button id="guideBtn" aria-haspopup="dialog" aria-controls="guideModal" aria-expanded="false"><i class="ico ico-scroll"></i>Guide</button>
+          <button id="achievementsBtn" aria-haspopup="dialog" aria-controls="achievementsModal" aria-expanded="false"><i class="ico ico-trophy"></i>Achievements</button>
+          <button id="soundBtn" aria-label="Sound" aria-pressed="true"><i class="ico ico-sound"></i></button>
+          <button id="musicBtn" aria-label="Music" aria-pressed="true"><i class="ico ico-music"></i></button>
           <button id="exportBtn" title="Export save" aria-label="Export save"><i class="ico ico-export"></i></button>
           <button id="importBtn" title="Import save" aria-label="Import save"><i class="ico ico-import"></i></button>
           <div id="devTools" role="group" aria-label="Developer tools" hidden>
@@ -67,6 +73,22 @@
         <div class="skill-gallery" role="group" aria-label="Legacy perks"></div>
         <div class="skill-detail-slot"></div>
       </div>
+    </dialog>
+    <dialog id="guideModal" class="frame dark" aria-labelledby="guideTitle">
+      <div class="skill-header">
+        <h2 id="guideTitle">Buildings</h2>
+        <p class="skill-summary"></p>
+        <button class="close" aria-label="Close">×</button>
+      </div>
+      <ul class="guide-list" aria-label="Every building and what it does"></ul>
+    </dialog>
+    <dialog id="achievementsModal" class="frame dark" aria-labelledby="achievementsTitle">
+      <div class="skill-header">
+        <h2 id="achievementsTitle">Achievements</h2>
+        <p class="skill-summary"></p>
+        <button class="close" aria-label="Close">×</button>
+      </div>
+      <div class="ach-body"></div>
     </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>

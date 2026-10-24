@@ -1,10 +1,11 @@
 import { CONFIG } from '../../config';
+import { count } from '../achievements';
 import { buildingById, isActive } from '../buildings';
 import { tileAt } from '../grid';
 import { rand } from '../rng';
 import { lvl, type SkillId } from '../skills';
 import type { Stats } from '../stats';
-import type { Building, Job, ResourceKey, Villager } from '../types';
+import type { Building, EventKey, Job, ResourceKey, Villager } from '../types';
 import { gainBonus, type Fx, type World } from '../world';
 import { arrived, deliver, goHome, pathToWork, returnToWork, walk } from './movement';
 
@@ -65,13 +66,13 @@ export function burst(w: World, st: Stats, jobs: readonly WorkplaceJob[], second
 }
 
 /** Golden Fleece and Geodes: a herder's or miner's delivery may bring a jackpot on top. */
-const JACKPOTS: Partial<Record<WorkplaceJob, { skill: SkillId; res: ResourceKey; chance: number; n: (load: number) => number; fx: Fx['kind'] }>> = {
+const JACKPOTS: Partial<Record<WorkplaceJob, { skill: SkillId; res: ResourceKey; chance: number; n: (load: number) => number; fx: Fx['kind']; count: EventKey }>> = {
   herd: {
-    skill: 'goldenFleece', res: 'cloth', chance: CONFIG.skills.goldenFleece.chance, fx: 'fleece',
+    skill: 'goldenFleece', res: 'cloth', chance: CONFIG.skills.goldenFleece.chance, fx: 'fleece', count: 'fleece',
     n: (load) => load * (CONFIG.skills.goldenFleece.mult - 1),
   },
   mine: {
-    skill: 'geodes', res: 'gold', chance: CONFIG.skills.geodes.chance, fx: 'geode',
+    skill: 'geodes', res: 'gold', chance: CONFIG.skills.geodes.chance, fx: 'geode', count: 'geodes',
     n: (load) => load * CONFIG.skills.geodes.goldPerStone,
   },
 };
@@ -84,6 +85,7 @@ function jackpot(w: World, v: Villager): void {
   const n = j.n(v.carry);
   gainBonus(w, j.res, n);
   w.fx.push({ kind: j.fx, i: tileAt(s, v.x, v.y), n });
+  count(s, j.count);
 }
 
 /** Resource a villager with this job carries. */

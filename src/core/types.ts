@@ -1,3 +1,4 @@
+import type { AchievementId, Counter } from './achievements';
 import type { BuildingKind } from './buildings';
 import type { PerkId } from './legacy';
 import type { SkillId } from './skills';
@@ -45,6 +46,10 @@ export interface Rect {
   h: number;
 }
 
+/** Run counters for events nothing else in the state records (see achievements.ts). `chain` and `blastTrees` keep the best, the rest add up. */
+export const EVENTS = ['taps', 'relics', 'fleece', 'geodes', 'blasts', 'blastTrees', 'contracts', 'deals', 'chain'] as const;
+export type EventKey = (typeof EVENTS)[number];
+
 /** Persistent, JSON-serializable (after typed-array conversion) game state. */
 export interface GameState {
   seed: number;
@@ -75,6 +80,8 @@ export interface GameState {
   legacy: { runs: number; perks: Partial<Record<PerkId, number>> }; // kept across rebuilds (prestige)
   contracts: Contract[]; // Guild Contracts on the board
   caravan: Deal[] | null; // Merchant Caravan deals while it is in town (null = away)
+  counts: Record<EventKey, number>; // this run's event counters
+  career: { past: Record<Counter, number>; earned: Partial<Record<AchievementId, number>> }; // kept across rebuilds: past runs' counters, achievement tiers earned
 }
 
 /** A Guild Contract: gather `need` more of a resource, fell `need` more trees, or reach `need` villagers. Pays `reward` gold. */
