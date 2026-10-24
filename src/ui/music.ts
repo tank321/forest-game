@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import type { Season } from '../core/seasons';
-import { hz, noise, readPref, showToggle, whenAudio, writePref } from './audio';
+import { hz, noise, showToggle, whenAudio } from './audio';
+import { readPref, writePref } from './prefs';
 
 /** A chord: its name, bass note and pad notes (MIDI), held for two bars. */
 type Chord = [name: string, bass: number, pad: number[]];

@@ -1,0 +1,201 @@
+import { CONFIG } from '../config';
+import { BUILDINGS, type BuildingKind } from '../core/buildings';
+import { canAfford, villagerCost } from '../core/economy';
+import { linkedBuildings } from '../core/roads';
+import type { World } from '../core/world';
+import { readPref, writePref } from './prefs';
+import type { UiState } from './state';
+
+/** One goal on the coach card. Its text and highlight can change as the player gets partway there. */
+interface Step {
+  title: string;
+  text: (w: World, ui: UiState) => string;
+  done?: (w: World) => boolean; // none on the last step: the player closes the card
+  target?: (w: World, ui: UiState) => Element | null; // pulsed while the step is shown
+  focus?: (w: World) => { x: number; y: number }; // the camera glides here when the step starts
+}
+
+const GLOW = 'tutorial-glow';
+const SKIP = 'Skip tutorial';
+
+const panelButton = (pick: (text: string) => boolean) =>
+  [...document.querySelectorAll<HTMLButtonElement>('#panel button')].find((b) => pick(b.textContent ?? '')) ?? null;
+const hireButton = (ui: UiState) => (ui.selected?.kind === 'townCenter' ? panelButton((t) => t.startsWith('Hire villager with wood')) : null);
+/** The build menu card for `kind`, or the Close button while a building's panel is in the way. */
+const buildCard = (kind: BuildingKind | 'road') =>
+  document.querySelector(`#panel .build-grid .thumb-${kind}`)?.closest('button') ?? panelButton((t) => t === 'Close');
+
+function placed(w: World, kind: BuildingKind): 'none' | 'isolated' | 'linked' {
+  const s = w.state;
+  const all = s.buildings.filter((b) => b.kind === kind);
+  if (!all.length) return 'none';
+  const linked = linkedBuildings(s);
+  return all.some((b) => linked.has(b.id)) ? 'linked' : 'isolated';
+}
+
+const { basePop, popPerHouse } = CONFIG.economy;
+
+export const STEPS: Step[] = [
+  {
+    title: 'Chop trees',
+    text: (w) => `Tap trees at the edge of your clearing: each tap gives wood. Gather ${villagerCost(w.state).wood} wood to hire your first villager.`,
+    done: (w) => w.state.villagers.length > 0 || canAfford(w.state, villagerCost(w.state)),
+  },
+  {
+    title: 'Hire a villager',
+    text: () => 'Tap the Town Center, then hire a villager with wood. Villagers fell trees and carry the wood home on their own.',
+    done: (w) => w.state.villagers.length > 0,
+    target: (_, ui) => hireButton(ui),
+    focus: (w) => {
+      const tc = w.state.buildings.find((b) => b.kind === 'townCenter')!;
+      return { x: tc.x + BUILDINGS.townCenter.w / 2, y: tc.y + BUILDINGS.townCenter.h / 2 };
+    },
+  },
+  {
+    title: 'Grow the village',
+    text: (w) =>
+      `Hire villagers until you have ${basePop} (${w.state.villagers.length} so far). Each costs more than the last, so keep tapping too. Tip: right-click a tree to flag it, and lumberjacks fell it first.`,
+    done: (w) => w.state.villagers.length >= basePop,
+    target: (_, ui) => hireButton(ui),
+  },
+  {
+    title: 'Build a House',
+    text: () =>
+      `Your village is full. Choose House in the build menu and place it touching the Town Center. Each house makes room for ${popPerHouse} more villagers and adds ${CONFIG.roads.perHouse} roads.`,
+    done: (w) => placed(w, 'house') === 'linked',
+    target: () => buildCard('house'),
+  },
+  {
+    title: 'Grow food',
+    text: (w) =>
+      placed(w, 'farm') === 'isolated'
+        ? 'Your Farm is isolated, so it does nothing. Choose Road and drag from the Town Center to the Farm to connect it.'
+        : `Every villager past the first ${CONFIG.upkeep.freeVillagers} eats food. Build a Farm touching the Town Center, or anywhere a road can join it to the Town Center.`,
+    done: (w) => placed(w, 'farm') === 'linked',
+    target: (w) => buildCard(placed(w, 'farm') === 'isolated' ? 'road' : 'farm'),
+  },
+  {
+    title: 'Sharpen the axes',
+    text: (w) => {
+      const camp = placed(w, 'lumberCamp');
+      if (camp === 'none') return 'Build a Lumber Camp out by the trees: lumberjacks drop their wood there instead of walking back to the Town Center.';
+      if (camp === 'isolated') return 'Connect your Lumber Camp to the Town Center with a road, so it starts working.';
+      return 'Tap your Lumber Camp and upgrade the axe, so lumberjacks chop faster and carry more.';
+    },
+    done: (w) => w.state.upgrades.axe >= 1,
+    target: (w, ui) => {
+      const camp = placed(w, 'lumberCamp');
+      if (camp !== 'linked') return buildCard(camp === 'none' ? 'lumberCamp' : 'road');
+      return ui.selected?.kind === 'lumberCamp' ? document.querySelector('#panel .upgrade-card button') : null;
+    },
+  },
+  {
+    title: 'Find a relic',
+    text: (w) => {
+      const s = w.state;
+      if (s.picksPending) return 'Tap Pick skill and choose one of the cards to learn it.';
+      if (s.relics.length) return 'A relic has appeared in the forest! Clear a path to it, then tap it.';
+      return 'Keep clearing land. A relic appears in the forest when the countdown next to your land runs out.';
+    },
+    done: (w) => Object.values(w.state.skills).some((n) => n > 0),
+    target: (w) => {
+      const s = w.state;
+      if (s.picksPending) return document.getElementById('pickSkillBtn');
+      return s.relics.length ? null : document.getElementById('relicCountdown');
+    },
+  },
+  {
+    title: "You're on your way",
+    text: () => 'More relics appear as you clear land, each with a new skill. The Guide lists every building and what unlocks it. Good luck!',
+    target: () => document.getElementById('guideBtn'),
+  },
+];
+
+/** The first step from `from` on that isn't done yet. The last step is never done on its own. */
+export function nextStep(w: World, from: number): number {
+  let i = from;
+  while (STEPS[i].done?.(w)) i++;
+  return i;
+}
+
+/**
+ * The coach card in the sidebar: one goal at a time, each finished by doing it. Progress is a per-browser
+ * setting (the step, or "done"), not part of the save. It starts on a fresh game; a save without it never shows it.
+ */
+export class Tutorial {
+  private step: number;
+  private shown = -1;
+  private glow: Element | null = null;
+  private armed = 0;
+  private count: HTMLElement;
+  private title: HTMLElement;
+  private body: HTMLElement;
+  private btn: HTMLButtonElement;
+
+  constructor(
+    private el: HTMLElement,
+    private world: () => World,
+    private ui: UiState,
+    private glide: (x: number, y: number) => void,
+    fresh: boolean,
+  ) {
+    const kept = Number(readPref(CONFIG.tutorial.key) ?? NaN);
+    this.step = fresh ? 0 : Number.isInteger(kept) ? Math.min(Math.max(kept, 0), STEPS.length - 1) : -1;
+    if (fresh) writePref(CONFIG.tutorial.key, '0');
+    this.count = el.querySelector('small')!;
+    this.title = el.querySelector('h3')!;
+    this.body = el.querySelector('p')!;
+    this.btn = el.querySelector('button')!;
+    // Skipping takes a second click within a few seconds, since there is no way back.
+    this.btn.onclick = () => {
+      if (this.step === STEPS.length - 1 || this.armed) return this.close();
+      this.btn.textContent = 'Sure?';
+      this.armed = window.setTimeout(() => {
+        this.armed = 0;
+        this.btn.textContent = SKIP;
+      }, 3000);
+    };
+    el.hidden = this.step < 0;
+  }
+
+  update(): void {
+    if (this.step < 0) return;
+    const w = this.world();
+    const step = nextStep(w, this.step);
+    if (step !== this.step) {
+      this.step = step;
+      writePref(CONFIG.tutorial.key, String(step));
+    }
+    const def = STEPS[step];
+    if (step !== this.shown) {
+      if (this.shown >= 0 && def.focus) {
+        const { x, y } = def.focus(w);
+        this.glide(x, y);
+      }
+      this.shown = step;
+      this.count.textContent = `Tutorial · ${step + 1} of ${STEPS.length}`;
+      this.title.textContent = def.title;
+      window.clearTimeout(this.armed);
+      this.armed = 0;
+      this.btn.textContent = step === STEPS.length - 1 ? 'Finish' : SKIP;
+    }
+    const text = def.text(w, this.ui);
+    if (this.body.textContent !== text) this.body.textContent = text;
+    this.highlight(def.target?.(w, this.ui) ?? null);
+  }
+
+  private highlight(el: Element | null): void {
+    if (el === this.glow) return;
+    this.glow?.classList.remove(GLOW);
+    el?.classList.add(GLOW);
+    this.glow = el;
+  }
+
+  private close(): void {
+    window.clearTimeout(this.armed);
+    this.step = -1;
+    this.highlight(null);
+    this.el.hidden = true;
+    writePref(CONFIG.tutorial.key, 'done');
+  }
+}

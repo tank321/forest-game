@@ -35,22 +35,6 @@ export function noise(ctx: AudioContext, seconds: number, shape: number): AudioB
   return b;
 }
 
-// On/off settings are per-browser preferences, not part of the save. Storage can be blocked, so both sides tolerate failure.
-export function readPref(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-export function writePref(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // not remembered; the toggle still works for this session
-  }
-}
-
 /** Shows an on/off audio button's state: pressed while on, dimmed while off. */
 export function showToggle(btn: HTMLButtonElement, on: boolean, name: string): void {
   btn.setAttribute('aria-pressed', String(on));

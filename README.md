@@ -11,6 +11,10 @@ npm run build   # typecheck + production build to dist/
 ```
 
 ## Controls
+A new game opens with a short **tutorial** at the top of the sidebar: one goal at a time, from the first taps through
+hiring, a House, a Farm, a Lumber Camp and the axe, to the first relic and skill. Each goal finishes when you do it,
+and whatever it points at pulses. **Skip tutorial** (click twice) ends it for good; it isn't shown for existing saves.
+
 Drag to pan, wheel or pinch to zoom. Tap a tree next to your land for +1 wood.
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
 shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
@@ -138,11 +142,16 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `audio.ts` the shared audio context and on/off settings, `sound.ts` synthesized achievement chimes, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v23** – Tutorial.
+- A new game starts with a coach card in the sidebar that walks through the early game in eight steps: chop, hire, grow to five villagers, build a House, a connected Farm, a Lumber Camp and its first axe upgrade, then find a relic and learn a skill.
+- Each step finishes when its goal is met, and the button or counter it means pulses. The camera glides back to the Town Center for the first hire.
+- **Skip tutorial** (two clicks) ends it for good. Progress is kept in the browser, not the save, so existing saves never see it.
+
 **v22** – Pack mules.
 - A Trading Post no longer takes a villager: it comes with its own pack mule, which loads gold, carries it to the nearest Market and walks back. It keeps to the roads (and across the Town Center or Outpost), taking another way only if the roads don't reach.
 - The mule wears a red saddle blanket and carries gold-topped packs while loaded, with a gold tag over it when zoomed in. Gold per trip, Pack Mules and the Midsummer Fair work as before.

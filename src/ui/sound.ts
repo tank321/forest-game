@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
-import { hz, noise, readPref, showToggle, whenAudio, writePref } from './audio';
+import { hz, noise, showToggle, whenAudio } from './audio';
+import { readPref, writePref } from './prefs';
 
 /** Each toast rank's chime: [start s, MIDI note, length s, level]; sparkles are short quiet bells, [start s, MIDI note]. */
 const SCORES: Record<1 | 2 | 3, { notes: [number, number, number, number][]; sparkle: [number, number][] }> = {

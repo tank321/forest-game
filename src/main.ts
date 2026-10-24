@@ -26,6 +26,7 @@ import { Toasts } from './ui/toast';
 import { createUiState } from './ui/state';
 import { applySkin } from './ui/skin';
 import { BUILDING_TEXT, duration, fmt } from './ui/text';
+import { Tutorial } from './ui/tutorial';
 import './style.css';
 
 const { dt, catchUpDt, maxFrameSeconds, maxOfflineSeconds } = CONFIG.sim;
@@ -71,6 +72,7 @@ const toasts = new Toasts(document.getElementById('toasts')!, () => achievements
 const already = checkAchievements(s);
 if (already.length > 3) toasts.summary(`You've already earned ${already.length} achievements!`);
 else for (const { id, tier } of already) toasts.achievement(id, tier);
+const tutorial = new Tutorial(document.getElementById('tutorial')!, () => world, ui, (x, y) => cam.glideTo(x, y), !loaded);
 
 // A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
 let lifting = false;
@@ -212,6 +214,7 @@ function frame(now: number): void {
   renderer.draw(world, ui);
   hud.update();
   panel.update();
+  tutorial.update(); // after the panel, so its highlight lands on the buttons just drawn
   skillModal.update();
   legacyModal.update();
   achievementsModal.update();
