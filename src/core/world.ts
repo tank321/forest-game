@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { record, type AchievementId } from './achievements';
 import { gain } from './economy';
+import { rushReached } from './flags';
 import { isTerritory, neighbors8 } from './grid';
 import { buildField, type Field } from './pathing';
 import { spawnRelic } from './relics';
@@ -80,6 +81,7 @@ export function claimTile(w: World, i: number): void {
   s.marked = s.marked.filter((m) => m !== i);
   stampFog(w, i);
   w.fields = buildFields(s);
+  rushReached(w, i);
 }
 
 /**

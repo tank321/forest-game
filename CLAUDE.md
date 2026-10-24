@@ -42,7 +42,7 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   stored in `GameState`. Never use `Math.random` in core. The save test round-trips a mid-game
   state and checks that the continued simulation matches exactly.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
-  - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery; flagging a tree (`toggleMark`) sends the nearest free ones there at once (`rushToMark`). `nearestTree`
+  - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery; flagging a tree (`toggleMark`), or land first reaching a flagged one (`claimTile`), sends the nearest free ones there at once (`flags.ts`). `nearestTree`
     picks marked trees first, then the shortest next trip: walk to the tree plus its walk home (`fields.wood`).
   - Workplace jobs (`farm`, `orchard`, `mine`, `herd`, `cotton`) share `workplace.ts`. Its `WORK` table maps each job
     to a resource and an `output(st, place)` giving the rate and carry at that workplace (Well-boosted

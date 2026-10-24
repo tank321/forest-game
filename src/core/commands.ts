@@ -6,6 +6,7 @@ import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4, neighbors8 } from './grid';
+import { rushToMark } from './flags';
 import { contractDone, newContract } from './guild';
 import { availablePerks, canPrestige, perk, type PerkId } from './legacy';
 import { rand } from './rng';
@@ -15,7 +16,6 @@ import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
 import { RESOURCES, Tile, type Building, type Cost, type GameState, type HireResource, type ResourceKey, type Resources, type Villager } from './types';
 import { collectorHome } from './systems/collector';
-import { rushToMark } from './systems/lumberjack';
 import { goHome } from './systems/movement';
 import { rerouteMules } from './systems/mules';
 import { burst, jobResource } from './systems/workplace';

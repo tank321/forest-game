@@ -93,10 +93,24 @@ describe('villager simulation', () => {
       expect(s.villagers[0].state).toBe('toHome');
     });
 
-    it('sends no one to a flag the land has not reached yet', () => {
-      const { w, s, flag } = idleAt([[5, 5]]);
+    it('sends no one to a flag the land has not reached yet, then the nearest once it does', () => {
+      const { w, s, flag } = idleAt([[0, 0], [5, 5]]);
       const tree = flag(7, 5);
       expect(toggleMark(w, tree)).toBe(true);
+      expect(s.villagers.map((v) => v.target)).toEqual([-1, -1]);
+      w.dev.manualMult = 1e9;
+      chopTree(w, flag(6, 5)); // the tree in the way: the flag turns red
+      expect(s.villagers.map((v) => v.target)).toEqual([-1, tree]);
+      expect(s.villagers[1].state).toBe('toTree');
+    });
+
+    it('does not rush again when more land reaches a flag already reached', () => {
+      const { w, s, flag } = idleAt([[5, 5]]);
+      const tree = flag(6, 5);
+      toggleMark(w, tree);
+      Object.assign(s.villagers[0], { state: 'idle', target: -1, path: [], pathI: 0 }); // its lumberjack went home
+      w.dev.manualMult = 1e9;
+      chopTree(w, flag(6, 4));
       expect(s.villagers[0].target).toBe(-1);
     });
   });

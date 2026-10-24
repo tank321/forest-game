@@ -1,7 +1,8 @@
 import { distToBuilding } from '../buildings';
 import { tileAt } from '../grid';
-import { nearestTree, walkToTree } from '../pathing';
-import { getStats, type Stats } from '../stats';
+import { loadFull } from '../flags';
+import { nearestTree } from '../pathing';
+import type { Stats } from '../stats';
 import type { Villager } from '../types';
 import { Tile } from '../types';
 import { clearTree, type World } from '../world';
@@ -56,7 +57,7 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
         if (amt === have) {
           clearTree(w, tree);
           v.target = -1;
-          if (isFull(v, st)) goHome(w, v, 'wood');
+          if (loadFull(v, st)) goHome(w, v, 'wood');
           else v.state = 'idle'; // chain to the next tree with the remaining capacity
         } else goHome(w, v, 'wood');
         break;
@@ -74,9 +75,6 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
     }
   }
 }
-
-/** Load can't take more (within rounding), so the next stop is a drop-off. */
-const isFull = (v: Villager, st: Stats) => st.carry - v.carry < EPS;
 
 /** Predicate: tree already has as many villagers as allowed (more on a flagged tree with Felling Crews). */
 function fullTrees(w: World, st: Stats): (tree: number) => boolean {
@@ -97,36 +95,11 @@ function assignTree(w: World, v: Villager, st: Stats): boolean {
   return true;
 }
 
-/**
- * A tree just flagged: the nearest lumberjacks by walk, as many as may work it, drop their current tree and head
- * there at once. Lumberjacks on their way home, with a full load, or on another flagged tree carry on.
- */
-export function rushToMark(w: World, tree: number): void {
-  const s = w.state;
-  const st = getStats(s);
-  const marked = new Set(s.marked);
-  const room = st.perMarkedTree - s.villagers.filter((v) => v.target === tree).length;
-  if (room <= 0) return;
-  const free = s.villagers.filter(
-    (v) => v.job === 'lumber' && (v.state === 'idle' || v.state === 'toTree' || v.state === 'chop') && !marked.has(v.target) && !isFull(v, st),
-  );
-  const walks = free
-    .map((v) => ({ v, walk: walkToTree(s, w.fields.wood, tileAt(s, v.x, v.y), tree) }))
-    .filter((e): e is { v: Villager; walk: NonNullable<typeof e.walk> } => e.walk !== null)
-    .sort((a, b) => a.walk.d - b.walk.d); // stable: ties keep villager order
-  for (const { v, walk } of walks.slice(0, room)) {
-    v.target = tree;
-    v.path = walk.path;
-    v.pathI = 0;
-    v.state = 'toTree';
-  }
-}
-
 /** Target felled by someone else (the player or a teammate). */
 function lostTarget(w: World, v: Villager, st: Stats): void {
   v.target = -1;
   v.state = 'idle';
-  if (v.carry > 0 && (isFull(v, st) || !assignTree(w, v, st))) goHome(w, v, 'wood');
+  if (v.carry > 0 && (loadFull(v, st) || !assignTree(w, v, st))) goHome(w, v, 'wood');
 }
 
 /** Tree within campRadius tiles (Chebyshev) of a connected Lumber Camp. */
