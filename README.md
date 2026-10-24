@@ -25,7 +25,9 @@ Drag to pan, wheel or pinch to zoom (on a touch screen two fingers also pan). Ta
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
 shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
 Right-clicking a tree (or holding a finger on it) flags it as a priority: a red flag once your land reaches it,
-yellow until then. Tap a building to select it:
+yellow until then. Flagging a red one sends the nearest lumberjack straight there (two with Teamwork, three with
+Felling Crews), dropping the tree it was on; lumberjacks walking home with a load finish the delivery first. A yellow
+flag is taken by the next lumberjack to look for a tree once your land reaches it. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
@@ -166,6 +168,11 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v32** – Flags send lumberjacks.
+- Flagging a tree your land reaches sends the nearest lumberjack to it at once, instead of waiting for a lumberjack to
+  finish its current trip. With Teamwork two go, with Felling Crews three. Lumberjacks walking home with a load, or
+  already on another flagged tree, carry on. No save change.
+
 **v31** – Phone stats plaque.
 - On narrow screens the stats plaque wraps onto rows instead of scrolling sideways, so every resource, the population,
   land, season and any shortage are visible at once; rates drop the "/min" there to fit. The Lucky Chest and achievement

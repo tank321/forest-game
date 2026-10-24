@@ -15,6 +15,7 @@ import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
 import { RESOURCES, Tile, type Building, type Cost, type GameState, type HireResource, type ResourceKey, type Resources, type Villager } from './types';
 import { collectorHome } from './systems/collector';
+import { rushToMark } from './systems/lumberjack';
 import { goHome } from './systems/movement';
 import { rerouteMules } from './systems/mules';
 import { burst, jobResource } from './systems/workplace';
@@ -90,8 +91,10 @@ export function toggleMark(w: World, i: number): boolean {
   const s = w.state;
   if (s.tiles[i] !== Tile.Tree || w.fog[i] > visionRadius(s)) return false;
   const m = s.marked.indexOf(i);
-  if (m === -1) s.marked.push(i);
-  else s.marked.splice(m, 1);
+  if (m === -1) {
+    s.marked.push(i);
+    rushToMark(w, i);
+  } else s.marked.splice(m, 1);
   return true;
 }
 

@@ -146,6 +146,18 @@ export function nearestTree(
   return tree === -1 ? null : { tree, path: trace(s, walk, stand) };
 }
 
+/** The walk from `from` to a tile beside `tree` it can be chopped from (with a way home in `field`) and its length, or null. */
+export function walkToTree(s: GameState, field: Field, from: number, tree: number): { path: number[]; d: number } | null {
+  let stand = -1;
+  let dist = 0;
+  const walk = search(s, [from], (u, d) => {
+    if (field.dist[u] === -1 || !neighbors4(s, u).includes(tree)) return false;
+    [stand, dist] = [u, d];
+    return true;
+  });
+  return stand === -1 ? null : { path: trace(s, walk, stand), d: dist };
+}
+
 /** Walk from `from` to the nearest of `goals` (walkable tiles), or null. */
 export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>): number[] | null {
   let goal = -1;

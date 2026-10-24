@@ -1,7 +1,7 @@
 import { distToBuilding } from '../buildings';
 import { tileAt } from '../grid';
-import { nearestTree } from '../pathing';
-import type { Stats } from '../stats';
+import { nearestTree, walkToTree } from '../pathing';
+import { getStats, type Stats } from '../stats';
 import type { Villager } from '../types';
 import { Tile } from '../types';
 import { clearTree, type World } from '../world';
@@ -95,6 +95,31 @@ function assignTree(w: World, v: Villager, st: Stats): boolean {
   v.pathI = 0;
   v.state = 'toTree';
   return true;
+}
+
+/**
+ * A tree just flagged: the nearest lumberjacks by walk, as many as may work it, drop their current tree and head
+ * there at once. Lumberjacks on their way home, with a full load, or on another flagged tree carry on.
+ */
+export function rushToMark(w: World, tree: number): void {
+  const s = w.state;
+  const st = getStats(s);
+  const marked = new Set(s.marked);
+  const room = st.perMarkedTree - s.villagers.filter((v) => v.target === tree).length;
+  if (room <= 0) return;
+  const free = s.villagers.filter(
+    (v) => v.job === 'lumber' && (v.state === 'idle' || v.state === 'toTree' || v.state === 'chop') && !marked.has(v.target) && !isFull(v, st),
+  );
+  const walks = free
+    .map((v) => ({ v, walk: walkToTree(s, w.fields.wood, tileAt(s, v.x, v.y), tree) }))
+    .filter((e): e is { v: Villager; walk: NonNullable<typeof e.walk> } => e.walk !== null)
+    .sort((a, b) => a.walk.d - b.walk.d); // stable: ties keep villager order
+  for (const { v, walk } of walks.slice(0, room)) {
+    v.target = tree;
+    v.path = walk.path;
+    v.pathI = 0;
+    v.state = 'toTree';
+  }
 }
 
 /** Target felled by someone else (the player or a teammate). */

@@ -40,7 +40,7 @@ describe('villager simulation', () => {
     expect(b.state.treesLeft).toBe(a.state.treesLeft);
   });
 
-  it('a marked tree is taken by the next villager to deposit', () => {
+  it('flagging a tree sends a lumberjack there at once', () => {
     const w = smallWorld(30, 1);
     const s = w.state;
     simulate(w, 2, 1 / 30);
@@ -49,8 +49,56 @@ describe('villager simulation', () => {
     const far = (s.origin.y + 5) * s.w + s.origin.x + 6;
     expect(far).not.toBe(first);
     toggleMark(w, far);
-    simulate(w, 40, 1 / 30);
     expect(v.target).toBe(far);
+    expect(v.state).toBe('toTree');
+    const wood = s.wood[far];
+    simulate(w, 20, 1 / 30);
+    expect(s.wood[far]).toBeLessThan(wood);
+  });
+
+  describe('flag rush', () => {
+    /** Lumberjacks standing idle at the given clearing tiles (offsets from the origin), empty-handed. */
+    function idleAt(spots: [number, number][], skills: Record<string, number> = {}) {
+      const w = smallWorld(30, spots.length);
+      const s = w.state;
+      s.nextRelicAt = Infinity;
+      Object.assign(s.skills, skills);
+      spots.forEach(([dx, dy], k) => Object.assign(s.villagers[k], { x: s.origin.x + dx + 0.5, y: s.origin.y + dy + 0.5, state: 'idle', target: -1, carry: 0, path: [], pathI: 0 }));
+      return { w, s, flag: (dx: number, dy: number) => (s.origin.y + dy) * s.w + s.origin.x + dx };
+    }
+
+    it('sends the nearest lumberjack and leaves the rest', () => {
+      const { w, s, flag } = idleAt([[0, 0], [5, 5]]);
+      const tree = flag(6, 5);
+      expect(toggleMark(w, tree)).toBe(true);
+      expect(s.villagers.map((v) => v.target)).toEqual([-1, tree]);
+    });
+
+    it('sends as many as may work a flagged tree: three with Felling Crews', () => {
+      const { w, s, flag } = idleAt([[0, 0], [5, 3], [5, 4], [5, 5]], { teamwork: 1, fellingCrews: 1 });
+      const tree = flag(6, 5);
+      toggleMark(w, tree);
+      expect(s.villagers.map((v) => v.target)).toEqual([-1, tree, tree, tree]);
+    });
+
+    it('leaves lumberjacks walking home or on another flag', () => {
+      const { w, s, flag } = idleAt([[5, 5], [5, 4], [0, 0]]);
+      const other = flag(-1, 0);
+      toggleMark(w, other); // the corner lumberjack takes it
+      expect(s.villagers[2].target).toBe(other);
+      s.villagers[0].state = 'toHome';
+      const tree = flag(6, 5);
+      toggleMark(w, tree);
+      expect(s.villagers.map((v) => v.target)).toEqual([-1, tree, other]);
+      expect(s.villagers[0].state).toBe('toHome');
+    });
+
+    it('sends no one to a flag the land has not reached yet', () => {
+      const { w, s, flag } = idleAt([[5, 5]]);
+      const tree = flag(7, 5);
+      expect(toggleMark(w, tree)).toBe(true);
+      expect(s.villagers[0].target).toBe(-1);
+    });
   });
 
   it('chooses a tree again after every delivery, leaving the half-chopped one', () => {
