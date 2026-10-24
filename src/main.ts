@@ -349,5 +349,8 @@ setInterval(save, CONFIG.save.intervalMs);
 addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => document.hidden && save());
 
+// The installed web app plays offline through a service worker (built from pwa/sw.js; not in dev).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('./sw.js');
+
 // Dev console helpers: `world`, `cam`, `reset()`.
 if (import.meta.env.DEV) Object.assign(window, { world, cam, reset });

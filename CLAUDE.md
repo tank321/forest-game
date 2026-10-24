@@ -14,7 +14,8 @@ npx vitest run -t "pausing returns"  # tests matching a name
 npm run typecheck                    # tsc; tsconfig includes tests/, noUnusedLocals is on
 npm run build                        # typecheck + production build
 ```
-No linter or formatter is configured.
+No linter or formatter is configured. Pushes to `main` deploy to GitHub Pages (`.github/workflows/deploy.yml`). The build uses
+relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing every built file for offline play.
 
 ## Architecture
 - **`src/core/` is pure simulation with no DOM.** The UI changes state only through `commands.ts`,

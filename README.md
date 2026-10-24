@@ -10,6 +10,12 @@ npm test        # vitest
 npm run build   # typecheck + production build to dist/
 ```
 
+**On a phone:** every push to `main` builds the game and publishes it to GitHub Pages
+(`.github/workflows/deploy.yml`), at `https://tank321.github.io/forest-game/`. Open it in Chrome on Android and choose
+**Install app** (or **Add to Home screen**): it then opens full screen from its own icon and plays offline. Saves stay
+in that browser, so use **Export** and **Import** to move a game between devices. Pages first has to be turned on once in
+the repository's **Settings → Pages** with **Source: GitHub Actions**, and serves a private repository only on a paid plan.
+
 ## Controls
 A new game opens with a short **tutorial** at the top of the sidebar: one goal at a time, from the first taps through
 hiring, a House, a Farm, a Lumber Camp and the axe, to the first relic and skill. Each goal finishes when you do it,
@@ -153,9 +159,15 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
 - `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `chest.ts` the Lucky Chest button, boost badge and opening show, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes and Lucky Chest sounds, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
-- `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
+- `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave, service worker registration
+- `public/` – web app manifest and icons · `pwa/sw.js` offline service worker, filled in by `vite.config.ts` at build
+- `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v29** – Install on a phone.
+- The game is published to GitHub Pages on every push to `main`, and can be installed as an app from Chrome: full screen
+  in portrait, with an oak tree icon, and playable offline. A new version loads the next time the app is opened. No save change.
+
 **v28** – Touch controls.
 - Hold a finger on a tree for a moment to flag it as a priority, like a right-click (phones that can vibrate give a short buzz).
 - On a touch screen, placing a building and moving a building or road no longer happen on the first tap. The footprint
