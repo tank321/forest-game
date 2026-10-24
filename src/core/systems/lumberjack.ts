@@ -78,11 +78,12 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
 /** Load can't take more (within rounding), so the next stop is a drop-off. */
 const isFull = (v: Villager, st: Stats) => st.carry - v.carry < EPS;
 
-/** Predicate: tree already has as many villagers as allowed. */
+/** Predicate: tree already has as many villagers as allowed (more on a flagged tree with Felling Crews). */
 function fullTrees(w: World, st: Stats): (tree: number) => boolean {
   const n = new Map<number, number>();
   for (const o of w.state.villagers) if (o.target !== -1) n.set(o.target, (n.get(o.target) ?? 0) + 1);
-  return (t) => (n.get(t) ?? 0) >= st.perTree;
+  const marked = new Set(w.state.marked);
+  return (t) => (n.get(t) ?? 0) >= (marked.has(t) ? st.perMarkedTree : st.perTree);
 }
 
 function assignTree(w: World, v: Villager, st: Stats): boolean {

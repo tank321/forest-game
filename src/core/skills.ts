@@ -13,6 +13,7 @@ export const SKILLS = {
   masterBuilders: { max: 1 }, // buildings −20%
   campCrews: { max: 1 }, // ×1.5 chop within 3 tiles of a Lumber Camp
   teamwork: { max: 1 }, // 2 villagers per tree
+  fellingCrews: { max: 1 }, // 3 villagers per flagged tree
   greenThumbs: { max: 5 }, // +20% farm harvest / lvl
   stonecutters: { max: 5 }, // +20% mining speed / lvl
   masons: { max: 3 }, // stone costs −15% / lvl
@@ -67,7 +68,7 @@ export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
 
 /** Skill tracks, one per economy. A track lists its skills parents first; the order also sets sibling order in the tree. */
 export const TRACKS = {
-  forestry: ['sharpAxes', 'powerSwing', 'sweepingStrike', 'momentum', 'campCrews', 'teamwork', 'keenEyes', 'heartwood', 'timber'],
+  forestry: ['sharpAxes', 'powerSwing', 'sweepingStrike', 'momentum', 'campCrews', 'teamwork', 'fellingCrews', 'keenEyes', 'heartwood', 'timber'],
   settlement: ['swiftFeet', 'bigBaskets', 'errandRunners', 'wellFed', 'roomyHouses', 'recruiters', 'masterBuilders', 'surveyors', 'frontierOutpost'],
   farming: ['greenThumbs', 'wells', 'deepWells', 'cropRotation', 'farmhands', 'orchards', 'rootCellars', 'greenhouses', 'harvestFestival'],
   herding: ['sheepFarms', 'openPastures', 'shearingDay', 'fertileHerding', 'goldenFleece', 'tailoring', 'weavers', 'cottonFields', 'grazingFlocks'],
@@ -87,6 +88,7 @@ const PARENT: Partial<Record<SkillId, SkillId>> = {
   momentum: 'powerSwing',
   campCrews: 'sharpAxes',
   teamwork: 'campCrews',
+  fellingCrews: 'teamwork',
   keenEyes: 'sharpAxes',
   heartwood: 'keenEyes',
   bigBaskets: 'swiftFeet',
@@ -109,7 +111,7 @@ const PARENT: Partial<Record<SkillId, SkillId>> = {
   goldenFleece: 'fertileHerding',
   tailoring: 'sheepFarms',
   weavers: 'tailoring',
-  cottonFields: 'sheepFarms',
+  cottonFields: 'tailoring',
   stonecutters: 'quarrying',
   quarryCrews: 'stonecutters',
   deepShafts: 'stonecutters',
@@ -143,10 +145,14 @@ export const isMastery = (id: SkillId) => MASTERY[trackOf(id)] === id;
 export const trackLevels = (s: Pick<GameState, 'skills'>, t: Track) =>
   TRACKS[t].reduce((n, id) => n + (isMastery(id) ? 0 : lvl(s, id)), 0);
 
-/** Whether a skill's requirement (its parent's first level, or a Mastery's track levels) is met. */
+/** Levels a skill needs learned in its track before it is offered: a Mastery's, or a gate on a later-game skill. */
+export const levelsNeeded = (id: SkillId): number =>
+  isMastery(id) ? CONFIG.skills.masteryLevels : ((CONFIG.skills.gates as Partial<Record<SkillId, number>>)[id] ?? 0);
+
+/** Whether a skill's requirement (its parent's first level, and the levels its track needs) is met. */
 export const requirementMet = (s: Pick<GameState, 'skills'>, id: SkillId) => {
   const req = prerequisite(id);
-  return isMastery(id) ? trackLevels(s, trackOf(id)) >= CONFIG.skills.masteryLevels : !req || lvl(s, req) > 0;
+  return (!req || lvl(s, req) > 0) && trackLevels(s, trackOf(id)) >= levelsNeeded(id);
 };
 
 /** The skill that must have a level before this one is offered, if any. */

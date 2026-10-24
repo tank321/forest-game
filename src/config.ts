@@ -116,6 +116,7 @@ export const CONFIG = {
   },
   skills: {
     masteryLevels: 8, // levels learned in a track before its Mastery is offered
+    gates: { orchards: 4, cottonFields: 5, greenhouses: 4, teamwork: 4, taxOffices: 3, guildContracts: 5 }, // levels learned in its track before this skill is offered
     sweep: 0.5, // Sweeping Strike: share of a tap dealt to each choppable neighbour
     combo: { window: 1, step: 0.1, capPerLevel: 0.5 }, // Momentum: s between chained taps, bonus per chained tap, max bonus per level
     keenEyes: { vision: 1, relicGap: 0.1 }, // per level: extra rings of forest in sight, trees between relics −10%

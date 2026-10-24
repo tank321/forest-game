@@ -122,11 +122,12 @@ describe('sheep farms', () => {
     expect(st.herdCarry).toBeCloseTo((10 + 20) * 1.02 ** 10);
   });
 
-  it('Sheep Farms unlocks Tailoring, Fertile Herding and Cotton Fields together', () => {
+  it('Sheep Farms unlocks Tailoring and Fertile Herding, but not Cotton Fields', () => {
     const s = smallWorld().state;
     expect(availableSkills(s)).not.toContain('tailoring');
     s.skills = { sheepFarms: 1 };
-    for (const id of ['tailoring', 'fertileHerding', 'cottonFields'] as const) expect(availableSkills(s)).toContain(id);
+    for (const id of ['tailoring', 'fertileHerding'] as const) expect(availableSkills(s)).toContain(id);
+    expect(availableSkills(s)).not.toContain('cottonFields');
   });
 });
 

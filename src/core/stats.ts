@@ -15,6 +15,7 @@ export interface Stats {
   campBonus: number; // chop multiplier near a Lumber Camp
   campRadius: number;
   perTree: number; // villagers allowed on one tree
+  perMarkedTree: number; // villagers allowed on one flagged tree
   farmRate: number; // farmer food/s
   farmCarry: number;
   orchardSpeed: number; // orchardist tiles/s
@@ -101,6 +102,7 @@ export function getStats(s: GameState): Stats {
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
     campRadius: 3,
     perTree: lvl(s, 'teamwork') ? 2 : 1,
+    perMarkedTree: lvl(s, 'fellingCrews') ? 3 : lvl(s, 'teamwork') ? 2 : 1,
     farmRate,
     farmCarry: farmLoad + carryBonus,
     orchardSpeed: walk * CONFIG.orchard.speedMult,

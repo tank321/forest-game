@@ -4,7 +4,7 @@ import { buildingCost, popCap, villagerCost } from '../src/core/economy';
 import { isCollectable, neighbors4 } from '../src/core/grid';
 import { relicGap, spawnRelic } from '../src/core/relics';
 import { simulate } from '../src/core/sim';
-import { availableSkills, dealCards, isMastery, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS, unlockedBy, type SkillId } from '../src/core/skills';
+import { availableSkills, dealCards, isMastery, levelsNeeded, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS, unlockedBy, type SkillId } from '../src/core/skills';
 import { NODE, skillLayout } from '../src/ui/skillGraph';
 import { getStats } from '../src/core/stats';
 import { Tile } from '../src/core/types';
@@ -110,12 +110,23 @@ describe('skill tracks', () => {
     const s = smallWorld().state;
     for (const id of SKILL_IDS) {
       const req = prerequisite(id);
-      if (!req) continue;
+      if (!req || levelsNeeded(id)) continue;
       s.skills = {};
       expect(availableSkills(s)).not.toContain(id);
       s.skills = { [req]: 1 };
       expect(availableSkills(s)).toContain(id);
     }
+  });
+
+  it('hold gated skills back until their track has enough levels', () => {
+    const s = smallWorld().state;
+    s.skills = { sheepFarms: 1, tailoring: 1 };
+    expect(levelsNeeded('cottonFields')).toBe(5);
+    expect(availableSkills(s)).not.toContain('cottonFields');
+    s.skills.openPastures = 3;
+    expect(availableSkills(s)).toContain('cottonFields');
+    s.skills = { greenThumbs: 3 };
+    expect(availableSkills(s)).not.toContain('orchards'); // 3 levels, but Farmhands is missing
   });
 
   it('lay the tree out with children below their parent and no overlapping nodes', () => {
@@ -178,6 +189,20 @@ describe('skill effects', () => {
     s.marked.push(first);
     simulate(w, 1, 1 / 30);
     expect(s.villagers.map((v) => v.target)).toEqual([first, first]);
+  });
+
+  it('felling crews put three villagers on a flagged tree and two on others', () => {
+    const w = smallWorld(30, 5);
+    const s = w.state;
+    s.skills = { teamwork: 1, fellingCrews: 1 };
+    s.nextRelicAt = Infinity;
+    const first = s.origin.y * s.w - s.w + s.origin.x;
+    s.marked.push(first);
+    simulate(w, 1, 1 / 30);
+    const count = new Map<number, number>();
+    for (const v of s.villagers) count.set(v.target, (count.get(v.target) ?? 0) + 1);
+    expect(count.get(first)).toBe(3);
+    expect(Math.max(...[...count].filter(([t]) => t !== first).map(([, n]) => n))).toBe(2);
   });
 
   it('counts lifetime wood from taps and deliveries', () => {

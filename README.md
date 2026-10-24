@@ -130,6 +130,12 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v18** – Later-game skills wait for their track; Felling Crews.
+- **Felling Crews** (Forestry, after Teamwork): three villagers can work the same flagged tree. Unflagged trees still take two.
+- Six skills are offered only once enough levels are learned in their track, on top of their parent: **Orchards** and **Greenhouses** (4 Farming), **Cotton Fields** (5 Herding), **Teamwork** (4 Forestry), **Tax Offices** (3 Trade) and **Guild Contracts** (5 Trade). Their lock text shows the progress, e.g. "Requires Tailoring and 5 levels in Herding (2/5)".
+- Cotton Fields now sits under Tailoring rather than Sheep Farms.
+- Saves load unchanged; skills already learned stay learned.
+
 **v17** – Settlement and Trade skills, Frontier Outpost, Guild Contracts, Merchant Caravans.
 - Settlement: Swift Feet → Big Baskets → **Errand Runners** (empty-handed villagers walk +25% per level), **Well Fed** (gathering ×1.2 while there are 10 food in stock per villager; a green badge on the plaque); → Roomy Houses → Recruiters, Master Builders → **Surveyors** (+2 roads per house per level).
 - Trade: Markets → Trading Posts → Pack Mules, **Toll Roads** (0.1 gold per road tile walked, per level); → Tax Offices → Tax Collectors, **Guild Contracts**; → Shrewd Traders → **Midsummer Fair** (all summer: no Market commission, Trading Posts ×1.5).

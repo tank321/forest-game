@@ -60,6 +60,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   masterBuilders: { name: 'Master Builders', desc: 'Buildings cost 20% less', icon: 'hammer' },
   campCrews: { name: 'Camp Crews', desc: 'Chop ×1.5 within 3 tiles of a Lumber Camp', icon: 'wood' },
   teamwork: { name: 'Teamwork', desc: 'Two villagers can work the same tree', icon: 'trees' },
+  fellingCrews: { name: 'Felling Crews', desc: 'Three villagers can work the same flagged tree', icon: 'mark' },
   greenThumbs: { name: 'Green Thumbs', desc: '+20% farm harvest per level', icon: 'food' },
   stonecutters: { name: 'Stonecutters', desc: '+20% mining speed per level', icon: 'pick' },
   masons: { name: 'Masons', desc: 'Buildings and upgrades need 15% less stone per level', icon: 'stone' },

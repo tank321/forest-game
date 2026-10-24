@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { unlocks } from '../core/buildings';
 import { commission } from '../core/economy';
 import { newLegacy } from '../core/legacy';
-import { isMastery, lvl, prerequisite, requirementMet, SKILLS, trackLevels, trackOf, type SkillId } from '../core/skills';
+import { levelsNeeded, lvl, prerequisite, requirementMet, SKILLS, trackLevels, trackOf, type SkillId } from '../core/skills';
 import type { GameState } from '../core/types';
 import { BUILDING_TEXT, SKILL_TEXT, TRACK_TEXT } from './text';
 
@@ -18,10 +18,11 @@ export function skillStatus(s: GameState, id: SkillId): SkillStatus {
 
 /** What a Locked skill is waiting for. */
 export function lockReason(s: GameState, id: SkillId): string {
-  if (!isMastery(id)) return `Requires ${SKILL_TEXT[prerequisite(id)!].name}`;
+  const req = prerequisite(id);
   const t = trackOf(id);
-  const need = CONFIG.skills.masteryLevels;
-  return `Requires ${need} levels in ${TRACK_TEXT[t].name} (${Math.min(trackLevels(s, t), need)}/${need})`;
+  const need = levelsNeeded(id);
+  const levels = need ? `${need} levels in ${TRACK_TEXT[t].name} (${Math.min(trackLevels(s, t), need)}/${need})` : '';
+  return `Requires ${[req && SKILL_TEXT[req].name, levels].filter(Boolean).join(' and ')}`;
 }
 
 /** Total contribution of this skill, before other upgrades and skills. */
@@ -38,6 +39,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'masterBuilders': return `${level ? 20 : 0}% lower building costs`;
     case 'campCrews': return `×${level ? 1.5 : 1} chop speed within 3 tiles of a Lumber Camp`;
     case 'teamwork': return `${level ? 2 : 1} villager${level ? 's' : ''} per tree`;
+    case 'fellingCrews': return `${level ? 3 : 2} villagers per flagged tree`;
     case 'greenThumbs': return `+${20 * level}% farm harvest speed`;
     case 'stonecutters': return `+${20 * level}% mining speed`;
     case 'masons': return `Buildings and upgrades need ${discount} less stone`;
