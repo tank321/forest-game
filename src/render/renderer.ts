@@ -14,7 +14,7 @@ import type { UiState } from '../ui/state';
 import { fmt } from '../ui/text';
 import { bake } from './bake';
 import type { Camera } from './camera';
-import { CRITTER_MIN_ZOOM, critterFrame, Critters, TRACK_LIFE, type Critter } from './critters';
+import { CRITTER_MIN_ZOOM, critterFrame, Critters, hopLift, TRACK_LIFE, type Critter } from './critters';
 import {
   BUILDING_ENTRANCES,
   BUILDING_SPRITES,
@@ -32,6 +32,8 @@ import {
   GRASS,
   GROUND_PALETTE,
   GROUND_TINTS,
+  HOUSE_LIGHTS,
+  LIGHTS_PALETTE,
   type GroundTile,
   MULE_FEET,
   MULE_FRAMES,
@@ -97,6 +99,7 @@ const WINTER_FADE = 10; // s the winter tint takes to fade in or out
 const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at its own moment
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
 const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
+const TWINKLE_MS = 650; // ms per frame of a house's Christmas lights
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
   outpost: '#9a6a34',
@@ -160,6 +163,8 @@ export class Renderer {
     const { grid, palette } = seasonalBuilding('farm', season, true)!;
     return bake(grid, palette, 1);
   });
+  /** Baked Christmas lights for winter houses, one per twinkle frame. */
+  private lights = HOUSE_LIGHTS.map((g) => bake(g, LIGHTS_PALETTE, 1));
   /** Baked relic stone: [season][fog]; and its glow (only drawn in territory, so never fogged). */
   private relics = SEASONS.map((season) => {
     const palette = { ...RELIC_PALETTE, ...RELIC_TINTS[season] };
@@ -409,7 +414,7 @@ export class Renderer {
     const props: { depth: number; draw: () => void }[] = [];
     const wellFed = wellFarms(s, linked);
     for (const b of s.buildings) {
-      props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id)) });
+      props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id), now) });
     }
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     for (const m of s.mules) props.push({ depth: villagerDepth(s, m), draw: () => this.drawMule(world, m, now) });
@@ -580,8 +585,11 @@ export class Renderer {
     }
   }
 
-  /** `isolated`: not connected by road, so tinted grey until it is. `wellFed`: a farm a Well boosts, drawn irrigated. */
-  private drawBuilding(s: GameState, b: Building, isolated: boolean, wellFed: boolean): void {
+  /**
+   * `isolated`: not connected by road, so tinted grey until it is. `wellFed`: a farm a Well boosts, drawn irrigated.
+   * In winter some houses hang Christmas lights, twinkling on wall-clock `now` (ms).
+   */
+  private drawBuilding(s: GameState, b: Building, isolated: boolean, wellFed: boolean, now: number): void {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const d = BUILDINGS[b.kind];
@@ -594,6 +602,11 @@ export class Renderer {
     if (sprite) {
       const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
       ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);
+      const twinkle = b.kind === 'house' && season === WINTER ? houseLights(b) : null;
+      if (twinkle !== null) {
+        const frame = this.lights[Math.floor(now / TWINKLE_MS + twinkle) % this.lights.length];
+        ctx.drawImage(frame, sx, sy, d.w * k, (d.h + OVERHANG) * k);
+      }
     } else {
       ctx.fillStyle = BUILDING_COLOR[b.kind];
       footprint();
@@ -623,8 +636,17 @@ export class Renderer {
     const img = frames[Math.min(c.variant, frames.length - 1)][critterFrame(c, now)][c.left ? 1 : 0];
     const px = cam.zoom / SPRITE_W; // screen px per art px
     const flutter = c.sprite === 'butterfly' ? Math.sin(now / 180 + c.phase) * 0.08 : 0;
-    const [sx, sy] = cam.toScreen(c.x, c.y - c.z + flutter);
+    const lift = hopLift(c, now);
+    const [sx, sy] = cam.toScreen(c.x, c.y - c.z + flutter - lift);
     ctx.globalAlpha = Math.max(0, c.alpha * c.shown);
+    if (lift > 0) {
+      // A shadow left on the ground under a hop.
+      const [gx, gy] = cam.toScreen(c.x, c.y);
+      ctx.fillStyle = 'rgba(0,0,0,.18)';
+      ctx.beginPath();
+      ctx.ellipse(gx, gy, px * 2.5, px, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     // Feet on the bottom row inside the outline.
     ctx.drawImage(img, sx - (img.width * px) / 2, sy - (img.height - 1) * px, img.width * px, img.height * px);
     ctx.globalAlpha = 1;
@@ -679,6 +701,12 @@ export class Renderer {
     const [sx, sy] = cam.toScreen(m.x - MULE_FEET.x / SPRITE_W, m.y - MULE_FEET.y / SPRITE_W);
     ctx.drawImage(sprite, sx, sy, (MULE_W / SPRITE_W) * k, (MULE_H / SPRITE_W) * k);
   }
+}
+
+/** Whether a house hangs Christmas lights in winter, by a hash of its id (about half do): its twinkle offset in frames, or null. */
+function houseLights(b: Building): number | null {
+  const h = hash(b.id + 1);
+  return h % 2 ? null : ((h >>> 1) % 8) / 8;
 }
 
 /** Walking or resting on the ground (sorted with everything else standing there), rather than flying over it. */

@@ -1875,6 +1875,67 @@ export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
   outpost: [{ rows: [3, 12], snow: 'ur', shade: 'R' }],
 };
 
+/** RGBA per Christmas light grid char: a bulb lit (lower case) or dimmed (upper case) as it twinkles, on a dark wire. */
+export const LIGHTS_PALETTE: Record<string, Rgba> = {
+  k: [34, 64, 40, 255], // #224028 wire
+  r: [236, 52, 44, 255], // #ec342c red
+  R: [150, 30, 30, 255],
+  g: [72, 210, 92, 255], // #48d25c green
+  G: [30, 110, 50, 255],
+  b: [80, 150, 255, 255], // #5096ff blue
+  B: [40, 70, 150, 255],
+  y: [255, 214, 64, 255], // #ffd640 yellow
+  Y: [160, 120, 30, 255],
+};
+
+/** Christmas lights some houses hang in winter: colored bulbs swagged under the eave, drawn over the house sprite at its size, in two frames that twinkle. */
+export const HOUSE_LIGHTS: readonly (readonly string[])[] = [
+  [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.k...k...k...k..',
+    '..r.g.b.y.r.g...',
+    '...b...r...y....',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+  [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.k...k...k...k..',
+    '..r.G.b.Y.r.G...',
+    '...B...r...Y....',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+];
+
 /**
  * A building's grid and palette in a season: its seasonal grid and tint over the summer art, and in winter snow on its roof.
  * `wellFed` adds the farm's `WELL_FARM_TINTS`.
@@ -2935,13 +2996,15 @@ export const CRITTER_BARE: ReadonlySet<CritterSprite> = new Set(['butterfly']);
 
 /**
  * Forest creature frames facing right, without outline (composeCritter adds it). Each stands on the
- * middle of its bottom row. 'o' pixels are drawn as they are and never outlined (legs stay thin).
+ * middle of its bottom row. 'o' pixels are drawn as they are and never outlined (legs stay thin). The row
+ * just under the body is its outline, so a leg needs two or more rows of 'o' to show below it.
  */
 export const CRITTERS = {
   rabbit: {
     sit: ['....bb.', '....pb.', '...bbb.', '.bbbbeb', 'cbbbbbb', '.BB.BB.'],
     twitch: ['...bb..', '...pb..', '...bbb.', '.bbbbeb', 'cbbbbbb', '.BB.BB.'],
-    hop: ['..bb...', '..pb...', '...bbb.', 'cbbbbeb', '.bbbbbb', 'B....B.'],
+    crouch: ['.......', '..bb...', '...pbb.', '.bbbbeb', 'cbbbbbb', '..BBBB.'],
+    leap: ['.......', '.bb....', '..pbbb.', 'cbbbbeb', '.bbbbbb', 'B.....B'],
   },
   squirrel: {
     sit: ['rr.....', 'rRr..r.', 'rRr.rre', '.rr.rrr', '..rrrc.', '...rr..'],
@@ -2950,9 +3013,9 @@ export const CRITTERS = {
     run2: ['.......', 'rr.....', 'rRr..r.', '.rRrrre', '..rrrr.', '.R....R'],
   },
   bird: {
-    stand: ['...bb.', 'Bbbbek', '.cccc.', '..o.o.'],
-    peck: ['......', 'Bbbbb.', '.ccbbe', '..o.ok'],
-    fly: ['..B...', '.BBbb.', 'Bbbbek', '..cc..'],
+    stand: ['...bb.', 'Bbbbek', '.cccc.', '..o.o.', '..o.o.'],
+    peck: ['......', 'Bbbbb.', '.ccbbe', '..o.ok', '..o.o.'],
+    fly: ['..B...', '.BBbb.', 'Bbbbek', '..cc..', '......'],
   },
   butterfly: {
     open: ['11.11', '12o21', '.1o1.', '.....'],
@@ -2971,18 +3034,18 @@ export const CRITTERS = {
     walk2: ['..yy.', '..yek', 'yyyy.', '.YY..', '..k..'],
   },
   hedgehog: {
-    walk1: ['.GgGg..', 'GgGgGce', 'gGgGcco', '.o..o..'],
-    walk2: ['.GgGg..', 'GgGgGce', 'gGgGcco', '..o..o.'],
+    walk1: ['.GgGg..', 'GgGgGce', 'gGgGcco', '.o..o..', '.o..o..'],
+    walk2: ['.GgGg..', 'GgGgGce', 'gGgGcco', '.o..o..', '..o..o.'],
   },
   fox: {
-    stand: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '...o...o..'],
-    trot1: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '..o.....o.'],
-    trot2: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '....o.o...'],
+    stand: ['......R.R.', '......rrr.', '......recc', 'rr..rrrrc.', 'crrrrrrrr.', '...rrrrr..', '...o...o..', '...o...o..', '...o...o..'],
+    trot1: ['......R.R.', '......rrr.', '......recc', 'rr..rrrrc.', 'crrrrrrrr.', '...rrrrr..', '...o...o..', '..o.....o.', '..o.....o.'],
+    trot2: ['......R.R.', '......rrr.', '......recc', 'rr..rrrrc.', 'crrrrrrrr.', '...rrrrr..', '...o...o..', '....o.o...', '....o.o...'],
   },
   deer: {
-    stand: ['......T.T.', '......ttt.', '......tteo', '.....tt...', '.ttttttt..', 'ctttttttt.', '.tttttttc.', '.tcccccT..', '.o.o..o.o.', '.o.o..o.o.'],
-    graze: ['..........', '..........', '..........', '..........', '.tttttttT.', 'cttttttttT', '.ttcccctte', '.tcccccTto', '.o.o..o.o.', '.o.o..o.o.'],
-    walk: ['......T.T.', '......ttt.', '......tteo', '.....tt...', '.ttttttt..', 'ctttttttt.', '.tttttttc.', '.tcccccT..', '..o.o.o..o', '.o...o...o'],
+    stand: ['......T.T.', '.......TT.', '......ttet', '......tt..', '.tttttttc.', 'cttttttt..', '.tcccct...', '.o.o..o.o.', '.o.o..o.o.', '.o.o..o.o.'],
+    graze: ['..........', '..........', '..........', '..........', '.tttttt...', 'cttttttt..', '.tcccctTt.', '.o.o..o.tt', '.o.o..o.te', '.o.o..o..t'],
+    walk: ['......T.T.', '.......TT.', '......ttet', '......tt..', '.tttttttc.', 'cttttttt..', '.tcccct...', '.o.o..o.o.', 'o..o.o...o', 'o..o.o...o'],
   },
   goose: {
     up: ['..ggg..', 'Gggggwo', '.......'],

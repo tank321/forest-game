@@ -5,7 +5,7 @@ import { rand } from '../src/core/rng';
 import { serialize } from '../src/core/save';
 import { Tile } from '../src/core/types';
 import { onBuildingsChanged, visionRadius, type World } from '../src/core/world';
-import { Critters, KINDS, type Critter, type CritterKind, type View } from '../src/render/critters';
+import { critterFrame, Critters, hopLift, KINDS, type Critter, type CritterKind, type View } from '../src/render/critters';
 import { clearArea, smallWorld } from './helpers';
 
 const SEASON = CONFIG.seasons.length;
@@ -55,19 +55,47 @@ describe('forest creatures', () => {
     expect(underTrees).toBeGreaterThan(0);
   });
 
-  it('comes in from a side of the view and leaves off a side', () => {
+  it('rests under the trees as well as on open ground, showing below the canopy', () => {
+    const { w, view } = forest();
+    const s = w.state;
+    const critters = new Critters(seeded(11));
+    const shaded = new Set<CritterKind>();
+    let inOpen = 0;
+    for (const season of [0, 2]) {
+      s.time = season * SEASON + 1;
+      run(critters, w, view, 400, (c) => {
+        if (c.mode !== 'idle' || c.lead || !walking(c) || c.x !== c.tx || c.y !== c.ty) return; // resting where it chose to
+        const i = Math.floor(c.y) * s.w + Math.floor(c.x);
+        if (s.tiles[i] !== Tile.Tree) return void inOpen++;
+        shaded.add(c.kind);
+        expect(KINDS[c.kind].cover).toBeGreaterThan(0);
+        expect(c.y % 1).toBeGreaterThanOrEqual(0.75);
+      });
+    }
+    expect(shaded.size).toBeGreaterThan(1);
+    expect(inOpen).toBeGreaterThan(0);
+  });
+
+  it('comes in from any side of the view, each about as often, and leaves off a side', () => {
     const { w } = forest();
-    const view = { x0: 10, y0: 10, x1: 19, y1: 19 }; // open ground runs past both sides
+    const view = { x0: 10, y0: 10, x1: 19, y1: 19 }; // open ground runs past every side
     const critters = new Critters(seeded(7));
     const offSide = (x: number) => x < view.x0 || x > view.x1 + 1;
+    /** The side of the view a point (drawn where it is, height included) is off, if any. */
+    const sideOf = (c: Critter) =>
+      c.x < view.x0 ? 'left' : c.x > view.x1 + 1 ? 'right' : c.y - c.z < view.y0 ? 'top' : c.y - c.z > view.y1 + 1 ? 'bottom' : null;
     const met = new Set<Critter>();
+    const sides = { left: 0, right: 0, top: 0, bottom: 0 };
     let left = 0;
     for (const season of [0, 2]) {
       w.state.time = season * SEASON + 1;
       run(critters, w, view, 300, (c) => {
         if (!met.has(c)) {
           met.add(c);
-          if (c.kind !== 'fireflies') expect(offSide(c.x)).toBe(true);
+          if (c.kind === 'fireflies') return;
+          const side = sideOf(c);
+          expect(side).not.toBeNull();
+          if (c.kind !== 'geese' && !c.lead) sides[side!]++;
         }
         if (c.mode === 'leave') {
           expect(offSide(c.tx)).toBe(true);
@@ -76,6 +104,8 @@ describe('forest creatures', () => {
       });
     }
     expect(met.size).toBeGreaterThan(10);
+    const total = sides.left + sides.right + sides.top + sides.bottom;
+    for (const n of Object.values(sides)) expect(n).toBeGreaterThan(total / 8);
     expect(left).toBeGreaterThan(0);
   });
 
@@ -175,6 +205,27 @@ describe('forest creatures', () => {
     [v.x, v.y] = [rabbit!.x + 0.5, rabbit!.y];
     critters.step(w, view, DT);
     expect(['flee', 'leave', 'gone']).toContain(rabbit!.mode);
+  });
+
+  it('rabbits hop off the ground only while on the move', () => {
+    const { w, view } = forest();
+    const critters = new Critters(seeded(5));
+    let rabbit: Critter | undefined;
+    for (let t = 0; t < 300 && !rabbit; t += DT) {
+      critters.step(w, view, DT);
+      rabbit = critters.list.find((c) => c.kind === 'rabbit');
+    }
+    const r = rabbit!;
+    const sample = () => Array.from({ length: 100 }, (_, k) => ({ lift: hopLift(r, k * 10), frame: critterFrame(r, k * 10) }));
+    r.mode = 'move';
+    const hops = sample();
+    expect(Math.max(...hops.map((h) => h.lift))).toBeGreaterThan(0.1);
+    for (const h of hops) expect(h.frame).toBe(h.lift > 0 ? 'leap' : 'crouch');
+    r.mode = 'idle';
+    for (const h of sample()) {
+      expect(h.lift).toBe(0);
+      expect(['sit', 'twitch']).toContain(h.frame);
+    }
   });
 
   it('never touches the game state', () => {

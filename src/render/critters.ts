@@ -14,6 +14,10 @@ import type { CritterSprite } from './sprites';
 /** What spawns together: one creature, or a group (a flock, a duck family, a skein of geese, a swarm of fireflies). */
 export type CritterKind = 'rabbit' | 'squirrel' | 'bird' | 'butterfly' | 'frog' | 'duck' | 'hedgehog' | 'fox' | 'deer' | 'geese' | 'fireflies';
 
+/** A side of the view a creature comes in from. */
+type Side = 'left' | 'right' | 'top' | 'bottom';
+const SIDES: readonly Side[] = ['left', 'right', 'top', 'bottom'];
+
 /** Where a kind heads when it comes in: open ground, a Well, across the sky, or (fireflies, glowing in place) the treeline. */
 type Site = 'ground' | 'well' | 'sky' | 'treeline';
 
@@ -26,21 +30,22 @@ interface KindDef {
   life: readonly [number, number]; // s before it heads off
   idle: readonly [number, number]; // s it rests between moves
   roam: number; // tiles it wanders per move
+  cover: number; // chance it rests under a tree rather than on open ground, and runs for the trees when startled
   shy: 'run' | 'bolt' | 'fly' | null; // when a villager comes close: run a few tiles, bolt off the side, or take flight
 }
 
 export const KINDS: Record<CritterKind, KindDef> = {
-  rabbit: { seasons: [0, 1, 2, 3], weight: 5, site: 'ground', speed: 2.2, group: [1, 1], life: [20, 40], idle: [1, 4], roam: 3, shy: 'run' },
-  squirrel: { seasons: [0, 1, 2], weight: 4, site: 'ground', speed: 2.6, group: [1, 1], life: [15, 30], idle: [1, 3], roam: 2, shy: 'bolt' },
-  bird: { seasons: [0, 1, 2, 3], weight: 4, site: 'ground', speed: 0.9, group: [2, 4], life: [12, 25], idle: [0.4, 1.6], roam: 0.8, shy: 'fly' },
-  butterfly: { seasons: [0, 1], weight: 4, site: 'ground', speed: 0.9, group: [1, 2], life: [15, 30], idle: [0, 0.4], roam: 2.5, shy: null },
-  frog: { seasons: [0, 1], weight: 3, site: 'well', speed: 1.6, group: [1, 1], life: [20, 40], idle: [2, 5], roam: 1.5, shy: 'run' },
-  duck: { seasons: [0], weight: 3, site: 'well', speed: 0.8, group: [3, 4], life: [25, 45], idle: [1.5, 4], roam: 1.5, shy: 'run' },
-  hedgehog: { seasons: [2], weight: 3, site: 'ground', speed: 0.6, group: [1, 1], life: [25, 45], idle: [1.5, 4], roam: 1.5, shy: 'run' },
-  fox: { seasons: [2, 3], weight: 2, site: 'ground', speed: 1.3, group: [1, 1], life: [20, 35], idle: [1, 3], roam: 4, shy: 'run' },
-  deer: { seasons: [0, 1, 2], weight: 0.6, site: 'ground', speed: 0.9, group: [1, 1], life: [25, 45], idle: [3, 7], roam: 2, shy: 'bolt' },
-  geese: { seasons: [2], weight: 1.5, site: 'sky', speed: 1.8, group: [5, 7], life: [60, 60], idle: [0, 0], roam: 0, shy: null },
-  fireflies: { seasons: [1], weight: 3, site: 'treeline', speed: 0.3, group: [3, 6], life: [20, 35], idle: [0.5, 2], roam: 1, shy: null },
+  rabbit: { seasons: [0, 1, 2, 3], weight: 5, site: 'ground', speed: 2.2, group: [1, 1], life: [20, 40], idle: [1, 4], roam: 3, cover: 0.35, shy: 'run' },
+  squirrel: { seasons: [0, 1, 2], weight: 4, site: 'ground', speed: 2.6, group: [1, 1], life: [15, 30], idle: [1, 3], roam: 2, cover: 0.5, shy: 'bolt' },
+  bird: { seasons: [0, 1, 2, 3], weight: 4, site: 'ground', speed: 0.9, group: [2, 4], life: [12, 25], idle: [0.4, 1.6], roam: 0.8, cover: 0.25, shy: 'fly' },
+  butterfly: { seasons: [0, 1], weight: 4, site: 'ground', speed: 0.9, group: [1, 2], life: [15, 30], idle: [0, 0.4], roam: 2.5, cover: 0, shy: null },
+  frog: { seasons: [0, 1], weight: 3, site: 'well', speed: 1.6, group: [1, 1], life: [20, 40], idle: [2, 5], roam: 1.5, cover: 0, shy: 'run' },
+  duck: { seasons: [0], weight: 3, site: 'well', speed: 0.8, group: [3, 4], life: [25, 45], idle: [1.5, 4], roam: 1.5, cover: 0, shy: 'run' },
+  hedgehog: { seasons: [2], weight: 3, site: 'ground', speed: 0.6, group: [1, 1], life: [25, 45], idle: [1.5, 4], roam: 1.5, cover: 0.5, shy: 'run' },
+  fox: { seasons: [2, 3], weight: 2, site: 'ground', speed: 1.3, group: [1, 1], life: [20, 35], idle: [1, 3], roam: 4, cover: 0.4, shy: 'run' },
+  deer: { seasons: [0, 1, 2], weight: 0.6, site: 'ground', speed: 0.9, group: [1, 1], life: [25, 45], idle: [3, 7], roam: 2, cover: 0, shy: 'bolt' },
+  geese: { seasons: [2], weight: 1.5, site: 'sky', speed: 1.8, group: [5, 7], life: [60, 60], idle: [0, 0], roam: 0, cover: 0, shy: null },
+  fireflies: { seasons: [1], weight: 3, site: 'treeline', speed: 0.3, group: [3, 6], life: [20, 35], idle: [0.5, 2], roam: 1, cover: 0, shy: null },
 };
 const KIND_LIST = Object.keys(KINDS) as CritterKind[];
 
@@ -192,8 +197,8 @@ export class Critters {
     }
     const step = Math.min(d - FOLLOW_GAP, KINDS.duck.speed * FLEE * dt);
     const [nx, ny] = [c.x + (dx / d) * step, c.y + (dy / d) * step];
-    if (!inSight(world, nx, ny)) {
-      c.mode = 'idle'; // waits rather than cut a corner through the dark
+    if (!inSight(world, nx, ny) || world.state.tiles[tileOf(world.state, nx, ny)] === Tile.Building) {
+      c.mode = 'idle'; // waits rather than cut a corner through the dark or across a building
       return;
     }
     [c.x, c.y] = [nx, ny];
@@ -240,17 +245,18 @@ export class Critters {
     }
   }
 
-  /** Picks the next spot to go to on open ground within the kind's reach (near home for frogs, ducks and fireflies). */
+  /** Picks the next spot to go to on open ground, or under a tree, within the kind's reach (near home for frogs, ducks and fireflies). */
   private wander(world: World, c: Critter): void {
     const s = world.state;
     const def = KINDS[c.kind];
     const vision = visionRadius(s);
+    const shade = def.cover > 0 && this.random() < def.cover; // looks for a tree to rest under this time
     for (let tries = 0; tries < 8; tries++) {
       const a = this.random() * Math.PI * 2;
       const r = (0.3 + 0.7 * this.random()) * def.roam;
       const base = c.home && c.kind === 'fireflies' ? c.home : c;
-      const x = base.x + Math.cos(a) * r;
-      const y = base.y + Math.sin(a) * r;
+      let x = base.x + Math.cos(a) * r;
+      let y = base.y + Math.sin(a) * r;
       const i = tileOf(s, x, y);
       if (i < 0) continue;
       if (c.kind === 'butterfly' || c.kind === 'fireflies') {
@@ -258,7 +264,11 @@ export class Critters {
         this.go(c, x, y, c.kind === 'butterfly' ? 0.5 + 0.4 * this.random() : 0.2 + 0.7 * this.random(), 'move');
         return;
       }
-      if (!open(s, i) || !clearPath(world, c.x, c.y, x, y)) continue;
+      if (shade && tries < 6) {
+        if (s.tiles[i] !== Tile.Tree) continue;
+        [x, y] = this.shadeSpot(s, i);
+      } else if (!open(s, i)) continue;
+      if (!clearPath(world, c.x, c.y, x, y)) continue;
       if (c.home && Math.hypot(x - c.home.x, y - c.home.y) > 2.5) continue;
       // Squirrels keep to the treeline.
       if (c.kind === 'squirrel' && tries < 6 && !neighbors4(s, i).some((n) => s.tiles[n] === Tile.Tree)) continue;
@@ -300,6 +310,29 @@ export class Critters {
     return null;
   }
 
+  /** Like edgeX, down column `x` from the top of the view or up from its bottom. */
+  private edgeY(world: World, x: number, fromTop: boolean, toward: number): number | null {
+    const v = this.view;
+    const step = fromTop ? 1 : -1;
+    for (let y = fromTop ? v.y0 - 1 : v.y1 + 1; fromTop ? y <= toward : y >= toward; y += step) {
+      if (inSight(world, x, y + 0.5)) return y + (fromTop ? 0.2 : 0.8);
+    }
+    return null;
+  }
+
+  /**
+   * Where a creature coming in from `side` toward (x, y) starts, `z` tiles up: on row y from the left or right,
+   * or on column x from the top or bottom, at the first tile in sight where it is drawn. Null if none is in sight.
+   */
+  private entry(world: World, side: Side, x: number, y: number, z: number): [number, number] | null {
+    if (side === 'left' || side === 'right') {
+      const sx = this.edgeX(world, y - z, side === 'left', x);
+      return sx === null ? null : [sx, y];
+    }
+    const sy = this.edgeY(world, x, side === 'top', y - z);
+    return sy === null ? null : [x, sy + z];
+  }
+
   /** A villager came close: run a few tiles from it, or bolt (or fly) off the side of the view. */
   private startle(world: World, c: Critter, from: { x: number; y: number }): void {
     if (KINDS[c.kind].shy !== 'run') return this.leave(world, c, 'flee');
@@ -309,9 +342,19 @@ export class Critters {
       const x = c.x + ((c.x - from.x) / d) * r;
       const y = c.y + ((c.y - from.y) / d) * r;
       const i = tileOf(s, x, y);
-      if (i >= 0 && open(s, i) && clearPath(world, c.x, c.y, x, y)) return this.go(c, x, y, 0, 'flee');
+      if (i < 0) continue;
+      const shade = s.tiles[i] === Tile.Tree && KINDS[c.kind].cover > 0; // dives under the trees
+      if (!shade && !open(s, i)) continue;
+      const [hx, hy] = shade ? this.shadeSpot(s, i) : [x, y];
+      if (clearPath(world, c.x, c.y, hx, hy)) return this.go(c, hx, hy, 0, 'flee');
     }
     this.leave(world, c, 'flee');
+  }
+
+  /** A spot under the tree on tile `i` where a creature still shows below the canopy: low in the tile, beside the trunk. */
+  private shadeSpot(s: GameState, i: number): [number, number] {
+    const side = this.random() < 0.5 ? 0.1 : 0.65;
+    return [(i % s.w) + side + 0.25 * this.random(), Math.floor(i / s.w) + 0.75 + 0.2 * this.random()];
   }
 
   private go(c: Critter, x: number, y: number, z: number, mode: Critter['mode']): void {
@@ -328,10 +371,11 @@ export class Critters {
     const s = world.state;
     const v = this.view;
     const winter = season === WINTER;
-    const fromLeft = this.random() < 0.5;
+    const side = SIDES[Math.floor(this.random() * SIDES.length)];
 
     if (def.site === 'sky') {
       // A V of geese crossing from one side to the other, led in from the first tile in sight (the rest fade in behind).
+      const fromLeft = side === 'left' || side === 'top'; // they only cross sideways
       const dir = fromLeft ? 1 : -1;
       const y = v.y0 + (v.y1 - v.y0) * (0.2 + 0.5 * this.random()) + 3.5;
       const x0 = this.edgeX(world, y - 3.5, fromLeft, fromLeft ? v.x1 + 1 : v.x0);
@@ -374,20 +418,20 @@ export class Critters {
     const dy = Math.floor(dest / s.w) + 0.2 + 0.6 * this.random();
 
     if (kind === 'bird' || kind === 'butterfly') {
-      // Songbirds fly in from the side and glide down to land; butterflies flutter in.
+      // Songbirds fly in from a side and glide down to land; butterflies flutter in.
       for (let k = 0; k < n; k++) {
         const [x, y] = [dx + (this.random() - 0.5) * 0.8, dy + (this.random() - 0.5) * 0.8];
         if (kind === 'butterfly') {
-          const sx = this.edgeX(world, y - 0.6, fromLeft, x);
-          if (sx === null) continue;
-          const c = this.add(kind, 'butterfly', sx, y, 0.6);
+          const start = this.entry(world, side, x, y, 0.6);
+          if (!start) continue;
+          const c = this.add(kind, 'butterfly', start[0], start[1], 0.6);
           c.variant = Math.floor(this.random() * 4);
           this.go(c, x, y, 0.6, 'move');
         } else {
           const gy = y - 1.5 - this.random(); // where it flies in over, 2.5 tiles below it in the air
-          const sx = this.edgeX(world, gy - 2.5, fromLeft, x);
-          if (sx === null) continue;
-          const c = this.add(kind, 'bird', sx, gy, 2.5);
+          const start = this.entry(world, side, x, gy, 2.5);
+          if (!start) continue;
+          const c = this.add(kind, 'bird', start[0], start[1], 2.5);
           if (winter) c.variant = 1;
           const [lx, ly] = open(s, tileOf(s, x, y)) ? [x, y] : [dx, dy]; // each lands on open ground
           this.go(c, lx, ly, 0, 'move');
@@ -396,11 +440,15 @@ export class Critters {
       return;
     }
 
-    // Walkers come in from the side at the first tile in sight, on a row whose way in isn't blocked by a building.
+    // Walkers come in from the side at the first tile in sight, on a row (or column) whose way in isn't blocked by a building.
+    const across = side === 'left' || side === 'right';
     for (let tries = 0; tries < 6; tries++) {
-      const sy = Math.max(0, Math.min(s.h - 1, Math.floor(dy) + Math.round((this.random() - 0.5) * 4))) + 0.5;
-      const sx = this.edgeX(world, sy, fromLeft, dx);
-      if (sx === null || !clearPath(world, sx, sy, dx, dy)) continue;
+      const shift = Math.round((this.random() - 0.5) * 4);
+      const start = across
+        ? this.entry(world, side, dx, Math.max(0, Math.min(s.h - 1, Math.floor(dy) + shift)) + 0.5, 0)
+        : this.entry(world, side, Math.max(0, Math.min(s.w - 1, Math.floor(dx) + shift)) + 0.5, dy, 0);
+      if (!start || !clearPath(world, start[0], start[1], dx, dy)) continue;
+      const [sx, sy] = start;
       let lead: Critter | null = null;
       for (let k = 0; k < (kind === 'duck' ? n : 1); k++) {
         const c = this.add(kind, kind === 'duck' && k > 0 ? 'duckling' : (kind as CritterSprite), sx, sy);
@@ -472,17 +520,38 @@ function clearPath(world: World, x0: number, y0: number, x1: number, y1: number)
   return true;
 }
 
+/** s per hop of a rabbit or frog on the move; a hop crouches for its first HOP_CROUCH of that and is in the air for the rest. */
+const HOP_PERIOD: Partial<Record<CritterSprite | 'firefly', number>> = { rabbit: 0.34, frog: 0.45 };
+const HOP_CROUCH = 0.3;
+const HOP_HEIGHT = 3 / 16; // tiles at the top of a hop
+
+const isMoving = (c: Critter) => c.mode !== 'idle' && c.mode !== 'gone';
+
+/** How far into its hop a moving rabbit or frog is (0–1), or null for any other creature or one at rest. */
+function hopPhase(c: Critter, now: number): number | null {
+  const period = HOP_PERIOD[c.sprite];
+  if (!period || !isMoving(c)) return null;
+  return ((now / 1000 + c.phase) / period) % 1;
+}
+
+/** How high a hopping creature is drawn above its ground position, tiles (0 unless it is in the air). */
+export function hopLift(c: Critter, now: number): number {
+  const u = hopPhase(c, now);
+  return u === null || u < HOP_CROUCH ? 0 : Math.sin((Math.PI * (u - HOP_CROUCH)) / (1 - HOP_CROUCH)) * HOP_HEIGHT;
+}
+
 /** The animation frame to draw, from what the creature is doing and wall-clock `now` (ms). */
 export function critterFrame(c: Critter, now: number): string {
   const t = now / 1000 + c.phase;
-  const moving = c.mode !== 'idle' && c.mode !== 'gone';
+  const moving = isMoving(c);
   const alt = (period: number, a: string, b: string) => (Math.floor(t / period) % 2 ? b : a);
+  const hop = hopPhase(c, now);
   switch (c.sprite) {
-    case 'rabbit': return moving ? 'hop' : t % 3 < 0.25 ? 'twitch' : 'sit';
+    case 'rabbit': return hop !== null ? (hop < HOP_CROUCH ? 'crouch' : 'leap') : t % 3 < 0.25 ? 'twitch' : 'sit';
     case 'squirrel': return moving ? alt(0.09, 'run1', 'run2') : c.variant === 1 ? 'eat' : 'sit';
     case 'bird': return c.z > 0.05 ? 'fly' : !moving && t % 1.2 < 0.4 ? 'peck' : 'stand';
     case 'butterfly': return alt(0.12, 'open', 'closed');
-    case 'frog': return moving ? 'hop' : 'sit';
+    case 'frog': return hop !== null && hop >= HOP_CROUCH ? 'hop' : 'sit';
     case 'duck':
     case 'duckling': return moving ? alt(0.2, 'walk1', 'walk2') : 'walk1';
     case 'hedgehog': return moving ? alt(0.18, 'walk1', 'walk2') : 'walk1';

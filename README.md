@@ -153,6 +153,13 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v26** – Creature animation fixes.
+- Foxes are redrawn with pointed ears, a snout, a bushy white-tipped tail and legs you can actually see, which now trot. Hedgehogs and songbirds get tiny visible legs too. The deer is redrawn slimmer and leggier, with antlers, a white rump, and a neck that bends down to graze.
+- Rabbits and frogs really hop: they crouch, spring up off the ground with a shadow below, and land, instead of sliding along in one pose.
+- Rabbits, squirrels, songbirds, hedgehogs and foxes sometimes rest in the shade under a tree, peeking out below the canopy beside the trunk, and startled rabbits, hedgehogs and foxes may dive under the trees.
+- Creatures come in from the top and bottom of the view as well as the sides, each equally often (geese still cross sideways). Ducklings no longer cut across a building to catch up with their mother.
+- In winter about half the houses hang twinkling Christmas lights: a string of colored bulbs swagged under the eave.
+
 **v25** – Forest creatures.
 - Wildlife now wanders the edge of the forest, just for atmosphere: you can't tap it and it changes nothing in the game. Creatures come in from the side of the view, appearing at the first tile you can see (never over the black beyond sight), and leave the same way, fading out at the edge of sight. Walkers cross the forest under the trees to wander and rest on open ground, never crossing a building; birds fly in and glide down to land, and butterflies flutter in.
 - Spring: rabbits, squirrels, songbirds, butterflies in four colors, and frogs and a duck with her ducklings in a line by your Wells. Summer: the same without the ducks, plus fireflies glowing along the treeline. Autumn: squirrels carrying acorns, hedgehogs, foxes, and V's of geese crossing overhead. Winter is quieter: white hares, red cardinals and foxes, which leave fading footprints in the snow. A rare deer grazes at the treeline from spring to autumn.

@@ -11,6 +11,8 @@ import {
   GRASS,
   GROUND_PALETTE,
   GROUND_TINTS,
+  HOUSE_LIGHTS,
+  LIGHTS_PALETTE,
   MULE_FRAMES,
   MULE_H,
   MULE_PALETTE,
@@ -237,6 +239,17 @@ describe('sprites', () => {
       }
       for (const v of CRITTER_VARIANTS[sprite] ?? []) for (const ch of Object.keys(v)) expect(ch in CRITTER_PALETTE).toBe(true);
     }
+  });
+
+  it('Christmas lights match the house sprite, use their palette, and twinkle', () => {
+    const house = BUILDING_SPRITES.house!;
+    expect(HOUSE_LIGHTS.length).toBeGreaterThan(1);
+    for (const g of HOUSE_LIGHTS) {
+      expect(g).toHaveLength(house.length);
+      for (const row of g) expect(row).toHaveLength(house[0].length);
+      for (const ch of g.join('')) expect(ch === '.' || ch in LIGHTS_PALETTE).toBe(true);
+    }
+    expect(new Set(HOUSE_LIGHTS.map((g) => g.join(''))).size).toBe(HOUSE_LIGHTS.length);
   });
 
   it('the Lucky Chest lid and base share a width and use the UI palette', () => {
