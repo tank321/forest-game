@@ -32,6 +32,8 @@ While placing a building, **Cancel**, Escape or a right-click anywhere stops pla
 On a touch screen, placing or moving a building or road is aimed first: its footprint starts in view (on the
 building being moved, or in the middle of the map), dragging a finger moves it, and tapping elsewhere puts it there.
 Tap the footprint itself to place it. Pinch or two fingers pan and zoom meanwhile.
+On a phone the menu is a row of icons, the build menu is one row of cards you swipe sideways, and **Hide** folds it
+down to its heading (remembered in this browser) so the map gets the screen; **Show** brings it back.
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
@@ -164,6 +166,12 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v30** – Phone layout.
+- On narrow screens the map takes most of the screen. The build menu is a single row of cards that scrolls sideways, and
+  **Hide**/**Show** on its heading folds it away (the tutorial still shows a card it points at). The menu is one row of
+  icon buttons, the sidebar's spacing is tighter, and the installed app uses the strip beside a camera notch for the map.
+  Desktop is unchanged. No save change.
+
 **v29** – Install on a phone.
 - The game is published to GitHub Pages on every push to `main`, and can be installed as an app from Chrome: full screen
   in portrait, with an oak tree icon, and playable offline. A new version loads the next time the app is opened. No save change.

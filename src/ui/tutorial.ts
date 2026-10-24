@@ -188,6 +188,7 @@ export class Tutorial {
     if (el === this.glow) return;
     this.glow?.classList.remove(GLOW);
     el?.classList.add(GLOW);
+    el?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }); // on a phone the build menu scrolls sideways
     this.glow = el;
   }
 

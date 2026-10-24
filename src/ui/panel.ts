@@ -7,6 +7,7 @@ import { Tile } from '../core/types';
 import type { World } from '../core/world';
 import { ACTIONS, INFO, tallyHtml, type Action } from './actions';
 import { MarketView } from './market';
+import { readPref, writePref } from './prefs';
 import type { UiState } from './state';
 import { BUILDING_TEXT, costHtml } from './text';
 
@@ -17,6 +18,7 @@ export class Panel {
   private key = '';
   private market: MarketView;
   private coarse = matchMedia('(pointer: coarse)'); // touch screens aim a placement before placing it
+  private folded = readPref(CONFIG.buildMenu.key) === 'hidden'; // on a phone the build menu folds down to its heading
 
   constructor(
     private el: HTMLElement,
@@ -27,7 +29,7 @@ export class Panel {
   }
 
   update(): void {
-    const { title, thumb, sub, status, tally, actions, custom } = this.view();
+    const { title, thumb, sub, status, tally, actions, custom, foldable } = this.view();
     custom?.update(); // updates itself in place, so it stays out of the change key
     const have = this.world().state.resources;
     const html = actions.map((a) => {
@@ -38,7 +40,8 @@ export class Panel {
       const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'} · ${lost}</span>` : '';
       return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined,
+    const folded = !!foldable && this.folded;
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) {
@@ -48,8 +51,19 @@ export class Panel {
       return;
     }
     this.key = key;
-    const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}</h2>` : `<h2>${title}</h2>`;
+    this.el.classList.toggle('folded', folded);
+    // The fold button only shows on narrow screens (style.css).
+    const fold = foldable ? `<button class="fold" aria-expanded="${!folded}">${folded ? 'Show' : 'Hide'}</button>` : '';
+    const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}${fold}</h2>` : `<h2>${title}${fold}</h2>`;
     this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
+    const foldBtn = this.el.querySelector<HTMLButtonElement>('.fold');
+    if (foldBtn) {
+      foldBtn.onclick = () => {
+        this.folded = !this.folded;
+        writePref(CONFIG.buildMenu.key, this.folded ? 'hidden' : 'shown');
+        this.key = ''; // redrawn next frame
+      };
+    }
     const box = this.el.querySelector('.actions')!;
     box.classList.toggle('build-grid', actions.length > 0 && actions.every((a) => a.thumb));
     actions.forEach((a, i) => {
@@ -85,7 +99,7 @@ export class Panel {
     return this.coarse.matches ? `Drag the footprint onto ${where}, then tap it to place it.` : `Tap ${where}.`;
   }
 
-  private view(): { title: string; thumb?: BuildingKind | 'road'; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView } {
+  private view(): { title: string; thumb?: BuildingKind | 'road'; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView; foldable?: boolean } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
@@ -156,6 +170,7 @@ export class Panel {
     return {
       title: 'Build',
       sub: 'Tap a building to select it.',
+      foldable: true,
       // Kinds still locked behind a skill, or at their limit (the Outpost), stay out of the menu.
       actions: [
         { label: `Road (${Math.max(0, roadStock(s) - roadsBuilt(s))} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const },
