@@ -14,10 +14,16 @@ import type { UiState } from '../ui/state';
 import { fmt } from '../ui/text';
 import { bake } from './bake';
 import type { Camera } from './camera';
+import { CRITTER_MIN_ZOOM, critterFrame, Critters, TRACK_LIFE, type Critter } from './critters';
 import {
   BUILDING_ENTRANCES,
   BUILDING_SPRITES,
+  composeCritter,
   composeMule,
+  CRITTER_PALETTE,
+  CRITTER_VARIANTS,
+  CRITTERS,
+  type CritterSprite,
   composeRoad,
   composeVillager,
   FLAG,
@@ -197,6 +203,20 @@ export class Renderer {
       return [bake(grid, MULE_PALETTE, 1), bake(mirrored, MULE_PALETTE, 1)];
     })]),
   ) as Record<MuleFrame, [HTMLCanvasElement, HTMLCanvasElement][]>;
+  /** Baked forest creature frames: [sprite][palette variant][frame] = [facing right, facing left]. */
+  private critterSprites = Object.fromEntries(
+    (Object.keys(CRITTERS) as CritterSprite[]).map((sprite) => [sprite, (CRITTER_VARIANTS[sprite] ?? [{}]).map((variant) => {
+      const palette = { ...CRITTER_PALETTE, ...variant };
+      return Object.fromEntries(Object.keys(CRITTERS[sprite]).map((f) => {
+        const grid = composeCritter(sprite, f);
+        const mirrored = grid.map((r) => [...r].reverse().join(''));
+        return [f, [bake(grid, palette, 1), bake(mirrored, palette, 1)]];
+      }));
+    })]),
+  ) as Record<CritterSprite, Record<string, [HTMLCanvasElement, HTMLCanvasElement]>[]>;
+  /** Forest creatures: ambience only, kept here and never in the game state. */
+  private critters = new Critters();
+  private lastDraw = performance.now(); // wall-clock ms of the last frame, to step the creatures
   /** Last horizontal facing per villager or mule id (true = left), kept while walking straight up/down. */
   private facing = new Map<number, boolean>();
 
@@ -248,12 +268,19 @@ export class Renderer {
 
     const net = roadNetwork(s);
     this.drawTerrain(world, net);
+    const now = performance.now();
+    // Creatures step on wall-clock time (capped, so a hidden tab doesn't teleport them) and only while big enough to see.
+    if (k >= CRITTER_MIN_ZOOM) this.critters.step(world, this.visibleTiles(s), Math.min(0.1, (now - this.lastDraw) / 1000));
+    else this.critters.clear();
+    this.lastDraw = now;
     ctx.fillStyle = `rgb(${VOID})`;
     ctx.fillRect(0, 0, cam.vw, cam.vh);
     ctx.imageSmoothingEnabled = k < SPRITE_W; // crisp pixels when magnified, averaged when shrunk
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
+    this.drawTracks();
     this.drawScene(world, linkedBuildings(s, net));
+    this.drawFlyers(now);
     this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
     this.drawCarryTags(s);
@@ -386,6 +413,7 @@ export class Renderer {
     }
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     for (const m of s.mules) props.push({ depth: villagerDepth(s, m), draw: () => this.drawMule(world, m, now) });
+    for (const c of this.critters.list) if (onGround(c)) props.push({ depth: c.y, draw: () => this.drawCritter(c, now) });
     props.sort((a, b) => a.depth - b.depth);
 
     const { x0, x1, y0, y1 } = this.visibleTiles(s);
@@ -588,6 +616,60 @@ export class Renderer {
     ctx.drawImage(sprite, sx, sy, (VILLAGER_W / SPRITE_W) * k, (VILLAGER_H / SPRITE_W) * k);
   }
 
+  /** A creature standing on (x, y) or `z` tiles above it, faded by its alpha. */
+  private drawCritter(c: Critter, now: number): void {
+    const { ctx, cam } = this;
+    const frames = this.critterSprites[c.sprite as CritterSprite];
+    const img = frames[Math.min(c.variant, frames.length - 1)][critterFrame(c, now)][c.left ? 1 : 0];
+    const px = cam.zoom / SPRITE_W; // screen px per art px
+    const flutter = c.sprite === 'butterfly' ? Math.sin(now / 180 + c.phase) * 0.08 : 0;
+    const [sx, sy] = cam.toScreen(c.x, c.y - c.z + flutter);
+    ctx.globalAlpha = Math.max(0, c.alpha * c.shown);
+    // Feet on the bottom row inside the outline.
+    ctx.drawImage(img, sx - (img.width * px) / 2, sy - (img.height - 1) * px, img.width * px, img.height * px);
+    ctx.globalAlpha = 1;
+  }
+
+  /** Flying creatures, over the scene: birds in flight, butterflies and geese with a shadow on the ground, and fireflies glowing. */
+  private drawFlyers(now: number): void {
+    const { ctx, cam } = this;
+    const px = cam.zoom / SPRITE_W;
+    for (const c of this.critters.list) {
+      if (onGround(c)) continue;
+      const a = Math.max(0, c.alpha * c.shown);
+      if (c.sprite === 'firefly') {
+        const glow = (0.5 + 0.5 * Math.sin(now / 300 + c.phase * 7)) * a;
+        const [sx, sy] = cam.toScreen(c.x + Math.sin(now / 900 + c.phase) * 0.1, c.y - c.z);
+        ctx.fillStyle = `rgba(255,236,120,${(0.3 * glow).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, px * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(255,255,200,${glow.toFixed(3)})`;
+        ctx.fillRect(sx - px / 2, sy - px / 2, px, px);
+        continue;
+      }
+      const [gx, gy] = cam.toScreen(c.x, c.y);
+      ctx.fillStyle = `rgba(0,0,0,${(0.18 * a).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(gx, gy, px * 2.5, px, 0, 0, Math.PI * 2);
+      ctx.fill();
+      this.drawCritter(c, now);
+    }
+  }
+
+  /** Footprints in the snow, fading. */
+  private drawTracks(): void {
+    const { ctx, cam } = this;
+    const px = cam.zoom / SPRITE_W;
+    for (const t of this.critters.tracks) {
+      const [sx, sy] = cam.toScreen(t.x, t.y);
+      ctx.fillStyle = `rgba(110,128,158,${(0.55 * (1 - t.age / TRACK_LIFE)).toFixed(3)})`;
+      const ahead = t.left ? -px : px;
+      ctx.fillRect(sx - px, sy - px, px, px);
+      ctx.fillRect(sx + ahead * 0.5, sy - px * 2, px, px);
+    }
+  }
+
   private drawMule(world: World, m: Mule, now: number): void {
     const { ctx, cam } = this;
     const k = cam.zoom;
@@ -598,6 +680,9 @@ export class Renderer {
     ctx.drawImage(sprite, sx, sy, (MULE_W / SPRITE_W) * k, (MULE_H / SPRITE_W) * k);
   }
 }
+
+/** Walking or resting on the ground (sorted with everything else standing there), rather than flying over it. */
+const onGround = (c: Critter) => c.z === 0 && c.sprite !== 'butterfly' && c.sprite !== 'firefly';
 
 /**
  * A villager's (or mule's) ground line is its feet, except on a building's tiles (a farmer in the field, a

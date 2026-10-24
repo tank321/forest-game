@@ -28,6 +28,12 @@ import {
   TREE_SPECIES,
   TREE_TINTS,
   TREES,
+  UI_CHEST,
+  composeCritter,
+  CRITTER_PALETTE,
+  CRITTER_VARIANTS,
+  CRITTERS,
+  type CritterSprite,
   UI_FRAME_H,
   UI_FRAME_SLICE,
   UI_FRAME_W,
@@ -216,5 +222,28 @@ describe('sprites', () => {
     }
     for (const row of UI_WOOD) expect(row).toMatch(new RegExp(`^[^.]{${UI_WOOD[0].length}}$`));
     for (const ch of UI_WOOD.join('')) expect(ch in UI_PALETTE).toBe(true);
+  });
+
+  it('forest creature frames share a size per creature, stay small, and use the creature palette', () => {
+    for (const sprite of Object.keys(CRITTERS) as CritterSprite[]) {
+      const frames = Object.keys(CRITTERS[sprite]).map((f) => composeCritter(sprite, f));
+      const [w, h] = [frames[0][0].length, frames[0].length];
+      expect(w).toBeLessThanOrEqual(12);
+      expect(h).toBeLessThanOrEqual(12);
+      for (const g of frames) {
+        expect(g).toHaveLength(h);
+        for (const row of g) expect(row).toHaveLength(w);
+        for (const ch of g.join('')) expect(ch === '.' || ch in CRITTER_PALETTE).toBe(true);
+      }
+      for (const v of CRITTER_VARIANTS[sprite] ?? []) for (const ch of Object.keys(v)) expect(ch in CRITTER_PALETTE).toBe(true);
+    }
+  });
+
+  it('the Lucky Chest lid and base share a width and use the UI palette', () => {
+    const w = UI_CHEST.base[0].length;
+    for (const row of [...UI_CHEST.lid, ...UI_CHEST.base]) {
+      expect(row).toHaveLength(w);
+      for (const ch of row) expect(ch === '.' || ch in UI_PALETTE).toBe(true);
+    }
   });
 });

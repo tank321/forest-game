@@ -1,5 +1,6 @@
 import type { AchievementId, Counter } from './achievements';
 import type { BuildingKind } from './buildings';
+import type { ChestState } from './chest';
 import type { PerkId } from './legacy';
 import type { SkillId } from './skills';
 
@@ -96,6 +97,7 @@ export interface GameState {
   caravan: Deal[] | null; // Merchant Caravan deals while it is in town (null = away)
   counts: Record<EventKey, number>; // this run's event counters
   career: { past: Record<Counter, number>; earned: Partial<Record<AchievementId, number>> }; // kept across rebuilds: past runs' counters, achievement tiers earned
+  chest: ChestState; // Lucky Chest: when it can next be opened and the boost running, in wall-clock ms (kept across rebuilds)
 }
 
 /** A Guild Contract: gather `need` more of a resource, fell `need` more trees, or reach `need` villagers. Pays `reward` gold. */

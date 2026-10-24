@@ -8,6 +8,7 @@ import {
   GROUND_PALETTE,
   ROAD_PALETTE,
   type Rgba,
+  UI_CHEST,
   UI_FRAMES,
   UI_ICON_NAMES,
   UI_ICONS,
@@ -23,13 +24,15 @@ const url = (grid: readonly string[], palette: Record<string, Rgba> = UI_PALETTE
 
 /**
  * Bakes the UI sprites once and hands them to CSS: `--frame-<name>` and `--frame-<name>-down`
- * (raised and pressed), `--wood`, and `.ico-<name>` / `.thumb-<kind>` / `.thumb-road` background images.
+ * (raised and pressed), `--wood`, the Lucky Chest's `--chest`, `--chest-lid` and `--chest-base`, and `.ico-<name>` / `.thumb-<kind>` / `.thumb-road` background images.
  */
 export function applySkin(): void {
   const vars = [`--wood:${url(UI_WOOD)}`];
   for (const f of Object.keys(UI_FRAMES) as UiFrame[]) {
     vars.push(`--frame-${f}:${url(composeFrame(f, false))}`, `--frame-${f}-down:${url(composeFrame(f, true))}`);
   }
+  // Lucky Chest: lid and base apart (they come apart when it opens), and closed for the map button.
+  vars.push(`--chest-lid:${url(UI_CHEST.lid)}`, `--chest-base:${url(UI_CHEST.base)}`, `--chest:${url([...UI_CHEST.lid, ...UI_CHEST.base])}`);
   const rules = [`:root{${vars.join(';')}}`];
   for (const name of UI_ICON_NAMES) rules.push(`.ico-${name}{background-image:${url(UI_ICONS[name])}}`);
   for (const [kind, grid] of Object.entries(BUILDING_SPRITES)) {

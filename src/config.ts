@@ -156,6 +156,19 @@ export const CONFIG = {
     // Merchant Caravans: deal size in seconds of the lifetime average rate; buy at buyMult × value, sell at sellMult × value
     caravan: { deals: 3, seconds: 600, min: 100, buyMult: 0.5, sellMult: 2 },
   },
+  // Lucky Chest: opens once every cooldownMs of real time. `odds` are relative weights; boosts run for `seconds` of real time.
+  chest: {
+    cooldownMs: 10 * 60_000,
+    odds: { speed2: 25, speed3: 18, speed5: 10, taps: 15, bountiful: 17, windfall: 15 },
+    boosts: {
+      speed2: { mult: 2, seconds: 300 }, // the whole game runs ×mult
+      speed3: { mult: 3, seconds: 240 },
+      speed5: { mult: 5, seconds: 180 },
+      taps: { mult: 10, seconds: 180 }, // chopping by hand ×mult
+      bountiful: { mult: 2, seconds: 300 }, // villagers gather and walk ×mult, the clock unchanged
+    },
+    windfall: { minutes: 15, minWood: 200 }, // minutes of income per resource (current or lifetime average, whichever is more)
+  },
   sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
   achievements: { checksPerSecond: 4 }, // how often earned tiers are checked, in simulated time
   sound: { volume: 0.6, key: 'forest-game-sound' }, // chime volume (0–1); browser storage key for the on/off setting

@@ -1,7 +1,8 @@
 import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
 import { buildingAt } from './core/buildings';
-import { chopTree, collectRelic, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
+import { chestSpeed } from './core/chest';
+import { chopTree, collectRelic, expireChest, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
 import { inBounds, tileAt } from './core/grid';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
@@ -15,6 +16,7 @@ import { Camera } from './render/camera';
 import { AchievementsModal } from './ui/achievementsModal';
 import { Renderer } from './render/renderer';
 import { Hud } from './ui/hud';
+import { LuckyChest } from './ui/chest';
 import { GuideModal } from './ui/guideModal';
 import { Panel } from './ui/panel';
 import { LegacyModal } from './ui/legacyModal';
@@ -67,6 +69,16 @@ const achievementsModal = new AchievementsModal(
 );
 const sound = new Sound(document.getElementById('soundBtn') as HTMLButtonElement);
 const music = new Music(document.getElementById('musicBtn') as HTMLButtonElement);
+const chest = new LuckyChest(
+  document.getElementById('map')!,
+  document.getElementById('chest')!,
+  document.getElementById('chestBtn') as HTMLButtonElement,
+  document.getElementById('chestBoost')!,
+  () => world,
+  () => hud.income(),
+  sound,
+  (text, ms) => hud.message(text, ms),
+);
 const toasts = new Toasts(document.getElementById('toasts')!, () => achievementsModal.open(), (rank) => sound.chime(rank));
 // Anything reached before load (a save from before achievements, a rebuild) is granted now: a few one by one, many as a summary.
 const already = checkAchievements(s);
@@ -158,7 +170,13 @@ addEventListener('contextmenu', (e) => {
 function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
-  simulate(world, t, catchUpDt);
+  // A Lucky Chest boost still counts for the part of the time away it ran (a speed boost as that much more time), then ends.
+  const now = Date.now();
+  const until = s.chest.boost?.until ?? 0;
+  const boosted = Math.max(0, Math.min(t, (until - (now - seconds * 1000)) / 1000));
+  simulate(world, boosted * chestSpeed(s), catchUpDt);
+  expireChest(s, now);
+  simulate(world, t - boosted, catchUpDt);
   const earned = world.fx.filter((fx) => fx.kind === 'achievement').length;
   world.fx.length = 0; // effects from time away are summed up below, not replayed
   if (earned) toasts.summary(`${earned} earned while you were away`);
@@ -193,7 +211,7 @@ function frame(now: number): void {
   last = now;
   if (elapsed > maxFrameSeconds) catchUp(elapsed);
   else {
-    acc += elapsed * world.dev.speed;
+    acc += elapsed * world.dev.speed * chestSpeed(s);
     while (acc >= dt) {
       tick(world, dt);
       acc -= dt;
@@ -213,6 +231,7 @@ function frame(now: number): void {
   cam.step(elapsed * 1000);
   renderer.draw(world, ui);
   hud.update();
+  chest.update();
   panel.update();
   tutorial.update(); // after the panel, so its highlight lands on the buttons just drawn
   skillModal.update();

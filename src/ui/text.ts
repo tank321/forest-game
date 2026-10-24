@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { ACHIEVEMENTS, tiersOf, type AchievementDef, type AchievementGroup, type AchievementId } from '../core/achievements';
 import { unlocks, type BuildingKind } from '../core/buildings';
+import type { ChestReward } from '../core/chest';
 import type { PerkId } from '../core/legacy';
 import type { SkillId, Track } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
@@ -50,6 +51,18 @@ export const TRACK_TEXT: Record<Track, { name: string; icon: UiIcon }> = {
   mining: { name: 'Mining', icon: 'pick' },
   trade: { name: 'Trade', icon: 'gold' },
 };
+
+const { boosts: B, windfall: WF } = CONFIG.chest;
+/** Lucky Chest rewards. `tier` (1–4) sets how big the reveal is: Great, Super, Epic, Legendary. */
+export const CHEST_TEXT: Record<ChestReward, { name: string; desc: string; icon: UiIcon; tier: 1 | 2 | 3 | 4 }> = {
+  speed2: { name: `Speed ×${B.speed2.mult}`, desc: 'The whole forest runs twice as fast', icon: 'bolt', tier: 1 },
+  speed3: { name: `Speed ×${B.speed3.mult}`, desc: 'The whole forest runs three times as fast', icon: 'bolt', tier: 2 },
+  speed5: { name: `Speed ×${B.speed5.mult}`, desc: 'The whole forest runs five times as fast', icon: 'bolt', tier: 4 },
+  taps: { name: `Mighty Taps ×${B.taps.mult}`, desc: 'Every chop by hand hits ten times as hard', icon: 'chop', tier: 1 },
+  bountiful: { name: `Bountiful ×${B.bountiful.mult}`, desc: 'Villagers gather and walk twice as fast', icon: 'basket', tier: 2 },
+  windfall: { name: 'Windfall!', desc: `${WF.minutes} minutes of income, right now`, icon: 'purse', tier: 3 },
+};
+export const CHEST_TIERS = ['', 'Great!', 'Super!', 'Epic!', 'Legendary!'] as const;
 
 export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiIcon }> = {
   sharpAxes: { name: 'Sharp Axes', desc: '+20% villager chop speed per level', icon: 'chop' },

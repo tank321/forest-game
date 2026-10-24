@@ -73,6 +73,10 @@ No linter or formatter is configured.
   corner; trees and relics are never walked through. Paths are straightened (`smooth`/`clearLine`)
   so villagers cross open ground in straight lines. Each resource has a multi-source distance field
   from its drop-off buildings.
+- **Lucky Chest** (`chest.ts`, `GameState.chest`) is the one part of the state on wall-clock time: `readyAt` and a boost's
+  `until` are epoch ms, and core never reads the clock (`openChest`/`claimChest`/`expireChest` take `now`). `openChest` rolls
+  into `pending`; `claimChest` applies it at the show's burst, so the UI never shows the reward early. Speed boosts scale the
+  live loop and the overlapping part of offline catch-up in `main.ts` (`chestSpeed`); Bountiful and Mighty Taps apply in `stats.ts`/`chopTree`.
 - **Saves.** `save.ts` keeps a `VERSION` and a chain of `migrations[v]` (v → v+1). Any change to
   the `GameState` shape needs a version bump, a migration, and a migration test.
 
@@ -102,6 +106,10 @@ No linter or formatter is configured.
 - **Render-only state.** Animation runs on wall-clock time, and facing is kept in the renderer.
   Visual variety comes from tile-index hashes. None of it touches `GameState` or `rand`, which
   keeps the simulation deterministic.
+
+- **Forest creatures** (`render/critters.ts`) are display only, like the rest of the render-only state: `Critters` lives in the
+  renderer, steps on wall-clock time with `Math.random`, and only reads `World` (tiles, fog, villagers, season). The logic has
+  no canvas, so `tests/critters.test.ts` drives it directly. Sprites are `CRITTERS` grids without an outline; `composeCritter` adds it.
 
 - **UI skin.** UI art (9-slice frames, icons, sidebar wood) is also grid data in `sprites.ts`.
   `ui/skin.ts` bakes it once at startup into CSS variables (`--frame-<name>[-down]`, `--wood`) and

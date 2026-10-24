@@ -2893,6 +2893,149 @@ export const UI_WOOD: readonly string[] = [
   'qqbbbbbbbbbbbbqqbbbbbQbbbbbbbbbb',
 ];
 
+/** RGBA per forest creature grid char. Creatures are ambience only: drawn by the renderer, never part of the game state. */
+export const CRITTER_PALETTE: Record<string, Rgba> = {
+  o: [30, 22, 16, 255], // #1e1610 outline, legs, nose
+  e: [12, 8, 6, 255], // #0c0806 eye
+  b: [150, 108, 70, 255], // #966c46 brown (rabbit, sparrow)
+  B: [108, 76, 48, 255], // #6c4c30
+  c: [236, 226, 204, 255], // #ece2cc cream, white tail tip
+  p: [226, 160, 160, 255], // #e2a0a0 inside a rabbit's ear
+  r: [198, 96, 42, 255], // #c6602a russet (squirrel, fox)
+  R: [140, 62, 26, 255], // #8c3e1a
+  a: [122, 84, 40, 255], // #7a5428 acorn
+  k: [232, 150, 48, 255], // #e89630 beak, webbed feet
+  w: [246, 246, 238, 255], // #f6f6ee white
+  g: [128, 118, 106, 255], // #80766a grey (hedgehog spines, goose)
+  G: [78, 70, 62, 255], // #4e463e
+  n: [70, 140, 70, 255], // #468c46 green (frog, drake's head)
+  N: [44, 96, 44, 255], // #2c602c
+  y: [246, 214, 80, 255], // #f6d650 duckling
+  Y: [208, 168, 40, 255], // #d0a828
+  t: [176, 128, 82, 255], // #b08052 deer
+  T: [126, 88, 54, 255], // #7e5836
+  '1': [246, 246, 238, 255], // butterfly wings (see CRITTER_VARIANTS)
+  '2': [80, 80, 80, 255],
+};
+
+/** Recolorings of a creature's palette: the winter hare, the winter cardinal, and each butterfly. Index 0 is the plain one. */
+export const CRITTER_VARIANTS: Partial<Record<CritterSprite, Record<string, Rgba>[]>> = {
+  rabbit: [{}, { b: [240, 240, 236, 255], B: [196, 204, 216, 255], c: [255, 255, 255, 255] }],
+  bird: [{}, { b: [200, 40, 36, 255], B: [140, 22, 20, 255], c: [214, 70, 56, 255] }],
+  butterfly: [
+    {},
+    { '1': [250, 222, 80, 255], '2': [230, 150, 40, 255] },
+    { '1': [236, 128, 36, 255], '2': [40, 26, 18, 255] },
+    { '1': [120, 176, 240, 255], '2': [220, 238, 255, 255] },
+  ],
+};
+
+/** Creatures drawn without an outline (thin wings that an outline would swamp). */
+export const CRITTER_BARE: ReadonlySet<CritterSprite> = new Set(['butterfly']);
+
+/**
+ * Forest creature frames facing right, without outline (composeCritter adds it). Each stands on the
+ * middle of its bottom row. 'o' pixels are drawn as they are and never outlined (legs stay thin).
+ */
+export const CRITTERS = {
+  rabbit: {
+    sit: ['....bb.', '....pb.', '...bbb.', '.bbbbeb', 'cbbbbbb', '.BB.BB.'],
+    twitch: ['...bb..', '...pb..', '...bbb.', '.bbbbeb', 'cbbbbbb', '.BB.BB.'],
+    hop: ['..bb...', '..pb...', '...bbb.', 'cbbbbeb', '.bbbbbb', 'B....B.'],
+  },
+  squirrel: {
+    sit: ['rr.....', 'rRr..r.', 'rRr.rre', '.rr.rrr', '..rrrc.', '...rr..'],
+    eat: ['rr.....', 'rRr..r.', 'rRr.rre', '.rr.rra', '..rrrc.', '...rr..'],
+    run1: ['r......', 'rr.....', 'rRr..r.', '.rRrrre', '..rrrr.', '..R..R.'],
+    run2: ['.......', 'rr.....', 'rRr..r.', '.rRrrre', '..rrrr.', '.R....R'],
+  },
+  bird: {
+    stand: ['...bb.', 'Bbbbek', '.cccc.', '..o.o.'],
+    peck: ['......', 'Bbbbb.', '.ccbbe', '..o.ok'],
+    fly: ['..B...', '.BBbb.', 'Bbbbek', '..cc..'],
+  },
+  butterfly: {
+    open: ['11.11', '12o21', '.1o1.', '.....'],
+    closed: ['.1.1.', '.1o1.', '..o..', '.....'],
+  },
+  frog: {
+    sit: ['...nn.', '.nnnen', 'NNnnn.'],
+    hop: ['....nn', '.nnnne', 'N..N..'],
+  },
+  duck: {
+    walk1: ['.....nn.', '.....nek', 'bbbbbw..', 'Bbbbbbb.', '.BBBBB..', '..k..k..'],
+    walk2: ['.....nn.', '.....nek', 'bbbbbw..', 'Bbbbbbb.', '.BBBBB..', '...kk...'],
+  },
+  duckling: {
+    walk1: ['..yy.', '..yek', 'yyyy.', '.YY..', '.k.k.'],
+    walk2: ['..yy.', '..yek', 'yyyy.', '.YY..', '..k..'],
+  },
+  hedgehog: {
+    walk1: ['.GgGg..', 'GgGgGce', 'gGgGcco', '.o..o..'],
+    walk2: ['.GgGg..', 'GgGgGce', 'gGgGcco', '..o..o.'],
+  },
+  fox: {
+    stand: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '...o...o..'],
+    trot1: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '..o.....o.'],
+    trot2: ['.......rr.', '......rrer', 'rr.rrrrrcc', 'crrrrrrrc.', '....o.o...'],
+  },
+  deer: {
+    stand: ['......T.T.', '......ttt.', '......tteo', '.....tt...', '.ttttttt..', 'ctttttttt.', '.tttttttc.', '.tcccccT..', '.o.o..o.o.', '.o.o..o.o.'],
+    graze: ['..........', '..........', '..........', '..........', '.tttttttT.', 'cttttttttT', '.ttcccctte', '.tcccccTto', '.o.o..o.o.', '.o.o..o.o.'],
+    walk: ['......T.T.', '......ttt.', '......tteo', '.....tt...', '.ttttttt..', 'ctttttttt.', '.tttttttc.', '.tcccccT..', '..o.o.o..o', '.o...o...o'],
+  },
+  goose: {
+    up: ['..ggg..', 'Gggggwo', '.......'],
+    down: ['.......', 'Gggggwo', '..ggg..'],
+  },
+} as const satisfies Record<string, Record<string, readonly string[]>>;
+export type CritterSprite = keyof typeof CRITTERS;
+
+/** A creature frame with a one-pixel outline added around it (unless it is CRITTER_BARE): 2 px wider and taller. */
+export function composeCritter(sprite: CritterSprite, frame: string): string[] {
+  const grid = (CRITTERS[sprite] as Record<string, readonly string[]>)[frame];
+  const w = grid[0].length + 2;
+  const at = (x: number, y: number) => grid[y - 1]?.[x - 1] ?? '.';
+  const out: string[] = [];
+  for (let y = 0; y < grid.length + 2; y++) {
+    let row = '';
+    for (let x = 0; x < w; x++) {
+      const ch = at(x, y);
+      const body = (c: string) => c !== '.' && c !== 'o';
+      const edge = !CRITTER_BARE.has(sprite) && ch === '.' && [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)].some(body);
+      row += edge ? 'o' : ch;
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+/** The Lucky Chest, drawn in UI_PALETTE: a lid that flies off when it opens, over its base. */
+export const UI_CHEST: Record<'lid' | 'base', readonly string[]> = {
+  lid: [
+    '...oooooooooooooo...',
+    '..ohhhhhhhhhhhhhho..',
+    '.ohhmhhhhhhhhhhmhho.',
+    'oYyyyyyyyyyyyyyyyyYo',
+    'ommdmmdmoYYomdmmdmmo',
+    'oVVVVVVVoYYoVVVVVVVo',
+    'oooooooooYYooooooooo',
+  ],
+  base: [
+    'oYyyyyyyyyyyyyyyyyYo',
+    'ohhmhhmhoYYohmhhmhho',
+    'ommdmmdmoVVomdmmdmmo',
+    'ohhmhhmhoyyohmhhmhho',
+    'ommdmmdmoooomdmmdmmo',
+    'oyyyyyyyyyyyyyyyyyyo',
+    'ohhmhhmhhmhhmhhmhhmo',
+    'ommdmmdmmdmmdmmdmmdo',
+    'ohhmhhmhhmhhmhhmhhmo',
+    'ovvvvvvvvvvvvvvvvvvo',
+    'oooooooooooooooooooo',
+  ],
+};
+
 export const UI_ICON_W = 12;
 export const UI_ICON_NAMES = [
   'wood', 'food', 'stone', 'cloth', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',

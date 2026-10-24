@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { newCareer, newCounts, type Career } from './achievements';
 import { addBuilding, BUILDINGS } from './buildings';
+import { newChest } from './chest';
 import { newLegacy, perk, startVillagers, type Legacy } from './legacy';
 import { relicSpacing } from './relics';
 import { maxWoodTable } from './trees';
@@ -49,6 +50,7 @@ export function createInitialState(
     caravan: null,
     counts: newCounts(),
     career,
+    chest: newChest(),
   };
   s.wood.set(maxWoodTable(s));
   for (let y = o; y < o + start; y++) s.tiles.fill(Tile.Grass, y * size + o, y * size + o + start);

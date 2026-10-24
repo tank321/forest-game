@@ -355,6 +355,160 @@ button.danger { color: #ffb6a3; }
   .skill-card, .skill-node-tile { transition: none; }
   .skill-node.is-offered .skill-node-tile { animation: none; filter: drop-shadow(0 0 6px #f2d77a); }
 }
+/* Lucky Chest: the corner button (counting down, then glowing to be opened), the boost running under it, and the show. */
+.chest-corner { position: absolute; top: 64px; right: 8px; z-index: 2; display: grid; justify-items: end; gap: 6px; pointer-events: none; }
+.chest-corner > * { pointer-events: auto; }
+.chest-halo { position: absolute; top: -26px; right: -26px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(closest-side, #fff3c4cc, #f2d77a55 45%, transparent), repeating-conic-gradient(#fff3c4 0 9deg, transparent 9deg 30deg); mask: radial-gradient(closest-side, #000 40%, transparent); opacity: 0; transition: opacity .4s; pointer-events: none; }
+.chest-corner.ready .chest-halo { opacity: 1; animation: rays 6s linear infinite, halo-pulse 1.2s ease-in-out infinite alternate; }
+.chest-btn { --f: var(--frame-dark); --f-down: var(--frame-dark-down); position: relative; display: grid; justify-items: center; width: 68px; padding: 2px 0 0; }
+.chest-face { position: relative; display: grid; place-items: center; width: 48px; height: 48px; }
+.chest-ring { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--gold) calc(var(--p, 0) * 1turn), #ffffff1f 0); mask: radial-gradient(closest-side, transparent 80%, #000 82%); }
+.chest-art { position: relative; width: 40px; height: 36px; background: var(--chest) center / 100% 100% no-repeat; filter: saturate(.45) brightness(.75); }
+.chest-time { font-size: 13px; font-weight: 800; line-height: 18px; font-variant-numeric: tabular-nums; }
+.chest-btn.ready { --f: var(--frame-gold); --f-down: var(--frame-gold-down); color: var(--ink); text-shadow: none; animation: chest-btn-glow .9s ease-in-out infinite alternate; }
+.chest-btn.ready .chest-ring { background: radial-gradient(closest-side, #fff8, transparent); mask: none; animation: halo-pulse .9s ease-in-out infinite alternate; }
+.chest-btn.ready .chest-art { filter: drop-shadow(0 0 4px #fff6c8); animation: chest-hop 2.2s ease-in-out infinite; }
+.chest-btn.ready .chest-time { text-transform: uppercase; letter-spacing: .06em; animation: chest-open-text .9s ease-in-out infinite alternate; }
+/* Sparkles twinkling around the ready chest. */
+.chest-corner.ready::before, .chest-corner.ready::after { content: ''; position: absolute; width: 4px; height: 4px; background: #fff; box-shadow: 0 -5px #fff, 0 5px #fff, -5px 0 #fff, 5px 0 #fff; pointer-events: none; animation: twinkle 1.6s ease-in-out infinite; }
+.chest-corner.ready::before { top: 4px; left: 2px; }
+.chest-corner.ready::after { top: 58px; right: -4px; animation-delay: .8s; }
+.chest-btn.got, .chest-boost.got { animation: chest-got .65s cubic-bezier(.3, 1.8, .5, 1); }
+.chest-boost { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 6px; min-width: 132px; padding: 2px 8px 4px 4px; box-shadow: 0 0 14px 2px var(--boost, #f2d77a); }
+.chest-boost .ico { grid-row: span 2; width: 28px; height: 28px; background-size: 28px; animation: boost-icon 1s ease-in-out infinite alternate; }
+.chest-boost b { font-size: 14px; line-height: 18px; white-space: nowrap; }
+.chest-boost small { font-size: 13px; line-height: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: #654222; }
+.chest-boost-bar { grid-column: 1 / -1; height: 6px; margin-top: 3px; border: 1px solid #937b52; background: #c6b58e; }
+.chest-boost-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--boost, #f2d77a), #fff6c8); }
+/* While a boost runs, the map's edges glow in its tier color; a speed boost pulses faster. */
+#map.boosted::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 48px 8px color-mix(in srgb, var(--boost) 60%, transparent); animation: boost-pulse 1.6s ease-in-out infinite alternate; }
+#map.boost-speed::after { animation-duration: .5s; }
+#map.chest-quake #world { animation: quake .45s linear; }
+
+/* The show: drop, shake (the seam leaking flickering light), burst, reveal, collect. */
+.chest-stage { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; overflow: hidden; cursor: pointer; user-select: none; }
+.chest-dim { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #0005, #000c 75%); animation: fade-in .35s ease-out both; }
+.chest-spot { position: relative; width: 120px; height: 108px; margin-top: 100px; }
+.chest-box { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.chest-lid, .chest-base, .chest-seam { position: absolute; left: 0; width: 120px; }
+.chest-lid { top: 0; height: 42px; background: var(--chest-lid) 0 0 / 100% 100%; transform-origin: 50% 100%; }
+.chest-base { top: 42px; height: 66px; background: var(--chest-base) 0 0 / 100% 100%; }
+.chest-seam { left: 8px; width: 104px; top: 39px; height: 4px; background: #fff; box-shadow: 0 0 10px 4px var(--seam, var(--glow)), 0 0 30px 8px var(--seam, var(--glow)); opacity: 0; transition: box-shadow .08s; }
+.chest-shadow { position: absolute; left: 6px; right: 6px; bottom: -10px; height: 16px; border-radius: 50%; background: #000a; }
+.chest-glow { position: absolute; left: 50%; top: 40px; width: 320px; height: 320px; margin: -160px; border-radius: 50%; background: radial-gradient(closest-side, #fff, color-mix(in srgb, var(--glow) 80%, transparent) 30%, transparent); opacity: 0; }
+.chest-rays { position: absolute; left: 50%; top: 30px; width: 1000px; height: 1000px; margin: -500px; opacity: 0; pointer-events: none; }
+.chest-rays i { position: absolute; inset: 0; border-radius: 50%; mask: radial-gradient(closest-side, #000 8%, transparent 75%); }
+.chest-rays i:first-child { background: repeating-conic-gradient(color-mix(in srgb, var(--glow) 70%, #fff) 0 7deg, transparent 7deg 20deg); animation: rays 10s linear infinite; }
+.chest-rays i:last-child { background: repeating-conic-gradient(from 10deg, color-mix(in srgb, var(--glow) 50%, transparent) 0 4deg, transparent 4deg 30deg); animation: rays 16s linear infinite reverse; }
+.chest-prize { position: absolute; left: 50%; top: 14px; width: 84px; height: 84px; margin-left: -42px; opacity: 0; }
+.chest-prize .ico { width: 84px; height: 84px; background-size: 84px; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px var(--glow)); }
+.chest-burst { position: absolute; left: 50%; top: 40px; width: 0; height: 0; z-index: 1; pointer-events: none; }
+.chest-burst .coin, .chest-burst .gem { position: absolute; width: 10px; height: 10px; margin: -5px; background: var(--c); opacity: 0; animation: loot var(--t) cubic-bezier(.2, .7, .4, 1) both; }
+.chest-burst .coin { box-shadow: inset -2px -2px 0 #a8802e, 0 0 0 2px #24160c; }
+.chest-burst .coin::after { content: ''; position: absolute; inset: 0; animation: coin-spin .35s steps(2) infinite; }
+.chest-burst .gem { width: 9px; height: 9px; box-shadow: 0 0 0 2px #24160c, 0 0 10px 2px var(--c); }
+.chest-burst .spark { position: absolute; left: var(--x); top: var(--y); width: 4px; height: 4px; background: #fff; box-shadow: 0 -6px #fff, 0 6px #fff, -6px 0 #fff, 6px 0 #fff, 0 0 10px 3px var(--glow); scale: 0; animation: twinkle .8s ease-in-out both; }
+.chest-card { position: relative; display: grid; justify-items: center; gap: 2px; max-width: calc(100% - 32px); text-align: center; color: var(--cream); text-shadow: 0 2px 0 #000, 0 0 12px #000; opacity: 0; }
+.chest-tier { font-size: 30px; line-height: 1.1; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--glow); }
+.chest-tier span { display: inline-block; }
+.chest-name { font-size: 34px; line-height: 1.15; color: #fff; }
+.chest-desc { font-size: 15px; }
+.chest-amounts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 6px; padding: 0; list-style: none; font-size: 22px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.chest-amounts li { display: flex; align-items: center; gap: 4px; }
+.chest-amounts .ico { width: 28px; height: 28px; background-size: 28px; }
+.chest-hint { margin-top: 12px; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--tan); opacity: 0; }
+.chest-flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 40%, #fff, color-mix(in srgb, var(--glow) 60%, transparent) 35%, transparent 75%); opacity: 0; }
+/* Drop: falls in, squashes on landing and bounces back. */
+.is-drop .chest-box { animation: chest-drop .45s cubic-bezier(.5, 0, .5, 1) both; }
+.is-drop .chest-shadow { animation: shadow-drop .45s cubic-bezier(.5, 0, .5, 1) both; }
+/* Shake: harder and harder, the lid jumping and the seam lighting up. */
+.is-shake .chest-box { animation: chest-shake 1.1s linear both; }
+.is-shake .chest-lid { animation: lid-bump 1.1s linear both; }
+.is-shake .chest-seam { animation: seam-leak 1.1s ease-in both; }
+/* Burst. */
+.is-open .chest-box { animation: chest-pop .4s cubic-bezier(.3, 1.6, .5, 1); }
+.is-open .chest-lid { animation: lid-fly .9s cubic-bezier(.2, .6, .4, 1) forwards; }
+.is-open .chest-seam { opacity: 1; animation: seam-open .5s ease-out forwards; }
+.is-open .chest-glow { animation: glow-burst .6s ease-out forwards; }
+.is-open .chest-rays { animation: fade-in .5s ease-out forwards; }
+.is-open .chest-flash { animation: toast-flash .8s ease-out; }
+.is-open .chest-prize { transform: translateY(-120px); animation: prize-rise .7s .1s cubic-bezier(.3, 1.6, .5, 1) both, prize-float 1.6s .8s ease-in-out infinite alternate; }
+.is-open .chest-card { animation: card-in .5s .35s cubic-bezier(.2, 1.5, .4, 1) both; }
+.is-open .chest-tier span { animation: letter-drop .45s calc(.45s + var(--k) * 45ms) cubic-bezier(.3, 1.8, .5, 1) both; }
+.is-open .chest-name { animation: name-beat .5s 1s ease-in-out 2; }
+.is-open .chest-hint { animation: hint 1s 1.6s ease-in-out infinite alternate; }
+/* Bigger tiers: hotter glow and faster rays; Legendary cycles through every color. */
+.tier-3 .chest-rays i:first-child, .tier-4 .chest-rays i:first-child { animation-duration: 6s; }
+.tier-3.is-open .chest-glow, .tier-4.is-open .chest-glow { animation: glow-burst .6s ease-out forwards, glow-throb 1.2s .6s ease-in-out infinite alternate; }
+.tier-4.is-open .chest-tier span { animation: letter-drop .45s calc(.45s + var(--k) * 45ms) cubic-bezier(.3, 1.8, .5, 1) both, rainbow 1.2s linear infinite; }
+.tier-4.is-open .chest-rays { animation: fade-in .5s ease-out forwards, rainbow 3s linear infinite; }
+/* Collect: the reward flies into the corner, everything else fades. */
+.is-collect .chest-prize { animation: prize-collect .65s cubic-bezier(.55, -0.3, .7, 1) forwards; }
+.is-collect .chest-dim, .is-collect .chest-card, .is-collect .chest-rays, .is-collect .chest-box, .is-collect .chest-shadow, .is-collect .chest-glow, .is-collect .chest-burst { animation: fade-out .4s ease-in forwards; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes halo-pulse { from { scale: .9; } to { scale: 1.1; } }
+@keyframes chest-btn-glow { from { filter: drop-shadow(0 0 2px #f2d77a); } to { filter: drop-shadow(0 0 10px #fff3c4) brightness(1.1); } }
+@keyframes chest-hop { 0%, 60%, 100% { transform: none; } 66% { transform: translateY(-6px) rotate(-8deg); } 72% { transform: translateY(0) rotate(6deg); } 78% { transform: translateY(-3px) rotate(-4deg); } 84% { transform: rotate(2deg); } }
+@keyframes chest-open-text { to { color: #7e2318; } }
+@keyframes twinkle { 0%, 100% { scale: 0; opacity: 0; } 50% { scale: 1; opacity: 1; } }
+@keyframes chest-got { from { scale: 1.5; filter: brightness(1.8); } }
+@keyframes boost-icon { to { scale: 1.15; } }
+@keyframes boost-pulse { from { opacity: .45; } to { opacity: 1; } }
+@keyframes quake { 0%, 100% { translate: 0 0; } 15% { translate: -7px 4px; } 30% { translate: 6px -5px; } 45% { translate: -5px -3px; } 60% { translate: 4px 4px; } 75% { translate: -2px 2px; } }
+@keyframes chest-drop {
+  0% { transform: translateY(-110vh) scale(.8, 1.2); }
+  70% { transform: translateY(0) scale(1.25, .72); }
+  85% { transform: translateY(-14px) scale(.92, 1.08); }
+  100% { transform: none; }
+}
+@keyframes shadow-drop { 0% { opacity: 0; scale: .2; } 70% { opacity: 1; scale: 1.2 1; } 100% { scale: 1; } }
+@keyframes chest-shake {
+  0% { transform: none; } 10% { transform: rotate(-3deg); } 20% { transform: rotate(3deg); } 30% { transform: rotate(-5deg); } 38% { transform: rotate(5deg); }
+  46% { transform: rotate(-7deg) scale(1.03); } 53% { transform: rotate(7deg) scale(1.03); } 60% { transform: rotate(-9deg) scale(1.06); } 66% { transform: rotate(9deg) scale(1.06); }
+  72% { transform: rotate(-11deg) scale(1.09); } 77% { transform: rotate(11deg) scale(1.09); } 82% { transform: rotate(-12deg) scale(1.12); } 86% { transform: rotate(12deg) scale(1.12); }
+  90% { transform: rotate(-12deg) scale(1.15, 1.1); } 94% { transform: rotate(12deg) scale(1.15, 1.1); } 97% { transform: rotate(-6deg) scale(1.2, .9); } 100% { transform: scale(1.25, .8); }
+}
+@keyframes lid-bump { 0%, 40%, 50%, 62%, 70%, 80%, 86%, 92%, 100% { translate: 0 0; } 45% { translate: 0 -4px; } 66% { translate: 0 -6px; } 83% { translate: 0 -8px; } 89% { translate: 0 -10px; } 96% { translate: 0 -12px; } }
+@keyframes seam-leak { 0%, 25% { opacity: 0; } 100% { opacity: 1; height: 8px; top: 37px; } }
+@keyframes seam-open { to { top: 30px; height: 18px; border-radius: 50%; box-shadow: 0 0 24px 10px var(--glow), 0 -30px 60px 20px var(--glow); } }
+@keyframes glow-burst { 0% { opacity: 0; scale: .2; } 30% { opacity: 1; scale: 1.4; } 100% { opacity: .85; scale: 1; } }
+@keyframes glow-throb { to { opacity: 1; scale: 1.2; } }
+@keyframes chest-pop { 0% { transform: scale(1.25, .8); } 40% { transform: scale(.9, 1.15) translateY(-8px); } }
+@keyframes lid-fly {
+  0% { transform: none; }
+  100% { transform: translate(90px, -340px) rotate(260deg) scale(.8); opacity: 0; }
+}
+@keyframes prize-rise {
+  0% { opacity: 0; transform: translateY(30px) scale(.1) rotate(-40deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(-120px) scale(1) rotate(0); }
+}
+@keyframes prize-float { from { opacity: 1; transform: translateY(-120px); } to { opacity: 1; transform: translateY(-132px) scale(1.04); } }
+@keyframes prize-collect {
+  0% { opacity: 1; transform: translateY(-120px); }
+  25% { opacity: 1; transform: translateY(-130px) scale(1.15); }
+  100% { opacity: .9; transform: translate(var(--tx), var(--ty)) translateY(-120px) scale(.3); }
+}
+@keyframes card-in { from { opacity: 0; transform: translateY(30px) scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes letter-drop { from { opacity: 0; transform: translateY(-40px) scale(2.2) rotate(-20deg); } }
+@keyframes name-beat { 50% { transform: scale(1.12); } }
+@keyframes hint { from { opacity: .35; } to { opacity: 1; } }
+@keyframes rainbow { to { filter: hue-rotate(360deg); } }
+@keyframes loot {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(.4); }
+  45% { opacity: 1; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1.1); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 1.3), calc(var(--dy) + 360px)) rotate(calc(var(--r) * 2)); }
+}
+@keyframes coin-spin { 50% { background: #a8802e; } }
+@media (prefers-reduced-motion: reduce) {
+  .chest-stage, .chest-stage *, .chest-corner *, .chest-corner::before, .chest-corner::after, #map.boosted::after { animation: none !important; }
+  .chest-corner.ready .chest-halo { opacity: .8; }
+  .calm .chest-lid { opacity: 0; }
+  .calm .chest-glow, .calm .chest-card, .calm .chest-prize, .calm .chest-hint { opacity: 1; }
+  .calm .chest-rays { opacity: .5; }
+  .is-collect { display: none; }
+}
 @media (max-width: 640px) {
   #skillModal, #legacyModal, #guideModal, #achievementsModal { max-width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 10px; gap: 8px; }
   #skillModal { padding: 8px; }
@@ -378,4 +532,5 @@ button.danger { color: #ffb6a3; }
   #hud { top: 12px; }
   .stats { column-gap: 20px; padding: 4px 12px; }
   .stats b { font-size: 20px; line-height: 26px; }
+  .chest-corner { top: 12px; right: 16px; }
 }

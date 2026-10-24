@@ -1,12 +1,13 @@
 import { CONFIG } from '../config';
 import { newCareer, newCounts } from './achievements';
+import { newChest } from './chest';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
 import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 20;
+const VERSION = 21;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -161,6 +162,8 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
       },
     };
   },
+  // v21 adds the Lucky Chest, ready to open.
+  20: (f) => ({ ...f, version: 21, state: { ...f.state, chest: newChest() } }),
 };
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */

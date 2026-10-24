@@ -115,6 +115,13 @@ export class Hud {
     addEventListener('keydown', (e) => e.key === 'Escape' && (this.seasonPinned = false));
   }
 
+  /** Current income per minute of each resource from every source but chopping by hand, upkeep not taken off; empty until there is enough history. */
+  income(): Partial<Resources> {
+    const f = this.flows;
+    if (!f) return {};
+    return Object.fromEntries(RESOURCES.map((r) => [r, SOURCES.reduce((n, src) => n + (src === 'hand' ? 0 : f[src][r]), 0)]));
+  }
+
   message(text: string, ms = 4000): void {
     this.set(this.els.msg, text);
     this.msgUntil = performance.now() + ms;

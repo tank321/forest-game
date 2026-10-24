@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, buildingGap, type BuildingKind } from './buildings';
+import { chestMult } from './chest';
 import { perk, perkMult, startVillagers } from './legacy';
 import { linkedBuildings } from './roads';
 import { seasonOf, SUMMER, WINTER } from './seasons';
@@ -72,7 +73,8 @@ export function getStats(s: GameState): Stats {
   const extra = Math.max(0, s.villagers.length - Math.max(u.freeVillagers, startVillagers(s)));
   // Well Fed: a food surplus (per villager) speeds up every gatherer.
   const wellFed = lvl(s, 'wellFed') > 0 && s.resources.food >= CONFIG.skills.wellFed.perVillager * Math.max(1, s.villagers.length);
-  const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2') * (wellFed ? CONFIG.skills.wellFed.gather : 1);
+  const bountiful = chestMult(s, 'bountiful'); // Lucky Chest: gathering and walking both ×, so every trip takes half as long
+  const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2') * (wellFed ? CONFIG.skills.wellFed.gather : 1) * bountiful;
   const guild = guildBonus(s);
   const eat = extra * u.food * CONFIG.skills.rootCellars ** lvl(s, 'rootCellars');
   const winterBurn = extra * u.wood * (1 - CONFIG.coats.burnCut * s.upgrades.coats);
@@ -87,7 +89,7 @@ export function getStats(s: GameState): Stats {
   const taxedHouses = new Set(office ? s.buildings.filter((b) => b.kind === 'house' && linked.has(b.id)).map((b) => b.id) : []);
   const taxPerHouse = CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold);
   const festive = season === WINTER && lvl(s, 'harvestFestival') ? CONFIG.skills.festival.winterWalk : 1;
-  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive;
+  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive * bountiful;
   // Greenhouses: farms and orchards keep part of their harvest in winter.
   const farmSeason = CONFIG.seasons.farm.map((m, i) => (i === WINTER && lvl(s, 'greenhouses') ? CONFIG.skills.greenhouse : m));
   const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;

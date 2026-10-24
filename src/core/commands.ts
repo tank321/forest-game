@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { count, nextCareer, record } from './achievements';
+import { chestMult, isBoost, rollChest, windfall, type ChestReward } from './chest';
 import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, type BuildingKind } from './buildings';
 import {
   buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
@@ -12,7 +13,7 @@ import { linkedBuildings, roadsBuilt, roadStock } from './roads';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
-import { Tile, type Building, type GameState, type HireResource, type ResourceKey, type Villager } from './types';
+import { RESOURCES, Tile, type Building, type Cost, type GameState, type HireResource, type ResourceKey, type Resources, type Villager } from './types';
 import { collectorHome } from './systems/collector';
 import { goHome } from './systems/movement';
 import { rerouteMules } from './systems/mules';
@@ -36,7 +37,7 @@ export function chopTree(w: World, i: number): boolean {
     if (c.n) w.fx.push({ kind: 'combo', i, n: mult });
   }
   count(s, 'taps');
-  const hit = getStats(s).manualChop * w.dev.manualMult * mult;
+  const hit = getStats(s).manualChop * w.dev.manualMult * chestMult(s, 'taps') * mult;
   const around = lvl(s, 'sweepingStrike') ? neighbors8(s, i) : [];
   hitTree(w, i, hit);
   for (const n of around) if (isChoppable(s, n)) hitTree(w, n, hit * k.sweep);
@@ -331,8 +332,49 @@ export function prestige(w: World, id: PerkId): GameState | null {
   const s = w.state;
   if (!canPrestige(s) || !availablePerks(s).includes(id)) return null;
   const seed = (rand(s) * 2 ** 32) >>> 0;
-  return createInitialState(seed, s.w, CONFIG.map.start, {
+  const next = createInitialState(seed, s.w, CONFIG.map.start, {
     runs: s.legacy.runs + 1,
     perks: { ...s.legacy.perks, [id]: perk(s, id) + 1 },
   }, nextCareer(s));
+  next.chest = { ...s.chest }; // a rebuild doesn't recharge the Lucky Chest or end its boost
+  return next;
+}
+
+/**
+ * Opens the Lucky Chest if it is ready at `now` (wall-clock ms): rolls a reward and starts the next cooldown.
+ * The reward waits in `pending` until `claimChest`. A chest opened but never claimed (the game closed
+ * during the show) opens again to the same reward. Returns the reward, or null if the chest isn't ready.
+ */
+export function openChest(w: World, now: number): ChestReward | null {
+  const c = w.state.chest;
+  if (c.pending) return c.pending;
+  if (now < c.readyAt) return null;
+  c.pending = rollChest(w.state);
+  c.readyAt = now + CONFIG.chest.cooldownMs;
+  return c.pending;
+}
+
+/**
+ * Applies the opened chest's reward at `now` (wall-clock ms): starts its boost, or pays the Windfall
+ * (`income` is the current rate per minute of each resource). Returns the reward and anything paid, or null if none is pending.
+ */
+export function claimChest(w: World, now: number, income: Partial<Resources>): { reward: ChestReward; paid: Cost } | null {
+  const s = w.state;
+  const reward = s.chest.pending;
+  if (!reward) return null;
+  s.chest.pending = null;
+  let paid: Cost = {};
+  if (isBoost(reward)) s.chest.boost = { kind: reward, until: now + CONFIG.chest.boosts[reward].seconds * 1000 };
+  else {
+    paid = windfall(s, income);
+    for (const r of RESOURCES) if (paid[r]) gain(s, r, paid[r]);
+  }
+  return { reward, paid };
+}
+
+/** Ends the Lucky Chest boost once its time is up at `now` (wall-clock ms). Returns whether one ended. */
+export function expireChest(s: GameState, now: number): boolean {
+  if (!s.chest.boost || now < s.chest.boost.until) return false;
+  s.chest.boost = null;
+  return true;
 }

@@ -35,6 +35,11 @@ Each one plays a bell chime; the speaker button in the menu turns sound off or o
 **Music** plays in the background and follows the season: each has its own chords, tempo and instruments, crossfading as the
 season turns. The note button in the menu turns it off or on. Audio starts after your first tap or key press, and the music pauses while the tab is hidden.
 They give no rewards and are kept across rebuilds; most count over all your runs.
+The **Lucky Chest** in the map's top-right corner opens once every 10 minutes of real time (the timer keeps running
+while the game is closed). Tap it when it glows: the chest drops in, rattles and bursts open with a timed boost
+(the whole game at ×2, ×3 or ×5 speed, ×10 hand chops, or villagers gathering and walking ×2) or a Windfall of
+15 minutes' income. The running boost and its time left show under the chest.
+**Forest creatures** (rabbits, birds, squirrels, foxes and more, changing with the season) wander the forest edge for atmosphere. They can't be tapped and change nothing in the game.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
 Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
@@ -139,14 +144,30 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
   - `achievements.ts` achievement table, lifetime counters (career), tier checks, next-up pick
+  - `chest.ts` Lucky Chest rewards, odds, boost multipliers and the Windfall
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
-- `src/render/` – `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
+- `src/render/` – `critters.ts` ambient forest creatures (season roster, wandering, shyness, snow tracks; display only), `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `chest.ts` the Lucky Chest button, boost badge and opening show, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes and Lucky Chest sounds, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v25** – Forest creatures.
+- Wildlife now wanders the edge of the forest, just for atmosphere: you can't tap it and it changes nothing in the game. Creatures come in from the side of the view, appearing at the first tile you can see (never over the black beyond sight), and leave the same way, fading out at the edge of sight. Walkers cross the forest under the trees to wander and rest on open ground, never crossing a building; birds fly in and glide down to land, and butterflies flutter in.
+- Spring: rabbits, squirrels, songbirds, butterflies in four colors, and frogs and a duck with her ducklings in a line by your Wells. Summer: the same without the ducks, plus fireflies glowing along the treeline. Autumn: squirrels carrying acorns, hedgehogs, foxes, and V's of geese crossing overhead. Winter is quieter: white hares, red cardinals and foxes, which leave fading footprints in the snow. A rare deer grazes at the treeline from spring to autumn.
+- They're shy: when a villager comes close, rabbits, foxes, frogs and ducks scurry a few tiles off, birds take off, and squirrels and deer bolt off the side. When the season turns, those that don't belong head home.
+- About 4–8 at a time, fewer in winter, and only where you can see. They move on real time, so speed boosts don't hurry them, and they're hidden when zoomed far out. No save change.
+
+**v24** – Lucky Chest.
+- A chest button in the map's top-right corner opens once every 10 minutes of real time. A ring counts down around it; once ready it turns gold, hops, glows and shines with turning rays, and a chime and message say so. The timer keeps running while the game is closed.
+- Opening it plays a show: the chest drops onto the map and squashes as it lands, then rattles harder and harder while light leaks from its seam, flickering through the reward colors before it settles on the real one. The lid flies off with a flash, turning rays, a burst of coins and gems, a jolt of the map and a fanfare, and the reward rises out with its rank dropping in letter by letter. Tap to skip ahead or collect; the reward flies into the corner.
+- Rewards and their odds: **Speed ×2** for 5 minutes (25%), **Speed ×3** for 4 minutes (18%), **Speed ×5** for 3 minutes (10%), **Mighty Taps ×10** for 3 minutes (15%), **Bountiful ×2** (villagers gather and walk twice as fast, seasons and upkeep unchanged) for 5 minutes (17%), and a **Windfall** of 15 minutes of every resource's income (15%). Ranks grow from Great (gold) through Super (blue) and Epic (purple) to Legendary (orange, cycling colors), and bigger ranks get more loot, faster rays and a longer fanfare.
+- The reward is rolled from the game's seeded randomness when the chest opens, so reloading can't re-roll it. It is applied only as the lid flies off, so nothing gives it away early. A chest closed mid-show opens again to the same reward.
+- While a boost runs, a badge under the chest shows it with its time left, and the map's edges glow in its rank's color. A boost keeps counting for the part of the time away it overlapped. Rebuilds keep the chest's timer and boost.
+- Reduced-motion settings replace the show with a still reveal.
+- Saves migrate to v21 with the chest ready to open.
+
 **v23** – Tutorial.
 - A new game starts with a coach card in the sidebar that walks through the early game in eight steps: chop, hire, grow to five villagers, build a House, a connected Farm, a Lumber Camp and its first axe upgrade, then find a relic and learn a skill.
 - Each step finishes when its goal is met, and the button or counter it means pulses. The camera glides back to the Town Center for the first hire.
