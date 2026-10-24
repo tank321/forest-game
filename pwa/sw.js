@@ -18,13 +18,14 @@ self.addEventListener('activate', (e) => {
 });
 
 // The page comes from the network when it can, so a new version loads on the next launch, and from the cache offline.
+// It is always revalidated: GitHub Pages lets the browser reuse it for 10 minutes, which would hide a new version.
 // Everything else has a content hash in its name (or is an icon), so the cached copy is always right.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();

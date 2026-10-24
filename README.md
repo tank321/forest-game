@@ -171,6 +171,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   **Hide**/**Show** on its heading folds it away (the tutorial still shows a card it points at). The menu is one row of
   icon buttons, the sidebar's spacing is tighter, and the installed app uses the strip beside a camera notch for the map.
   Desktop is unchanged. No save change.
+- The installed app now always checks for a new version when it opens; before, it could keep showing the old one for up to 10 minutes after an update.
 
 **v29** – Install on a phone.
 - The game is published to GitHub Pages on every push to `main`, and can be installed as an app from Chrome: full screen
