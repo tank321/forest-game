@@ -16,6 +16,7 @@ const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILD
 export class Panel {
   private key = '';
   private market: MarketView;
+  private coarse = matchMedia('(pointer: coarse)'); // touch screens aim a placement before placing it
 
   constructor(
     private el: HTMLElement,
@@ -79,6 +80,11 @@ export class Panel {
     if (custom) box.replaceWith(custom.el);
   }
 
+  /** How to choose where a placement goes: tap it with a mouse; on touch, aim the footprint and tap it to confirm. */
+  private aim(where: string): string {
+    return this.coarse.matches ? `Drag the footprint onto ${where}, then tap it to place it.` : `Tap ${where}.`;
+  }
+
   private view(): { title: string; thumb?: BuildingKind | 'road'; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView } {
     const w = this.world();
     const s = w.state;
@@ -86,7 +92,7 @@ export class Panel {
     if (ui.moving) {
       return {
         title: `Move ${BUILDING_TEXT[ui.moving.kind].name}`,
-        sub: 'Tap clear land for the new location. Green = valid; yellow = valid but needs a road to the Town Center. Moving is free; the original stays until placed.',
+        sub: `${this.aim('clear land for the new location')} Green = valid; yellow = valid but needs a road to the Town Center. Moving is free; the original stays until placed.`,
         actions: [{ label: 'Cancel move', cost: null, enabled: true, run: () => (ui.moving = null) }],
       };
     }
@@ -101,7 +107,7 @@ export class Panel {
     if (ui.placing) {
       return {
         title: `Place ${BUILDING_TEXT[ui.placing].name}`,
-        sub: 'Tap your territory. Green = valid; yellow = valid but needs a road to the Town Center.',
+        sub: `${this.aim('your territory')} Green = valid; yellow = valid but needs a road to the Town Center.`,
         actions: [{ label: 'Cancel', cost: null, enabled: true, run: () => (ui.placing = null) }],
       };
     }
@@ -109,7 +115,7 @@ export class Panel {
     if (ui.road !== null && ui.movingRoad) {
       return {
         title: 'Move Road',
-        sub: 'Tap cleared land for the new location.',
+        sub: this.aim('cleared land for the new location'),
         actions: [{ label: 'Cancel move', cost: null, enabled: true, run: () => (ui.movingRoad = false) }],
       };
     }

@@ -1,6 +1,6 @@
 import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
-import { buildingAt } from './core/buildings';
+import { BUILDINGS, buildingAt } from './core/buildings';
 import { chestSpeed } from './core/chest';
 import { chopTree, collectRelic, expireChest, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
 import { inBounds, tileAt } from './core/grid';
@@ -21,7 +21,7 @@ import { GuideModal } from './ui/guideModal';
 import { Panel } from './ui/panel';
 import { LegacyModal } from './ui/legacyModal';
 import { Music } from './ui/music';
-import { placementAt } from './ui/placement';
+import { aiming, onFootprint, placementAt } from './ui/placement';
 import { SkillModal } from './ui/skillModal';
 import { Sound } from './ui/sound';
 import { Toasts } from './ui/toast';
@@ -89,6 +89,7 @@ const tutorial = new Tutorial(document.getElementById('tutorial')!, () => world,
 // A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
 let lifting = false;
 let lastRoadTile = -1;
+let grabOffset = { x: 0, y: 0 }; // from the finger to the aimed point while dragging a placement
 attachInput(canvas, cam, {
   hover: (x, y) => (ui.hover = { x, y }),
   leave: () => (ui.hover = null),
@@ -113,7 +114,26 @@ attachInput(canvas, cam, {
       }
     } else if (s.tiles[i] === Tile.Grass && roadsBuilt(s) >= roadStock(s)) hud.message(noneLeft);
   },
-  tap(wx, wy, alt) {
+  // On touch a placement is aimed first (drag it, or tap where it should go) and placed by tapping its footprint.
+  grab: () => aiming(ui) !== null,
+  drag(wx, wy, start) {
+    // Grabbing the footprint carries it along; a drag that starts elsewhere brings it under the finger.
+    if (start) grabOffset = ui.hover && onFootprint(ui, wx, wy) ? { x: ui.hover.x - wx, y: ui.hover.y - wy } : { x: 0, y: 0 };
+    ui.hover = { x: wx + grabOffset.x, y: wy + grabOffset.y };
+  },
+  // Holding a tree flags it, like a right-click.
+  hold(wx, wy) {
+    if (aiming(ui) || !inBounds(s, wx, wy)) return false;
+    const i = tileAt(s, wx, wy);
+    if (s.tiles[i] !== Tile.Tree) return false;
+    if (toggleMark(world, i)) navigator.vibrate?.(20);
+    return true;
+  },
+  tap(wx, wy, alt, touch) {
+    if (touch && aiming(ui)) {
+      if (!onFootprint(ui, wx, wy)) return void (ui.hover = { x: wx, y: wy });
+      ({ x: wx, y: wy } = ui.hover!);
+    }
     ui.hover = { x: wx, y: wy };
     if (ui.movingRoad && ui.road !== null) {
       const to = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
@@ -160,8 +180,9 @@ addEventListener('keydown', (e) => {
   else ui.placing = ui.selected = ui.road = null;
 });
 // Right click anywhere (map or sidebar, even after a right-drag) cancels placing a building or ends road mode.
+// A long press on a touch screen can also open a context menu; that one cancels nothing.
 addEventListener('contextmenu', (e) => {
-  if (!(ui.placing || ui.paving) || e.button !== 2) return;
+  if (!(ui.placing || ui.paving) || e.button !== 2 || (e as PointerEvent).pointerType === 'touch') return;
   e.preventDefault();
   ui.placing = null;
   ui.paving = false;
@@ -188,6 +209,22 @@ function catchUp(seconds: number): void {
   const found = panToNewRelic();
   if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${found ? `. ${NEW_RELIC}` : ''}`, 8000);
   else if (found) hud.message(NEW_RELIC);
+}
+
+// A finger doesn't hover, so on touch a placement starts with its footprint in sight: over the building or road being
+// moved, or in the middle of the view.
+let touchInput = false; // the last press was a finger or pen
+addEventListener('pointerdown', (e) => (touchInput = e.pointerType !== 'mouse'), true);
+let aimed: ReturnType<typeof aiming> = null;
+function startAim(): void {
+  const kind = aiming(ui);
+  if (kind && !aimed && touchInput) {
+    const b = ui.moving;
+    if (b) ui.hover = { x: b.x + BUILDINGS[b.kind].w / 2, y: b.y + BUILDINGS[b.kind].h / 2 };
+    else if (kind === 'road') ui.hover = { x: (ui.road! % s.w) + 0.5, y: ((ui.road! / s.w) | 0) + 0.5 };
+    else ui.hover = { x: cam.x, y: cam.y };
+  }
+  aimed = kind;
 }
 
 const NEW_RELIC = 'New relic discovered!';
@@ -229,6 +266,7 @@ function frame(now: number): void {
   }
   if (wool) hud.message(`Shearing Day! Sheep Farms bring in ${fmt(wool)} cloth.`, 6000);
   cam.step(elapsed * 1000);
+  startAim();
   renderer.draw(world, ui);
   hud.update();
   chest.update();

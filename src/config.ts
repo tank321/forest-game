@@ -173,7 +173,9 @@ export const CONFIG = {
   achievements: { checksPerSecond: 4 }, // how often earned tiers are checked, in simulated time
   sound: { volume: 0.6, key: 'forest-game-sound' }, // chime volume (0–1); browser storage key for the on/off setting
   music: { volume: 0.5, key: 'forest-game-music' }, // background music volume (0–1); browser storage key for the on/off setting
-  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900 }, // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic
+  // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic; a touch held still for holdMs marks a tree;
+  // grabPad = tiles of slack around a placement footprint for a finger
+  camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900, holdMs: 450, grabPad: 0.3 },
   tutorial: { key: 'forest-game-tutorial' }, // browser storage key for the tutorial's step (or "done")
   save: { key: 'forest-game-save', intervalMs: 10_000 },
 } as const;

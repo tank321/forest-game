@@ -15,14 +15,17 @@ A new game opens with a short **tutorial** at the top of the sidebar: one goal a
 hiring, a House, a Farm, a Lumber Camp and the axe, to the first relic and skill. Each goal finishes when you do it,
 and whatever it points at pulses. **Skip tutorial** (click twice) ends it for good; it isn't shown for existing saves.
 
-Drag to pan, wheel or pinch to zoom. Tap a tree next to your land for +1 wood.
+Drag to pan, wheel or pinch to zoom (on a touch screen two fingers also pan). Tap a tree next to your land for +1 wood.
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
 shows a health bar. Zoom in close to see what each villager carries in a tag over its head.
-Right-clicking a tree flags it as a priority: a red flag once your land reaches it,
+Right-clicking a tree (or holding a finger on it) flags it as a priority: a red flag once your land reaches it,
 yellow until then. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
+On a touch screen, placing or moving a building or road is aimed first: its footprint starts in view (on the
+building being moved, or in the middle of the map), dragging a finger moves it, and tapping elsewhere puts it there.
+Tap the footprint itself to place it. Pinch or two fingers pan and zoom meanwhile.
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
@@ -153,6 +156,13 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v28** – Touch controls.
+- Hold a finger on a tree for a moment to flag it as a priority, like a right-click (phones that can vibrate give a short buzz).
+- On a touch screen, placing a building and moving a building or road no longer happen on the first tap. The footprint
+  starts in view, follows your finger as you drag (grab it to carry it, or drag anywhere to bring it under your finger),
+  and moves to wherever you tap; tapping the footprint itself places it. The panel's instructions say so on touch screens.
+- Pinching now also pans with the two fingers' midpoint, so you can move the map while aiming a placement. No save change.
+
 **v27** – Chimney smoke.
 - In winter, smoke curls up from every house's chimney: soft puffs that rise, swell and drift off with the wind as they fade, each house puffing in its own rhythm. No save change.
 - Relic skill cards now pick a track evenly before a skill in it, so a track you haven't started (and the building it unlocks: Quarry, Sheep Farm, Market) comes up as often as one with many skills on offer. Long waits for those buildings are about half as long in unlucky games.
