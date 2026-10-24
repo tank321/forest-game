@@ -13,21 +13,33 @@ export type Cost = Partial<Resources>;
 /** Resources villagers can be hired with, each on its own price track. */
 export type HireResource = 'wood' | 'food' | 'cloth';
 
-export type Job = 'lumber' | 'farm' | 'orchard' | 'mine' | 'herd' | 'cotton' | 'trade';
-/** Lumberjack: idle → toTree → chop → toHome. Workplace jobs: idle → toWork → work → toHome. */
+export type Job = 'lumber' | 'farm' | 'orchard' | 'mine' | 'herd' | 'cotton' | 'tax';
+/** Lumberjack: idle → toTree → chop → toHome. Workplace jobs: idle → toWork → work → toHome. Tax collector: idle → toWork (house to house) → toHome. */
 export type VillagerState = 'idle' | 'toTree' | 'chop' | 'toWork' | 'work' | 'toHome';
 
-export interface Villager {
+/** Anything that walks a path (see movement.walk). */
+export interface Walker {
   id: number;
   x: number; // tile units, continuous (tile centers at .5)
   y: number;
-  state: VillagerState;
   path: number[]; // tile indices to walk through
   pathI: number; // next waypoint
+  carry: number; // of the resource it carries
+}
+
+export interface Villager extends Walker {
+  state: VillagerState;
   target: number; // claimed tree tile, -1 if none (released at every delivery)
-  carry: number; // of the job's resource
   job: Job;
-  workplace: number; // building id for workplace jobs (farm, orchard, mine, herd, cotton, trade), -1 otherwise
+  workplace: number; // building id for workplace jobs (farm, orchard, mine, herd, cotton, tax), -1 otherwise
+  round?: number[]; // tax collector: house tiles visited this round
+}
+
+/** A Trading Post's pack mule: idle (at its post) → load → toMarket → (deposit) → toPost → load ... */
+export type MuleState = 'idle' | 'load' | 'toMarket' | 'toPost';
+export interface Mule extends Walker {
+  state: MuleState;
+  post: number; // its Trading Post's id
 }
 
 export interface Building {
@@ -37,6 +49,7 @@ export interface Building {
   y: number;
   paidCost: Cost; // original materials paid; moving and later discounts do not change this
   tally: Cost; // lifetime amounts its workers produced (workplaces) or it collected (drop-offs, Tax Office)
+  due?: number; // house: gold owed, waiting for a tax collector
 }
 
 export interface Rect {
@@ -62,8 +75,9 @@ export interface GameState {
   marked: number[]; // priority trees (player-marked)
   buildings: Building[];
   villagers: Villager[];
+  mules: Mule[]; // one per Trading Post (see systems/mules.ts)
   resources: Resources;
-  upgrades: { axe: number; farm: number; pick: number; coats: number; shoes: number; backpack: number };
+  upgrades: { axe: number; farm: number; pick: number; coats: number; shoes: number; backpack: number; satchel: number };
   hires: Record<HireResource, number>; // villagers bought with each resource (separate price tracks)
   paused: number[]; // ids of paused workplaces
   skills: Partial<Record<SkillId, number>>;

@@ -11,6 +11,10 @@ import {
   GRASS,
   GROUND_PALETTE,
   GROUND_TINTS,
+  MULE_FRAMES,
+  MULE_H,
+  MULE_PALETTE,
+  MULE_W,
   OVERHANG_PX,
   RELIC,
   RELIC_GLOW,
@@ -45,6 +49,7 @@ import {
   WELL_FARM_TINTS,
   WINTER_TREES,
   composeFrame,
+  composeMule,
   composeVillager,
   seasonalBuilding,
 } from '../src/render/sprites';
@@ -165,6 +170,17 @@ describe('sprites', () => {
         expect(grid).toHaveLength(VILLAGER_H);
         for (const row of grid) expect(row).toHaveLength(VILLAGER_W);
         for (const ch of grid.join('')) expect(ch === '.' || ch in palette).toBe(true);
+      }
+    }
+  });
+
+  it('every pack mule frame, loaded or not, composes to MULE_W × MULE_H in its palette', () => {
+    for (const frame of MULE_FRAMES) {
+      for (const loaded of [false, true]) {
+        const grid = composeMule(frame, loaded);
+        expect(grid).toHaveLength(MULE_H);
+        for (const row of grid) expect(row).toHaveLength(MULE_W);
+        for (const ch of grid.join('')) expect(ch === '.' || ch in MULE_PALETTE).toBe(true);
       }
     }
   });

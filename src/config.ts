@@ -95,7 +95,16 @@ export const CONFIG = {
   },
   // road stock = base + perHouse × houses; a step between connected road tiles costs pathCost × a step off-road
   roads: { base: 12, perHouse: 3, pathCost: 0.5 },
-  tax: { perHouse: 0.2, radius: 4 }, // gold/s per house within radius (Chebyshev) of a Tax Office
+  tax: { perHouse: 0.2, hold: 60 }, // gold/s each connected house owes while a Tax Office stands; it holds at most `hold` s of it
+  // Tax Office: houses a collector visits per round, by level
+  satchel: {
+    costs: {
+      wood: [600, 1500, 4000],
+      stone: [60, 200, 500],
+      gold: [100, 400, 1200],
+    },
+    stops: [1, 2, 3, 5],
+  },
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
   // Prestige: rebuild once base + step × runs skill levels are learned (capped at every skill maxed)

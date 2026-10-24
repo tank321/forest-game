@@ -6,7 +6,7 @@ import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import { getStats, wellFarms, wellReach } from '../core/stats';
 import { carried } from '../core/systems/workplace';
-import type { Building, GameState, Job, ResourceKey, Villager } from '../core/types';
+import type { Building, GameState, Job, Mule, ResourceKey, Villager, Walker } from '../core/types';
 import { RESOURCES, Tile } from '../core/types';
 import { visionRadius, type Fx, type World } from '../core/world';
 import { placementAt } from '../ui/placement';
@@ -17,6 +17,7 @@ import type { Camera } from './camera';
 import {
   BUILDING_ENTRANCES,
   BUILDING_SPRITES,
+  composeMule,
   composeRoad,
   composeVillager,
   FLAG,
@@ -26,6 +27,12 @@ import {
   GROUND_PALETTE,
   GROUND_TINTS,
   type GroundTile,
+  MULE_FEET,
+  MULE_FRAMES,
+  MULE_H,
+  MULE_PALETTE,
+  MULE_W,
+  type MuleFrame,
   OVERHANG_PX,
   RELIC,
   RELIC_GLOW,
@@ -182,7 +189,15 @@ export class Renderer {
       return [job, Object.fromEntries(frames)];
     }),
   ) as Record<Job, Record<VillagerFrame, [HTMLCanvasElement, HTMLCanvasElement]>>;
-  /** Last horizontal facing per villager id (true = left), kept while walking straight up/down. */
+  /** Baked pack mule frames: [frame][empty, loaded] = [facing right, facing left]. */
+  private mules = Object.fromEntries(
+    MULE_FRAMES.map((f) => [f, [false, true].map((loaded) => {
+      const grid = composeMule(f, loaded);
+      const mirrored = grid.map((r) => [...r].reverse().join(''));
+      return [bake(grid, MULE_PALETTE, 1), bake(mirrored, MULE_PALETTE, 1)];
+    })]),
+  ) as Record<MuleFrame, [HTMLCanvasElement, HTMLCanvasElement][]>;
+  /** Last horizontal facing per villager or mule id (true = left), kept while walking straight up/down. */
   private facing = new Map<number, boolean>();
 
   constructor(
@@ -341,7 +356,7 @@ export class Renderer {
   }
 
   /** Faces the next waypoint, the tree being chopped or the workplace; else keeps the last facing. */
-  private faceLeft(world: World, v: Villager): boolean {
+  private faceLeft(world: World, v: Villager | Mule): boolean {
     const s = world.state;
     let tx: number | undefined;
     if (v.state === 'chop' && v.target >= 0) tx = (v.target % s.w) + 0.5;
@@ -370,6 +385,7 @@ export class Renderer {
       props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id)) });
     }
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
+    for (const m of s.mules) props.push({ depth: villagerDepth(s, m), draw: () => this.drawMule(world, m, now) });
     props.sort((a, b) => a.depth - b.depth);
 
     const { x0, x1, y0, y1 } = this.visibleTiles(s);
@@ -498,7 +514,7 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  /** Zoomed in: a tag over each villager's head with the resource it carries and how much. Empty hands show none. */
+  /** Zoomed in: a tag over each villager's (and mule's) head with the resource it carries and how much. Empty hands show none. */
   private drawCarryTags(s: GameState): void {
     const { ctx, cam } = this;
     if (cam.zoom < CONFIG.camera.carryZoom) return;
@@ -507,12 +523,16 @@ export class Renderer {
     ctx.textBaseline = 'middle';
     const h = UI_ICON_W + 2 * TAG.pad;
     const st = getStats(s);
-    for (const v of s.villagers) {
+    const carriers = [
+      ...s.villagers.map((v) => ({ v, top: VILLAGER_FEET.y, load: () => carried(st, v) })),
+      ...s.mules.map((v) => ({ v, top: MULE_FEET.y, load: () => [{ res: 'gold' as ResourceKey, n: v.carry }] })),
+    ];
+    for (const { v, top, load } of carriers) {
       if (v.carry < 1) continue;
-      const [cx, head] = cam.toScreen(v.x, v.y - VILLAGER_FEET.y / SPRITE_W);
+      const [cx, head] = cam.toScreen(v.x, v.y - top / SPRITE_W);
       if (cx < -cam.zoom || cx > cam.vw + cam.zoom || head < 0 || head > cam.vh + cam.zoom) continue;
       // One icon and count per resource the load delivers (a herder's cloth and food).
-      const items = carried(st, v)
+      const items = load()
         .map(({ res, n }) => ({ res, label: fmt(Math.floor(n)), n }))
         .filter(({ n }) => n >= 1)
         .map((it) => ({ ...it, w: UI_ICON_W + TAG.gap + Math.ceil(ctx.measureText(it.label).width) }));
@@ -567,13 +587,23 @@ export class Renderer {
     const [sx, sy] = cam.toScreen(v.x - VILLAGER_FEET.x / SPRITE_W, v.y - VILLAGER_FEET.y / SPRITE_W);
     ctx.drawImage(sprite, sx, sy, (VILLAGER_W / SPRITE_W) * k, (VILLAGER_H / SPRITE_W) * k);
   }
+
+  private drawMule(world: World, m: Mule, now: number): void {
+    const { ctx, cam } = this;
+    const k = cam.zoom;
+    const walking = (m.state === 'toMarket' || m.state === 'toPost') && m.pathI < m.path.length;
+    const frame: MuleFrame = !walking ? 'stand' : Math.floor(now / WALK_MS + m.id * 0.37) % 2 === 1 ? 'walk2' : 'walk1';
+    const sprite = this.mules[frame][m.carry > 0 ? 1 : 0][this.faceLeft(world, m) ? 1 : 0];
+    const [sx, sy] = cam.toScreen(m.x - MULE_FEET.x / SPRITE_W, m.y - MULE_FEET.y / SPRITE_W);
+    ctx.drawImage(sprite, sx, sy, (MULE_W / SPRITE_W) * k, (MULE_H / SPRITE_W) * k);
+  }
 }
 
 /**
- * A villager's ground line is its feet, except on a building's tiles (a farmer in the field, a
+ * A villager's (or mule's) ground line is its feet, except on a building's tiles (a farmer in the field, a
  * miner in the pit, a delivery in the yard), where it is drawn over that building.
  */
-function villagerDepth(s: GameState, v: Villager): number {
+function villagerDepth(s: GameState, v: Walker): number {
   const i = tileAt(s, v.x, v.y);
   const b = s.tiles[i] === Tile.Building ? buildingAt(s, i) : undefined;
   return b ? b.y + BUILDINGS[b.kind].h + 0.01 : v.y;

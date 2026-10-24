@@ -149,6 +149,6 @@ describe('upkeep', () => {
     const old = JSON.parse(serialize(w.state, 1));
     old.version = 7;
     delete old.state.upgrades.coats;
-    expect(deserialize(JSON.stringify(old)).state.upgrades).toEqual({ axe: 0, farm: 0, pick: 0, coats: 0, shoes: 0, backpack: 0 });
+    expect(deserialize(JSON.stringify(old)).state.upgrades).toEqual({ axe: 0, farm: 0, pick: 0, coats: 0, shoes: 0, backpack: 0, satchel: 0 });
   });
 });

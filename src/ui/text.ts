@@ -34,11 +34,11 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   },
   taxOffice: {
     name: 'Tax Office',
-    desc: `Houses within ${CONFIG.tax.radius} tiles pay gold. Must touch the Town Center or a city building.`,
+    desc: `Connected houses owe gold, up to ${CONFIG.tax.hold} s of tax each. A collector walks the roads house to house and brings it back here. Must touch the Town Center or a city building.`,
   },
   tradingPost: {
     name: 'Trading Post',
-    desc: 'A trader carries gold to the nearest Market. The farther apart they are, the more gold per trip.',
+    desc: 'Its pack mule loads gold and carries it along the roads to the nearest Market. The farther apart they are, the more gold per trip.',
   },
 };
 
@@ -69,6 +69,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   deepWells: { name: 'Deep Wells', desc: 'Wells boost farms within 2 tiles', icon: 'drop' },
   fertileHerding: { name: 'Fertile Herding', desc: 'Herders also bring back as much food as cloth', icon: 'food' },
   taxCollectors: { name: 'Tax Collectors', desc: '+20% tax per level', icon: 'purse' },
+  deputies: { name: 'Deputies', desc: 'Each Tax Office sends out a second collector', icon: 'pair' },
   packMules: { name: 'Pack Mules', desc: '+25% gold per trade trip per level', icon: 'basket' },
   shrewdTraders: { name: 'Shrewd Traders', desc: 'Market commission 5 points lower per level', icon: 'scales' },
   quarrying: { name: 'Quarrying', desc: 'Unlocks the Quarry', icon: 'stone' },

@@ -7,6 +7,7 @@ import { lvl } from './skills';
 import { getStats } from './stats';
 import { grazingSystem } from './systems/grazing';
 import { jobSystem } from './systems/jobs';
+import { muleSystem } from './systems/mules';
 import { upkeepSystem } from './systems/upkeep';
 import { villagerSystem } from './systems/villagers';
 import { burst } from './systems/workplace';
@@ -15,7 +16,7 @@ import { gainBonus, type World } from './world';
 export type System = (w: World, dt: number) => void;
 
 /** Run order matters; new systems (production, growth, events) are appended here. */
-const systems: System[] = [jobSystem, upkeepSystem, villagerSystem, grazingSystem];
+const systems: System[] = [jobSystem, upkeepSystem, villagerSystem, muleSystem, grazingSystem];
 
 /**
  * Advances `dt`, split at season boundaries so no step straddles a change of season. Harvest Festival

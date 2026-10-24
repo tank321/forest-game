@@ -29,10 +29,11 @@ const SOURCE_LABEL: Record<Source, string> = {
   bonus: 'Skill bonuses',
 };
 
-/** Gathered per source so far, plus loads still being carried (under the carrier's job), so it grows as goods are gathered, not in lumps at delivery. */
+/** Gathered per source so far, plus loads still being carried (under the carrier's job, a mule's under trade), so it grows as goods are gathered, not in lumps at delivery. */
 function gathered(w: World): Flows {
   const out = Object.fromEntries(SOURCES.map((src) => [src, { ...w.gathered[src] }])) as Flows;
   for (const v of w.state.villagers) out[v.job][jobResource(v.job)] += v.carry;
+  for (const m of w.state.mules) out.trade.gold += m.carry;
   return out;
 }
 

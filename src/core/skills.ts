@@ -21,6 +21,7 @@ export const SKILLS = {
   deepWells: { max: 1 }, // well radius +1
   fertileHerding: { max: 1 }, // herders also deliver food equal to their cloth
   taxCollectors: { max: 5 }, // +20% tax / lvl
+  deputies: { max: 1 }, // a second collector per Tax Office
   packMules: { max: 3 }, // +25% gold per trade trip / lvl
   shrewdTraders: { max: 2 }, // market commission −5 points / lvl
   sweepingStrike: { max: 1 }, // taps also hit choppable neighbours
@@ -73,7 +74,7 @@ export const TRACKS = {
   farming: ['greenThumbs', 'wells', 'deepWells', 'cropRotation', 'farmhands', 'orchards', 'rootCellars', 'greenhouses', 'harvestFestival'],
   herding: ['sheepFarms', 'openPastures', 'shearingDay', 'fertileHerding', 'goldenFleece', 'tailoring', 'weavers', 'cottonFields', 'grazingFlocks'],
   mining: ['quarrying', 'stonecutters', 'quarryCrews', 'deepShafts', 'masons', 'cobblestone', 'richVeins', 'geodes', 'dynamite'],
-  trade: ['markets', 'tradingPosts', 'packMules', 'tollRoads', 'taxOffices', 'taxCollectors', 'guildContracts', 'shrewdTraders', 'midsummerFair', 'merchantCaravans'],
+  trade: ['markets', 'tradingPosts', 'packMules', 'tollRoads', 'taxOffices', 'taxCollectors', 'deputies', 'guildContracts', 'shrewdTraders', 'midsummerFair', 'merchantCaravans'],
 } as const satisfies Record<string, readonly SkillId[]>;
 export type Track = keyof typeof TRACKS;
 export const TRACK_IDS = Object.keys(TRACKS) as Track[];
@@ -124,6 +125,7 @@ const PARENT: Partial<Record<SkillId, SkillId>> = {
   tollRoads: 'tradingPosts',
   taxOffices: 'markets',
   taxCollectors: 'taxOffices',
+  deputies: 'taxCollectors',
   guildContracts: 'taxOffices',
   shrewdTraders: 'markets',
   midsummerFair: 'shrewdTraders',

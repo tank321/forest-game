@@ -26,21 +26,6 @@ describe('building tallies', () => {
     expect(tc.tally.wood).toBeCloseTo(s.totals.wood - handChopped, 9);
   });
 
-  it('split each taxed house between the Tax Offices in reach', () => {
-    const w = smallWorld(30);
-    const s = w.state;
-    const a = addBuilding(s, 'taxOffice', 13, 11);
-    const b = addBuilding(s, 'taxOffice', 15, 11);
-    addBuilding(s, 'house', 12, 12); // in reach of both
-    clearArea(w, 18, 12, 20, 12);
-    addBuilding(s, 'house', 20, 12); // in reach of b only
-    pave(w);
-    simulate(w, 100, 1);
-    expect(a.tally.gold).toBeCloseTo(100 * 0.2 / 2, 6);
-    expect(b.tally.gold).toBeCloseTo(100 * 0.2 * 1.5, 6);
-    expect(a.tally.gold! + b.tally.gold!).toBeCloseTo(s.totals.gold, 6);
-  });
-
   it('show produced for workplaces, collected for drop-offs, nothing for houses', () => {
     const w = smallWorld(30);
     const s = w.state;
@@ -69,8 +54,10 @@ describe('gathered sources', () => {
     expect(placeBuilding(w, 'farm', x - 3, y)).toBe(true);
     addBuilding(s, 'taxOffice', 13, 11);
     addBuilding(s, 'house', 12, 12);
+    pave(w);
     simulate(w, 200, 1 / 30);
     const g = w.gathered;
+    expect(g.tax.gold).toBeGreaterThan(0);
     expect(g.hand.wood).toBeGreaterThan(0);
     expect(g.lumber.wood).toBeGreaterThan(0);
     expect(g.farm.food).toBe(s.totals.food);

@@ -12,8 +12,10 @@ import { linkedBuildings, roadsBuilt, roadStock } from './roads';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
 import { createInitialState, spawnVillager } from './state';
 import { getStats } from './stats';
-import { Tile, type Building, type GameState, type HireResource, type ResourceKey } from './types';
+import { Tile, type Building, type GameState, type HireResource, type ResourceKey, type Villager } from './types';
+import { collectorHome } from './systems/collector';
 import { goHome } from './systems/movement';
+import { rerouteMules } from './systems/mules';
 import { burst, jobResource } from './systems/workplace';
 import { claimTile, clearTree, gainBonus, onBuildingsChanged, visionRadius, type World } from './world';
 
@@ -236,20 +238,24 @@ export function removeBuilding(w: World, id: number): boolean {
 /** Villagers walk around buildings, so any building change can change the way home: deliveries under way re-route. */
 function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
   onBuildingsChanged(w);
+  rerouteMules(w.state);
   for (const v of w.state.villagers) {
     const assigned = v.workplace === b.id;
     if (assigned && (v.carry > 0 || v.state === 'toHome')) {
-      goHome(w, v, jobResource(v.job));
+      homeward(w, v);
     } else if (assigned) {
       v.path = [];
       v.pathI = 0;
       v.state = 'idle';
       if (removed) { v.job = 'lumber'; v.workplace = -1; v.target = -1; }
     } else if (v.state === 'toHome') {
-      goHome(w, v, jobResource(v.job));
+      homeward(w, v);
     }
   }
 }
+
+/** Re-routes a delivery: to the nearest drop-off, or a tax collector to its office. */
+const homeward = (w: World, v: Villager) => (v.job === 'tax' ? collectorHome(w, v) : goHome(w, v, jobResource(v.job)));
 
 /** A road can be laid on open ground while the road stock lasts. */
 export function canPlaceRoad(w: World, i: number): boolean {
@@ -287,7 +293,8 @@ export function moveRoad(w: World, from: number, to: number): boolean {
 /** Roads change which drop-offs work and the best way to each, so deliveries under way re-route. */
 function refreshRoadRoutes(w: World): void {
   onBuildingsChanged(w);
-  for (const v of w.state.villagers) if (v.state === 'toHome') goHome(w, v, jobResource(v.job));
+  rerouteMules(w.state);
+  for (const v of w.state.villagers) if (v.state === 'toHome') homeward(w, v);
 }
 
 /** Picks up a relic touching territory; its tile becomes territory and a skill pick is owed. */

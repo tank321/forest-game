@@ -6,7 +6,7 @@ import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import type { GameState, Resources } from './types';
 
-const VERSION = 18;
+const VERSION = 20;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -140,6 +140,26 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   17: (f) => {
     const s = f.state;
     return { ...f, version: 18, state: { ...s, counts: { ...newCounts(), relics: s.relicsSpawned - s.relics.length }, career: newCareer() } };
+  },
+  // v19 sends tax collectors house to house: houses start owing nothing, and the Satchel upgrade starts at 0.
+  18: (f) => ({ ...f, version: 19, state: { ...f.state, upgrades: { ...f.state.upgrades, satchel: 0 } } }),
+  // v20 gives Trading Posts pack mules: traders go back to lumberjacking, and the gold they carried is banked.
+  19: (f) => {
+    const s = f.state;
+    const traders = s.villagers.filter((v) => (v.job as string) === 'trade');
+    const gold = traders.reduce((n, v) => n + v.carry, 0);
+    return {
+      ...f,
+      version: 20,
+      state: {
+        ...s,
+        resources: { ...s.resources, gold: s.resources.gold + gold },
+        totals: { ...s.totals, gold: s.totals.gold + gold },
+        villagers: s.villagers.map((v) =>
+          traders.includes(v) ? { ...v, job: 'lumber', workplace: -1, state: 'idle', carry: 0, target: -1, path: [], pathI: 0 } : v),
+        mules: [],
+      },
+    };
   },
 };
 

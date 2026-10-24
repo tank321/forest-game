@@ -48,8 +48,11 @@ export interface Stats {
   winterBurn: number; // what `burn` is in winter
   hungry: boolean; // food ran out: chopping and mining slowed
   cold: boolean; // firewood ran out in winter: farming, mining and herding slowed
-  taxedHouses: ReadonlySet<number>; // ids of houses within reach of a Tax Office
-  tax: number; // gold/s from taxed houses
+  taxedHouses: ReadonlySet<number>; // ids of connected houses owing tax (any connected Tax Office stands)
+  taxPerHouse: number; // gold/s each taxed house comes to owe
+  tax: number; // gold/s owed by all taxed houses
+  taxHold: number; // most gold a house holds before its tax goes uncollected
+  taxStops: number; // houses a tax collector visits per round
   tradeLoads: ReadonlyMap<number, number>; // Trading Post id -> gold per trip (none without a Market)
 }
 
@@ -80,7 +83,9 @@ export function getStats(s: GameState): Stats {
   const fed = hungry ? u.hungry : 1;
   const warm = cold ? u.cold : 1;
   const linked = linkedBuildings(s);
-  const taxedHouses = inRange(s, linked, 'house', 'taxOffice', CONFIG.tax.radius);
+  const office = s.buildings.some((b) => b.kind === 'taxOffice' && linked.has(b.id));
+  const taxedHouses = new Set(office ? s.buildings.filter((b) => b.kind === 'house' && linked.has(b.id)).map((b) => b.id) : []);
+  const taxPerHouse = CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold);
   const festive = season === WINTER && lvl(s, 'harvestFestival') ? CONFIG.skills.festival.winterWalk : 1;
   const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive;
   // Greenhouses: farms and orchards keep part of their harvest in winter.
@@ -136,7 +141,10 @@ export function getStats(s: GameState): Stats {
     hungry,
     cold,
     taxedHouses,
-    tax: taxedHouses.size * CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold),
+    taxPerHouse,
+    tax: taxedHouses.size * taxPerHouse,
+    taxHold: taxPerHouse * CONFIG.tax.hold,
+    taxStops: CONFIG.satchel.stops[s.upgrades.satchel],
     tradeLoads: tradeLoads(s, linked),
   };
 }

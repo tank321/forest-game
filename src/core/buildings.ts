@@ -86,15 +86,16 @@ export const BUILDINGS = {
   taxOffice: def({
     w: 2,
     h: 2,
+    workers: 1,
+    job: 'tax',
     cityNeighbor: true,
     unlock: 'taxOffices',
     cost: (n) => ({ wood: Math.round(800 * 1.5 ** n), stone: Math.round(100 * 1.5 ** n) }),
   }),
+  // Trading Post: no villagers; its own pack mule carries the gold (see systems/mules.ts).
   tradingPost: def({
     w: 2,
     h: 2,
-    workers: 1,
-    job: 'trade',
     unlock: 'tradingPosts',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
   }),
@@ -196,9 +197,10 @@ export function buildingGap(a: Pick<Building, 'kind' | 'x' | 'y'>, b: Pick<Build
   return Math.max(b.x - (a.x + da.w - 1), a.x - (b.x + db.w - 1), b.y - (a.y + da.h - 1), a.y - (b.y + db.h - 1), 0);
 }
 
-/** Job slots of a workplace, including skill bonuses (Quarry Crews, Farmhands). */
+/** Job slots of a workplace, including skill bonuses (Quarry Crews, Farmhands, Deputies). */
 export const workersOf = (s: GameState, b: Building) =>
-  BUILDINGS[b.kind].workers + (b.kind === 'quarry' ? lvl(s, 'quarryCrews') : b.kind === 'farm' ? lvl(s, 'farmhands') : 0);
+  BUILDINGS[b.kind].workers +
+  (b.kind === 'quarry' ? lvl(s, 'quarryCrews') : b.kind === 'farm' ? lvl(s, 'farmhands') : b.kind === 'taxOffice' ? lvl(s, 'deputies') : 0);
 
 export const buildingById = (s: GameState, id: number) => s.buildings.find((b) => b.id === id);
 

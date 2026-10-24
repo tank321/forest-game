@@ -2,7 +2,7 @@ import { BUILDINGS, buildingAt, buildingById, footprint, tallyTo, workersOf } fr
 import { gain } from '../economy';
 import { tileAt } from '../grid';
 import { pathHome, pathToAny } from '../pathing';
-import { Tile, type Building, type GameState, type ResourceKey, type Villager } from '../types';
+import { Tile, type Building, type GameState, type ResourceKey, type Villager, type Walker } from '../types';
 import type { Stats } from '../stats';
 import { gainBonus, type World } from '../world';
 
@@ -11,7 +11,7 @@ import { gainBonus, type World } from '../world';
  * is walked at `roadWalk` × speed (Cobblestone) and pays `toll` gold per tile (Toll Roads); empty hands
  * walk at `emptyWalk` × speed (Errand Runners).
  */
-export function walk(w: World, v: Villager, t: number, speed: number, st: Pick<Stats, 'roadWalk' | 'emptyWalk' | 'toll'>): number {
+export function walk(w: World, v: Walker, t: number, speed: number, st: Pick<Stats, 'roadWalk' | 'emptyWalk' | 'toll'>): number {
   const { w: sw, tiles } = w.state;
   const base = v.carry > 0 ? speed : speed * st.emptyWalk;
   let tolled = 0;
@@ -41,7 +41,7 @@ export function walk(w: World, v: Villager, t: number, speed: number, st: Pick<S
   return t;
 }
 
-export const arrived = (v: Villager) => v.pathI >= v.path.length;
+export const arrived = (v: Walker) => v.pathI >= v.path.length;
 
 /** Heads for the nearest drop-off accepting `res`. */
 export function goHome(w: World, v: Villager, res: ResourceKey): void {

@@ -1,6 +1,7 @@
 import { getStats, type Stats } from '../stats';
 import type { Job, Villager } from '../types';
 import type { World } from '../world';
+import { updateCollector } from './collector';
 import { updateLumberjack } from './lumberjack';
 import { updateWorker } from './workplace';
 
@@ -14,7 +15,7 @@ const UPDATERS: Record<Job, Updater> = {
   mine: updateWorker,
   herd: updateWorker,
   cotton: updateWorker,
-  trade: updateWorker,
+  tax: updateCollector,
 };
 
 export function villagerSystem(w: World, dt: number): void {

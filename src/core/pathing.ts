@@ -1,8 +1,8 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, footprint } from './buildings';
+import { BUILDINGS, footprint, HUB_KINDS } from './buildings';
 import { isWalkable, neighbors4 } from './grid';
 import { linkedBuildings, roadNetwork } from './roads';
-import type { GameState, ResourceKey } from './types';
+import type { Building, GameState, ResourceKey } from './types';
 import { Tile } from './types';
 
 /** Walking costs in tenths of a tile: integers keep the search exact and deterministic. */
@@ -37,6 +37,7 @@ function owners(s: GameState): Int32Array {
  * A walk steps onto a building's tiles only within the building it is in or into one of `enter`
  * (its destination): villagers walk out of buildings and around the others, not over them.
  * `reverse` searches from the destinations back (a drop-off field), so each step is walked v → u.
+ * `only`, if given, limits the walk to the tiles marked 1 in it (the sources aside).
  */
 function search(
   s: GameState,
@@ -44,6 +45,7 @@ function search(
   visit?: (u: number, d: number) => boolean,
   enter: ReadonlySet<number> = new Set(),
   reverse = false,
+  only?: Uint8Array,
 ): Field {
   const n = s.w * s.h;
   const dist = new Int32Array(n).fill(-1);
@@ -53,7 +55,7 @@ function search(
   const owner = owners(s);
   // Per tile: 0 not walkable, 1 anyone may step onto it, 2 only from within its own building.
   const kind = new Uint8Array(n);
-  for (let i = 0; i < n; i++) kind[i] = !isWalkable(s, i) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
+  for (let i = 0; i < n; i++) kind[i] = !isWalkable(s, i) || (only && !only[i]) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
   // May the walk step between u and v (walked v → u when `reverse`)?
   const onto = (from: number, to: number) => kind[to] === 1 || (kind[to] === 2 && owner[to] === owner[from]);
   const open = reverse ? (u: number, v: number) => kind[v] !== 0 && onto(v, u) : onto;
@@ -157,6 +159,42 @@ export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>
   return goal === -1 ? null : trace(s, walk, goal);
 }
 
+/** A walk found by `roadRoutes`: its length in steps (STEP per tile) and the walk itself. */
+export interface Route {
+  d: number;
+  path: () => number[];
+}
+
+/**
+ * Walks that keep to the paving: connected roads, the hubs, and the footprints of `within` (the
+ * buildings a walk starts or ends in). Every goal reached on the paving, or from a paved tile beside
+ * it (a house), gets its shortest route from `from`. `nearest` stops at the first goal reached.
+ */
+export function roadRoutes(s: GameState, from: number, goals: ReadonlySet<number>, within: readonly Building[], nearest = false): Map<number, Route> {
+  const paved = roadNetwork(s);
+  const inside = [...s.buildings.filter((b) => HUB_KINDS.includes(b.kind)), ...within];
+  for (const b of inside) for (const i of footprint(s, b)) paved[i] = 1;
+  const reached = new Map<number, number>(); // goal -> paved tile it is reached from
+  const walk = search(s, [from], (u) => {
+    for (const g of [u, ...neighbors4(s, u)]) if (goals.has(g) && !reached.has(g)) reached.set(g, u);
+    return nearest && reached.size > 0;
+  }, new Set(inside.map((b) => b.id)), false, paved);
+  const out = new Map<number, Route>();
+  for (const [g, stand] of reached) {
+    out.set(g, {
+      d: walk.dist[stand] + (g === stand ? 0 : STEP),
+      path: () => {
+        const path = [stand];
+        for (let i = stand; walk.parent[i] !== -1; i = walk.parent[i]) path.push(walk.parent[i]);
+        path.reverse();
+        if (g !== stand) path.push(g);
+        return smooth(s, path, (i) => paved[i] === 1 || i === g || i === from);
+      },
+    });
+  }
+  return out;
+}
+
 /** Path from the search's source to `to`, straightened. */
 function trace(s: GameState, f: Field, to: number): number[] {
   const path = [to];
@@ -168,18 +206,19 @@ function trace(s: GameState, f: Field, to: number): number[] {
  * Drops waypoints that a straight walk can skip: villagers cross open ground in straight lines.
  * A waypoint stays where the path joins or leaves a connected road, and a stretch along the road
  * is only straightened where the line stays on it, so villagers keep to the road. A line crosses no
- * building but the ones the walk starts and ends in.
+ * building but the ones the walk starts and ends in, and off the road only tiles passing `offRoad` if given.
  */
-export function smooth(s: GameState, path: number[]): number[] {
+export function smooth(s: GameState, path: number[], offRoad?: (i: number) => boolean): number[] {
   if (path.length < 3) return path;
   const net = roadNetwork(s);
   const owner = owners(s);
   const ends = new Set([owner[path[0]], owner[path[path.length - 1]]]);
+  const open = offRoad ?? ((i: number) => owner[i] === -1 || ends.has(owner[i]));
   const onRoad = (k: number) => net[path[k]] === 1 && net[path[k + 1]] === 1; // step k → k + 1
   const out = [path[0]];
   for (let k = 2; k < path.length; k++) {
     const road = onRoad(k - 1);
-    const clear = road ? clearLine(s, out[out.length - 1], path[k], (i) => net[i] === 1) : clearLine(s, out[out.length - 1], path[k], (i) => owner[i] === -1 || ends.has(owner[i]));
+    const clear = clearLine(s, out[out.length - 1], path[k], road ? (i) => net[i] === 1 : open);
     if (road !== onRoad(k - 2) || !clear) out.push(path[k - 1]);
   }
   out.push(path[path.length - 1]);

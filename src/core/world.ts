@@ -11,8 +11,8 @@ import { maxWoodTable } from './trees';
 import type { GameState, Job, ResourceKey, Resources } from './types';
 import { RESOURCES, Tile } from './types';
 
-/** Where gathered goods come from: a job's deliveries, chopping by hand, tax, or skill bonuses (Heartwood, Timber!, festivals, jackpots, grazing). */
-export type Source = Job | 'hand' | 'tax' | 'bonus';
+/** Where gathered goods come from: a job's deliveries, pack mules' trade, chopping by hand, tax, or skill bonuses (Heartwood, Timber!, festivals, jackpots, grazing). */
+export type Source = Job | 'trade' | 'hand' | 'tax' | 'bonus';
 const SOURCE_KEYS: Record<Source, true> = { lumber: true, farm: true, orchard: true, mine: true, herd: true, cotton: true, trade: true, hand: true, tax: true, bonus: true };
 
 /** A moment for the UI to show: floating text over tile `i` (a combo multiplier or an amount `n`), or the festival's food `n`. */

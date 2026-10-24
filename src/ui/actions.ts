@@ -74,15 +74,19 @@ const SCOPE: Record<UpgradeKind, string> = {
   coats: 'Whole town · firewood is burned in winter',
   shoes: 'Every villager walks faster',
   backpack: 'Every gatherer carries the same extra amount',
+  satchel: 'Every tax collector',
 };
 
 const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
 
 function pauseAction(w: World, b: Building): Action {
   const active = !w.state.paused.includes(b.id);
+  const mule = b.kind === 'tradingPost';
   return {
     label: active ? 'Pause production' : 'Resume production',
-    hint: active ? 'Workers finish deliveries, then return to chopping.' : 'Available villagers will return to this workplace.',
+    hint: mule
+      ? (active ? 'The mule finishes its delivery, then waits at the post.' : 'The mule will start loading again.')
+      : (active ? 'Workers finish deliveries, then return to chopping.' : 'Available villagers will return to this workplace.'),
     cost: null,
     enabled: true,
     run: () => togglePause(w, b.id),
@@ -144,6 +148,10 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   sheepFarm: (w, b) => [pauseAction(w, b)],
   cottonPlantation: (w, b) => [pauseAction(w, b)],
   tradingPost: (w, b) => [pauseAction(w, b)],
+  taxOffice: (w, b) => [
+    upgradeAction(w, 'satchel', 'Satchel', (st) => [{ label: 'Houses per round', value: `${st.taxStops}` }]),
+    pauseAction(w, b),
+  ],
 };
 
 /**
@@ -152,12 +160,13 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
  */
 export function tallyHtml(b: Building): string | undefined {
   const d = BUILDINGS[b.kind];
-  const base: readonly ResourceKey[] = d.job ? [jobResource(d.job)] : d.dropoff.length ? d.dropoff : b.kind === 'taxOffice' ? ['gold'] : [];
+  const mule = b.kind === 'tradingPost';
+  const base: readonly ResourceKey[] = d.job ? [jobResource(d.job)] : mule ? ['gold'] : d.dropoff;
   if (!base.length) return undefined;
   // Extras show once they have been gathered, like a sheep farm's food from Fertile Herding.
   const res = [...new Set([...base, ...(Object.keys(b.tally) as ResourceKey[])])];
   const chips = res.map((r) => `<span class="chip" title="${r}">${icon(r)}${fmt(b.tally[r] ?? 0)}</span>`).join('');
-  return `<span>Total ${d.job ? 'produced' : 'collected'}</span>${chips}`;
+  return `<span>Total ${mule || (d.job && d.job !== 'tax') ? 'produced' : 'collected'}</span>${chips}`;
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -178,7 +187,7 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
     const st = getStats(w.state);
-    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('orchard'), 'orchardist')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('cotton'), 'picker')} · ${plural(n('trade'), 'trader')}`;
+    const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('orchard'), 'orchardist')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('cotton'), 'picker')} · ${plural(n('tax'), 'tax collector')}`;
     return st.eat ? `${jobs} · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : jobs;
   },
   farm: (w, b) => {
@@ -216,16 +225,24 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
     const posts = countOf(w.state, 'tradingPost');
     return `Selling pays ${Math.round(100 * (1 - c))}% of value, buying costs ${Math.round(100 * (1 + c))}% · ${plural(posts, 'trading post')} deliver${posts === 1 ? 's' : ''} here`;
   },
-  taxOffice: (w) => {
-    const st = getStats(w.state);
-    return `${plural(st.taxedHouses.size, 'house')} taxed by all Tax Offices · +${fmt(st.tax * 60)} gold/min`;
+  taxOffice: (w, b) => {
+    const s = w.state;
+    const st = getStats(s);
+    const owed = s.buildings.reduce((n, h) => n + (st.taxedHouses.has(h.id) ? h.due ?? 0 : 0), 0);
+    return `${staffInfo(w, b, 'collector')} · ${plural(st.taxedHouses.size, 'house')} owe +${fmt(st.tax * 60)} gold/min, up to ${fmt(st.taxHold)} each · ` +
+      `${fmt(owed)} gold waiting · ${plural(st.taxStops, 'house')} per round`;
   },
   tradingPost: (w, b) => {
     const s = w.state;
     const st = getStats(s);
+    if (s.paused.includes(b.id)) return 'Production paused. The mule waits at the post.';
+    if (!st.linked.has(b.id)) return 'Connect the post by road for its mule to work.';
     const load = st.tradeLoads.get(b.id);
-    if (load === undefined) return staffInfo(w, b, 'trader');
+    if (load === undefined) return `Needs a ${BUILDING_TEXT.market.name} connected by road to work.`;
     const gap = Math.min(...s.buildings.filter((m) => m.kind === 'market' && st.linked.has(m.id)).map((m) => buildingGap(b, m)));
-    return `${staffInfo(w, b, 'trader')} · ${plural(gap, 'tile')} to the nearest Market · ${load.toFixed(1)} gold per trip`;
+    const mule = s.mules.find((m) => m.post === b.id);
+    const doing = !mule ? '' : mule.state === 'load' ? 'The mule is loading' : mule.state === 'toMarket' ? 'The mule is on its way to the Market' :
+      mule.state === 'toPost' ? 'The mule is heading back' : 'The mule is waiting';
+    return `${doing ? `${doing} · ` : ''}${plural(gap, 'tile')} to the nearest Market · ${load.toFixed(1)} gold per trip`;
   },
 };

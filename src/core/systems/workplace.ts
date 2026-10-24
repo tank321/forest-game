@@ -9,7 +9,8 @@ import type { Building, EventKey, Job, ResourceKey, Villager } from '../types';
 import { gainBonus, type Fx, type World } from '../world';
 import { arrived, deliver, goHome, pathToWork, returnToWork, walk } from './movement';
 
-export type WorkplaceJob = Exclude<Job, 'lumber'>;
+/** Jobs at a workplace from the WORK table: every job but lumberjacking and tax collecting (collector.ts). */
+export type WorkplaceJob = Exclude<Job, 'lumber' | 'tax'>;
 
 type NumericStat = { [K in keyof Stats]: Stats[K] extends number ? K : never }[keyof Stats];
 
@@ -40,14 +41,6 @@ const WORK: Record<WorkplaceJob, Work> = {
     also: { res: 'food', per: 'herdFood' },
   },
   cotton: { res: 'cloth', output: (st) => ({ rate: st.cottonRate, carry: st.cottonCarry }) },
-  // Loading takes the same time on every route, so a longer route also pays more per second.
-  trade: {
-    res: 'gold',
-    output: (st, b) => {
-      const load = st.tradeLoads.get(b.id) ?? 0;
-      return { rate: load / CONFIG.trade.loadTime, carry: load };
-    },
-  },
 };
 
 /**
@@ -89,18 +82,18 @@ function jackpot(w: World, v: Villager): void {
 }
 
 /** Resource a villager with this job carries. */
-export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : WORK[job].res);
+export const jobResource = (job: Job): ResourceKey => (job === 'lumber' ? 'wood' : job === 'tax' ? 'gold' : WORK[job].res);
 
 /** What a villager's load delivers, by resource: the load itself, plus any resource delivered alongside it (herders' food). */
 export function carried(st: Stats, v: Villager): { res: ResourceKey; n: number }[] {
   const out = [{ res: jobResource(v.job), n: v.carry }];
-  const also = v.job === 'lumber' ? undefined : WORK[v.job].also;
+  const also = v.job === 'lumber' || v.job === 'tax' ? undefined : WORK[v.job].also;
   if (also && st[also.per] > 0) out.push({ res: also.res, n: v.carry * st[also.per] });
   return out;
 }
 
 /**
- * Workplace worker (farmer, orchardist, miner, herder, picker, trader): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
+ * Workplace worker (farmer, orchardist, miner, herder, picker): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
  * Workplaces never run out. If the workplace is paused or cut off from the roads the worker delivers what it carries and goes
  * idle, where the job system hands it back to lumberjacking. dt-independent like the lumberjack.
  */

@@ -88,12 +88,16 @@ then also food from level 3, stone from level 5, cloth from level 7 and gold fro
 their value (wood 1, food 5, stone 20, cloth 20) and sells them to you at 120%. Select the Market,
 pick a resource (each tile shows your stock), then tap a quick amount from 1 to 10M under **Sell** or
 **Buy** (each shows the gold it earns or costs), or type an amount (**Max** fills in your whole stock). Market trades don't count toward the production rates on the plaque. A **Tax Office**
-(2×2, a city building) collects 0.2 gold/s from every house within 4 tiles; a house pays once, however
-many offices reach it. A **Trading Post** (2×2, anywhere) takes one empty-handed lumberjack as its
-trader, who loads gold and carries it to the nearest Market. Gold per trip grows faster than the
+(2×2, a city building) takes one empty-handed lumberjack as its tax collector. While one stands, every
+connected house comes to owe 0.2 gold/s, up to 60 s of tax (12 gold); beyond that its tax is lost. The
+collector walks only along the roads (and across the Town Center or Outpost) from house to house,
+starting each round at the house owing the most, then the nearest next, and the gold counts once it is
+back at the office. It visits one house per round; the **Satchel** upgrade at the office raises that to
+2, 3 and 5. A **Trading Post** (2×2, anywhere) comes with its own pack mule (no villager
+needed), which loads gold for 5 s and carries it along the roads to the nearest Market and back. Gold per trip grows faster than the
 straight-line gap between the two buildings (10 gold at 10 tiles, 28 at 20), so put trading posts far
 from the Market. Without a Market the post stands idle. Gold pays for houses from the 13th. Skills:
-**Tax Collectors** (+20% tax per level), **Pack Mules** (+25% gold per trip per level) and
+**Tax Collectors** (+20% tax per level), **Deputies** (a second collector per Tax Office), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
 With **Guild Contracts**, the Market panel also lists three contracts (gather a resource, fell trees or
 reach a population); tap a finished one to claim its gold. With **Merchant Caravans**, a caravan's three
@@ -124,10 +128,10 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/core/` – pure simulation, no DOM
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers · `roads.ts` road network, connected buildings, road stock
-  - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, path straightening
-  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers, traders) · `movement.ts` shared walking (faster along roads with Cobblestone), each worker's spot in its workplace · `grazing.ts` Grazing Flocks
+  - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, `roadRoutes` (walks kept to the roads), path straightening
+  - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers) / `collector.ts` (tax collectors' rounds) · `mules.ts` Trading Posts' pack mules · `movement.ts` shared walking (faster along roads with Cobblestone), each worker's spot in its workplace · `grazing.ts` Grazing Flocks
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
-  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, house tax
+  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, gold owed by houses
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
   - `achievements.ts` achievement table, lifetime counters (career), tier checks, next-up pick
@@ -139,6 +143,20 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v22** – Pack mules.
+- A Trading Post no longer takes a villager: it comes with its own pack mule, which loads gold, carries it to the nearest Market and walks back. It keeps to the roads (and across the Town Center or Outpost), taking another way only if the roads don't reach.
+- The mule wears a red saddle blanket and carries gold-topped packs while loaded, with a gold tag over it when zoomed in. Gold per trip, Pack Mules and the Midsummer Fair work as before.
+- A paused post, or one with no Market, keeps its mule waiting at home. A removed post's mule delivers what it carries, then leaves.
+- Saves migrate to v20: traders go back to lumberjacking, and the gold they were carrying is banked.
+
+**v21** – Tax collectors.
+- A Tax Office now takes a villager as its tax collector, in a navy coat and top hat. Connected houses owe gold (0.2 gold/s each, up to 60 s of it) instead of paying it straight in, and the collector walks the roads house to house to fetch it. The gold counts only once the collector is back at the office, carrying it in a strongbox.
+- Houses no longer need to be within 4 tiles of an office: the collector reaches any house it can walk to along the roads, the Town Center or the Outpost. A far house takes longer to reach, so a second office near it helps.
+- **Satchel** (bought at the Tax Office): houses per round go from 1 to 2, 3 and 5.
+- **Deputies** (Trade, after Tax Collectors): each Tax Office sends out a second collector. Collectors never head for the same house.
+- The Tax Office panel shows its collectors, how much gold the houses owe, and the houses per round. It can be paused like a workplace.
+- Saves migrate to v19 with the Satchel at level 0 and houses owing nothing.
+
 **v20** – Achievements.
 - 42 achievements with 100 tiers, and no rewards: ladders for gathering and the town (trees felled, each resource, taps, population, land, buildings, upgrades, relics, skill levels, winters, Guild Contracts, rebuilds), a first-building achievement for each building plus the first road, feats, and six secrets shown as ??? until earned.
 - A toast drops in for each one with a confetti burst and the medal spinning into place; ladder toasts show the tier pips with the new one popping in. The bigger the achievement, the bigger the show: tier 1s are plain, later tiers and feats are gold with rays turning behind the medal, and tier 4+, a ladder's last tier and secrets ("Mastered!", "Secret found!") throw a second burst, flash the map gold, wobble, glow and stay longest. Reduced-motion settings turn the effects off. Tap a toast to open the list.

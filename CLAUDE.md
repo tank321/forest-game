@@ -33,7 +33,7 @@ No linter or formatter is configured.
   Pathing steps between connected road tiles cost `CONFIG.roads.pathCost` × normal, and `smooth` keeps
   villagers on the road. Tests can call `pave(w)` (`tests/helpers.ts`) to connect every building.
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`, `villagerSystem`,
-  then `grazingSystem`. `tick` splits its step at season boundaries, where Harvest Festival and Shearing Day pay out (`seasons.ts`; the season is
+  `muleSystem`, then `grazingSystem`. `tick` splits its step at season boundaries, where Harvest Festival and Shearing Day pay out (`seasons.ts`; the season is
   derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps
   (`CONFIG.sim`). Villager updaters must be **dt-independent**: they spend their whole time budget
   across state transitions inside one call. Tests assert identical results at both step sizes.
@@ -43,13 +43,19 @@ No linter or formatter is configured.
 - **Villager jobs.** `systems/villagers.ts` dispatches through a `Record<Job, Updater>`:
   - `lumber` uses `lumberjack.ts`. A lumberjack picks a tree on spawn and after every delivery. `nearestTree`
     picks marked trees first, then the shortest next trip: walk to the tree plus its walk home (`fields.wood`).
-  - Workplace jobs (`farm`, `orchard`, `mine`, `herd`, `cotton`, `trade`) share `workplace.ts`. Its `WORK` table maps each job
+  - Workplace jobs (`farm`, `orchard`, `mine`, `herd`, `cotton`) share `workplace.ts`. Its `WORK` table maps each job
     to a resource and an `output(st, place)` giving the rate and carry at that workplace (Well-boosted
-    farms, gap-based trade loads), plus an optional `also` resource delivered alongside
+    farms), plus an optional `also` resource delivered alongside
     it (herders' food from Fertile Herding) and an optional walk `speed` stat (orchardists). Workplaces never run out. Workers walk to their own
     spot (`pathToWork` in `movement.ts`), spread over the interior by their index among the staff.
   - `NEEDS` (`buildings.ts`) names a building a workplace requires (Trading Post → Market). `isActive`
     checks it, so an unmet need unstaffs the workplace like a pause.
+  - **Pack mules** (`systems/mules.ts`, `GameState.mules`) are not villagers: `muleSystem` gives each Trading Post one,
+    which loads its gap-based `tradeLoads` gold, walks `roadRoutes` to the nearest Market and back, and is retired
+    once its removed post's gold is delivered. Deliveries count under the `trade` source. `walk`/`arrived` take any `Walker`.
+  - `tax` uses `collector.ts`. Houses accrue `due` gold in `upkeepSystem` (capped at `taxHold`); a collector's round starts
+    at its Tax Office, visits up to `taxStops` houses (`round` holds those visited) along `roadRoutes` (roads, hubs, its office),
+    and the gold is delivered only back at the office. Re-routing in `commands.ts` sends collectors to their office, not a drop-off.
   - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at
     `carry === 0`. That keeps resources conserved, and tests check the totals.
 - **Effective values.** Gameplay reads villager and production numbers from `getStats(s)`

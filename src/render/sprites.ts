@@ -2074,7 +2074,7 @@ export const VILLAGER_CLOTH: Record<Job, { c: Rgba; C: Rgba }> = {
   mine: { c: [138, 106, 62, 255], C: [94, 68, 38, 255] }, // #8a6a3e
   herd: { c: [74, 120, 176, 255], C: [46, 82, 128, 255] }, // #4a78b0
   cotton: { c: [222, 208, 170, 255], C: [160, 142, 102, 255] }, // #ded0aa
-  trade: { c: [142, 90, 168, 255], C: [94, 58, 116, 255] }, // #8e5aa8
+  tax: { c: [44, 62, 110, 255], C: [28, 40, 74, 255] }, // #2c3e6e
 };
 
 export const VILLAGER_FRAMES = ['stand', 'walk1', 'walk2', 'work1', 'work2', 'carry1', 'carry2'] as const;
@@ -2625,13 +2625,14 @@ export const VILLAGER_GEAR: Record<Job, Record<'hat' | 'tool1' | 'tool2' | 'load
       '............',
     ],
   },
-  trade: {
+  // Tax collector: a top hat with a gold band, a ledger, and a strongbox carried home.
+  tax: {
     hat: [
       '............',
-      '............',
-      '......Y.....',
-      '....qqqq....',
-      '...QQQQQQ...',
+      '....eeee....',
+      '....eeee....',
+      '....YYYY....',
+      '...eeeeee...',
       '............',
       '............',
       '............',
@@ -2648,10 +2649,10 @@ export const VILLAGER_GEAR: Record<Job, Record<'hat' | 'tool1' | 'tool2' | 'load
       '............',
       '............',
       '............',
-      '.........y..',
-      '........yYy.',
-      '........YYYy',
-      '........sYy.',
+      '............',
+      '........LLL.',
+      '........xxL.',
+      '........sxL.',
       '........c...',
       '............',
       '............',
@@ -2671,16 +2672,16 @@ export const VILLAGER_GEAR: Record<Job, Record<'hat' | 'tool1' | 'tool2' | 'load
       '............',
       '............',
       '........cs..',
-      '.........yy.',
-      '........yYYy',
-      '........yYyy',
-      '.........yy.',
+      '.........LLL',
+      '.........xxL',
+      '.........xxL',
+      '............',
       '............',
     ],
     load: [
-      '...kkkkkk...',
-      '..kkkYkkkK..',
-      '..KKKKKKKK..',
+      '...QQQQQQ...',
+      '..qqqYYqqq..',
+      '..QQQQQQQQ..',
       '............',
       '............',
       '............',
@@ -2715,6 +2716,93 @@ export function composeVillager(job: Job, frame: VillagerFrame): string[] {
     }
   }
   for (let x = 3; x <= 8; x++) if (out[VILLAGER_FEET.y][x] === '.') out[VILLAGER_FEET.y][x] = 'z';
+  return out.map((r) => r.join(''));
+}
+
+export const MULE_W = 16;
+export const MULE_H = 14;
+/** Pixel in a mule sprite that sits on the mule's position (under its middle). */
+export const MULE_FEET = { x: 7, y: 13 } as const;
+
+/** RGBA per pack mule grid char. */
+export const MULE_PALETTE: Record<string, Rgba> = {
+  o: [26, 18, 12, 255], // #1a120c outline
+  z: [0, 0, 0, 60], // #000000 at 24%
+  m: [140, 118, 98, 255], // #8c7662 coat
+  M: [104, 86, 70, 255], // #685646 coat shade, far legs
+  n: [200, 184, 164, 255], // #c8b8a4 muzzle, belly
+  k: [48, 36, 26, 255], // #30241a hooves, nostril
+  e: [20, 14, 10, 255], // #140e0a eye
+  t: [70, 54, 40, 255], // #463628 mane, tail
+  r: [192, 57, 43, 255], // #c0392b saddle blanket
+  R: [126, 35, 24, 255], // #7e2318
+  L: [138, 90, 48, 255], // #8a5a30 packs
+  l: [90, 58, 31, 255], // #5a3a1f
+  Y: [232, 194, 90, 255], // #e8c25a gold
+  y: [168, 128, 46, 255], // #a8802e
+};
+
+export const MULE_FRAMES = ['stand', 'walk1', 'walk2'] as const;
+export type MuleFrame = (typeof MULE_FRAMES)[number];
+
+const MULE_BODY = [
+  '................',
+  '..........M.M...',
+  '..........m.m...',
+  '.........tmmm...',
+  '.........tmemm..',
+  '...MMMMMMmmmmnn.',
+  '..tmmmmmmmmmmnk.',
+  '..tmmmmmmmmm....',
+  '..tmmmmmmmmm....',
+  '..tMnnnnnnnM....',
+];
+
+/** A pack mule facing right, without outline (composeMule adds it): the body, then the legs of each frame. */
+export const MULE_POSES: Record<MuleFrame, readonly string[]> = {
+  stand: [...MULE_BODY, '...m.M...m.M....', '...m.M...m.M....', '...k.k...k.k....', '................'],
+  walk1: [...MULE_BODY, '...m.M...m.M....', '..m...M.m...M...', '..k...k.k...k...', '................'],
+  walk2: [...MULE_BODY, '...mM....mM.....', '...mM....mM.....', '...kk....kk.....', '................'],
+};
+
+/** Layers over the body: the saddle blanket it always wears, and the gold-laden packs while loaded. */
+export const MULE_GEAR: Record<'saddle' | 'packs', readonly string[]> = {
+  saddle: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '...rrrrrrr......',
+    '...RRRRRRR......',
+  ],
+  packs: [
+    '................',
+    '................',
+    '.....YyY........',
+    '....lLLLl.......',
+    '....LLLLL.......',
+    '....LLYLL.......',
+    '....LLLLL.......',
+    '....lLLLl.......',
+  ],
+};
+
+/** One pack mule frame (facing right), loaded or not, outlined, with a ground shadow. */
+export function composeMule(frame: MuleFrame, loaded: boolean): string[] {
+  const g = MULE_POSES[frame].map((r) => [...r]);
+  for (const layer of loaded ? [MULE_GEAR.saddle, MULE_GEAR.packs] : [MULE_GEAR.saddle]) {
+    layer.forEach((r, y) => [...r].forEach((c, x) => c !== '.' && (g[y][x] = c)));
+  }
+  const solid = (x: number, y: number) => g[y]?.[x] !== undefined && g[y][x] !== '.';
+  const out = g.map((r) => [...r]);
+  for (let y = 0; y < MULE_H; y++) {
+    for (let x = 0; x < MULE_W; x++) {
+      if (solid(x, y) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => solid(x + dx, y + dy))) continue;
+      out[y][x] = y === MULE_FEET.y ? 'z' : 'o';
+    }
+  }
+  for (let x = 2; x <= 13; x++) if (out[MULE_FEET.y][x] === '.') out[MULE_FEET.y][x] = 'z';
   return out.map((r) => r.join(''));
 }
 

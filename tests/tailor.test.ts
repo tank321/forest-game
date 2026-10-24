@@ -58,6 +58,6 @@ describe('tailor', () => {
     old.version = 15;
     const { shoes: _s, backpack: _b, ...rest } = old.state.upgrades;
     old.state.upgrades = { ...rest, barrow: 3 };
-    expect(deserialize(JSON.stringify(old)).state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0, shoes: 3, backpack: 3 });
+    expect(deserialize(JSON.stringify(old)).state.upgrades).toEqual({ axe: 2, farm: 0, pick: 0, coats: 0, shoes: 3, backpack: 3, satchel: 0 });
   });
 });
