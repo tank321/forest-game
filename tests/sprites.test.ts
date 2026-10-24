@@ -5,6 +5,7 @@ import {
   BUILDING_PALETTE,
   BUILDING_SEASONS,
   BUILDING_SPRITES,
+  CHIMNEYS,
   FLAG,
   FLAG_CLOTH,
   FLAG_PALETTE,
@@ -250,6 +251,15 @@ describe('sprites', () => {
       for (const ch of g.join('')) expect(ch === '.' || ch in LIGHTS_PALETTE).toBe(true);
     }
     expect(new Set(HOUSE_LIGHTS.map((g) => g.join(''))).size).toBe(HOUSE_LIGHTS.length);
+  });
+
+  it('chimney smoke starts at the top of a chimney drawn in the building sprite', () => {
+    for (const [kind, [x, y]] of Object.entries(CHIMNEYS) as [BuildingKind, readonly [number, number]][]) {
+      const art = BUILDING_SPRITES[kind]!;
+      expect(art[y][x - 1]).not.toBe('.');
+      expect(art[y][x]).not.toBe('.');
+      expect(art[y - 1]?.[x] ?? '.').toBe('.');
+    }
   });
 
   it('the Lucky Chest lid and base share a width and use the UI palette', () => {

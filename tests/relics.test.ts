@@ -160,6 +160,18 @@ describe('skill tracks', () => {
     expect(s.cards.map(trackOf)).toEqual(['forestry', 'forestry', 'forestry']);
     expect(new Set(s.cards).size).toBe(3);
   });
+
+  it('deal an untouched track as often as a crowded one: half the deals with six tracks on offer', () => {
+    const s = smallWorld().state;
+    // Forestry and Settlement have many skills on offer; Mining still only Quarrying.
+    s.skills = { sharpAxes: 1, powerSwing: 1, campCrews: 1, keenEyes: 1, swiftFeet: 1, bigBaskets: 1, roomyHouses: 1 };
+    let quarrying = 0;
+    for (let k = 0; k < 2000; k++) {
+      dealCards(s);
+      if (s.cards.includes('quarrying')) quarrying++;
+    }
+    expect(quarrying / 2000).toBeCloseTo(0.5, 1);
+  });
 });
 
 describe('skill effects', () => {

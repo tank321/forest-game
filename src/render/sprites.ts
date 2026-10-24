@@ -1875,6 +1875,11 @@ export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
   outpost: [{ rows: [3, 12], snow: 'ur', shade: 'R' }],
 };
 
+/** Where smoke leaves a building's chimney in winter, in art pixels from its sprite's top-left: the middle of the chimney's top. */
+export const CHIMNEYS: Partial<Record<BuildingKind, readonly [number, number]>> = {
+  house: [11, 0],
+};
+
 /** RGBA per Christmas light grid char: a bulb lit (lower case) or dimmed (upper case) as it twinkles, on a dark wire. */
 export const LIGHTS_PALETTE: Record<string, Rgba> = {
   k: [34, 64, 40, 255], // #224028 wire

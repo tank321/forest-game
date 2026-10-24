@@ -153,6 +153,10 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave
 
 ## Changelog
+**v27** – Chimney smoke.
+- In winter, smoke curls up from every house's chimney: soft puffs that rise, swell and drift off with the wind as they fade, each house puffing in its own rhythm. No save change.
+- Relic skill cards now pick a track evenly before a skill in it, so a track you haven't started (and the building it unlocks: Quarry, Sheep Farm, Market) comes up as often as one with many skills on offer. Long waits for those buildings are about half as long in unlucky games.
+
 **v26** – Creature animation fixes.
 - Foxes are redrawn with pointed ears, a snout, a bushy white-tipped tail and legs you can actually see, which now trot. Hedgehogs and songbirds get tiny visible legs too. The deer is redrawn slimmer and leggier, with antlers, a white rump, and a neck that bends down to graze.
 - Rabbits and frogs really hop: they crouch, spring up off the ground with a shadow below, and land, instead of sliding along in one pose.

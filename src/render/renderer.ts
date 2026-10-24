@@ -18,6 +18,7 @@ import { CRITTER_MIN_ZOOM, critterFrame, Critters, hopLift, TRACK_LIFE, type Cri
 import {
   BUILDING_ENTRANCES,
   BUILDING_SPRITES,
+  CHIMNEYS,
   composeCritter,
   composeMule,
   CRITTER_PALETTE,
@@ -100,6 +101,10 @@ const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at i
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
 const OVERHANG = OVERHANG_PX / SPRITE_W; // tiles a sprite reaches into the tile above
 const TWINKLE_MS = 650; // ms per frame of a house's Christmas lights
+const SMOKE_PUFFS = 4; // puffs rising from a chimney at once
+const SMOKE_MS = 3200; // ms a puff takes to rise and fade
+const SMOKE_RISE = 14; // art px a puff rises
+const SMOKE_DRIFT = 6; // art px the wind carries it sideways
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
   outpost: '#9a6a34',
@@ -607,6 +612,8 @@ export class Renderer {
         const frame = this.lights[Math.floor(now / TWINKLE_MS + twinkle) % this.lights.length];
         ctx.drawImage(frame, sx, sy, d.w * k, (d.h + OVERHANG) * k);
       }
+      const chimney = CHIMNEYS[b.kind];
+      if (chimney && season === WINTER) this.drawSmoke(b, chimney, sx, sy, now);
     } else {
       ctx.fillStyle = BUILDING_COLOR[b.kind];
       footprint();
@@ -618,6 +625,29 @@ export class Renderer {
     if (isolated) {
       ctx.fillStyle = 'rgba(150,150,150,.5)';
       footprint();
+    }
+  }
+
+  /**
+   * Smoke from a chimney at art px `[cx, cy]` of a sprite drawn at screen (sx, sy): puffs on wall-clock `now` (ms)
+   * that rise, swell and drift with the wind as they fade, snapped to art pixels.
+   */
+  private drawSmoke(b: Building, [cx, cy]: readonly [number, number], sx: number, sy: number, now: number): void {
+    const { ctx } = this;
+    const px = this.cam.zoom / SPRITE_W;
+    const offset = (hash(b.id) % 1000) / 1000; // each chimney puffs out of step with its neighbors
+    for (let n = 0; n < SMOKE_PUFFS; n++) {
+      const u = (now / SMOKE_MS + n / SMOKE_PUFFS + offset) % 1; // the puff's age, 0–1
+      const size = Math.round(2 + 3 * u);
+      const x = Math.round(cx + SMOKE_DRIFT * u * u + Math.sin(u * 7 + n) * 0.8 - size / 2);
+      const y = Math.round(cy - 1 - SMOKE_RISE * u - size / 2);
+      const alpha = 0.55 * (1 - u) * Math.min(1, u * 6); // in quickly, out slowly
+      ctx.fillStyle = `rgba(226,230,236,${alpha.toFixed(3)})`;
+      // A square with its corners cut once it is big enough, as three rects that don't overlap.
+      const corner = size >= 3 ? 1 : 0;
+      ctx.fillRect(sx + (x + corner) * px, sy + y * px, (size - 2 * corner) * px, px);
+      ctx.fillRect(sx + x * px, sy + (y + 1) * px, size * px, (size - 2) * px);
+      ctx.fillRect(sx + (x + corner) * px, sy + (y + size - 1) * px, (size - 2 * corner) * px, px);
     }
   }
 

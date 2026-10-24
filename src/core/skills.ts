@@ -170,14 +170,16 @@ export const availableSkills = (s: GameState): SkillId[] =>
 
 /**
  * Offer up to `n` distinct available skills (seeded, so reloads see the same cards).
- * Each comes from a different track while untouched tracks remain.
+ * Each comes from a different track while untouched tracks remain. A track is picked first, evenly, then a skill
+ * in it, so a track with one skill on offer (a building unlock) is dealt as often as one with many.
  */
 export function dealCards(s: GameState, n = 3): void {
   const pool = availableSkills(s);
   s.cards = [];
   while (s.cards.length < n && pool.length) {
-    const fresh = pool.filter((id) => !s.cards.some((c) => trackOf(c) === trackOf(id)));
-    const from = fresh.length ? fresh : pool;
+    const tracks = [...new Set(pool.map(trackOf))].filter((t) => !s.cards.some((c) => trackOf(c) === t));
+    const track = tracks.length ? tracks[Math.floor(rand(s) * tracks.length)] : null;
+    const from = track ? pool.filter((id) => trackOf(id) === track) : pool;
     const id = from[Math.floor(rand(s) * from.length)];
     s.cards.push(id);
     pool.splice(pool.indexOf(id), 1);
