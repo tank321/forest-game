@@ -44,7 +44,8 @@ function sinks(r: ResourceKey, st: Stats): [string, number][] {
   return [];
 }
 
-const perMin = (n: number) => `${n < 0 ? '−' : '+'}${fmt(Math.abs(n))}/min`;
+const signed = (n: number) => `${n < 0 ? '−' : '+'}${fmt(Math.abs(n))}`;
+const perMin = (n: number) => `${signed(n)}/min`;
 
 /** Top bar. Reads state every frame, writes the DOM only on change. */
 export class Hud {
@@ -54,8 +55,10 @@ export class Hud {
     span.setAttribute('role', 'button');
     span.setAttribute('aria-label', `${r[0].toUpperCase()}${r.slice(1)}: show sources and upkeep`);
     span.setAttribute('aria-controls', 'resourceInfo');
-    span.innerHTML = `${icon(r)}<b>0</b><small>…</small>`;
-    return { r, amount: span.querySelector('b')!, rate: span.querySelector('small')!, span };
+    // "/min" is its own span so phones can drop it (style.css).
+    span.innerHTML = `${icon(r)}<b>0</b><small><span>…</span><span class="per" hidden>/min</span></small>`;
+    const [rate, per] = span.querySelectorAll('small span') as unknown as [HTMLElement, HTMLElement];
+    return { r, amount: span.querySelector('b')!, small: span.querySelector('small')!, rate, per, span };
   });
   private els = {
     pop: $('pop'),
@@ -83,7 +86,10 @@ export class Hud {
   private resPinned: ResourceKey | null = null; // opened by a click, tap or key
 
   constructor(private world: () => World) {
-    $('hud').querySelector('.stats')!.prepend(...this.res.map((e) => e.span));
+    const stats = $('hud').querySelector<HTMLElement>('.stats')!;
+    stats.prepend(...this.res.map((e) => e.span));
+    // The plaque wraps onto more rows on a phone; the Lucky Chest and toasts sit below it (style.css).
+    new ResizeObserver(() => $('map').style.setProperty('--hud-h', `${stats.offsetHeight}px`)).observe(stats);
     for (const { r, span } of this.res) {
       span.onpointerenter = (e) => e.pointerType === 'mouse' && (this.resHover = r);
       span.onpointerleave = (e) => e.pointerType === 'mouse' && this.resHover === r && (this.resHover = null);
@@ -136,7 +142,7 @@ export class Hud {
       this.rateAt = now;
       this.flows = this.perMinute();
     }
-    for (const { r, amount, rate: el, span } of this.res) {
+    for (const { r, amount, small, rate, per, span } of this.res) {
       // Wood shows from the start; every other resource once some has been gathered or bought.
       const hide = r !== 'wood' && !s.totals[r] && !s.resources[r];
       if (span.hidden !== hide) span.hidden = hide;
@@ -144,8 +150,9 @@ export class Hud {
       this.set(amount, fmt(s.resources[r]));
       if (!refresh || !this.flows) continue;
       const net = this.net(this.flows, r, st);
-      this.set(el, perMin(net));
-      el.classList.toggle('neg', net < 0);
+      this.set(rate, signed(net));
+      per.hidden = false;
+      small.classList.toggle('neg', net < 0);
     }
     this.updateResourceInfo(st);
     this.set(this.els.season, seasonName(st.season));

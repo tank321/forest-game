@@ -166,6 +166,11 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v31** – Phone stats plaque.
+- On narrow screens the stats plaque wraps onto rows instead of scrolling sideways, so every resource, the population,
+  land, season and any shortage are visible at once; rates drop the "/min" there to fit. The Lucky Chest and achievement
+  toasts sit just below the plaque however tall it grows, and the resource and season popups open over the chest. No save change.
+
 **v30** – Phone layout.
 - On narrow screens the map takes most of the screen. The build menu is a single row of cards that scrolls sideways, and
   **Hide**/**Show** on its heading folds it away (the tutorial still shows a card it points at). The menu is one row of

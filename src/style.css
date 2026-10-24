@@ -17,7 +17,7 @@ b, h2, .chip { font-weight: 700; }
 /* Map, with the stats plaque and message toast floating over it. */
 #map { position: relative; flex: 1; min-height: 0; }
 #world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-#hud { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; display: flex; justify-content: center; pointer-events: none; }
+#hud { position: absolute; z-index: 3; top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; display: flex; justify-content: center; pointer-events: none; }
 .stats { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; align-items: center; gap: 16px; max-width: 100%; min-width: 0; padding: 4px 8px; overflow-x: auto; pointer-events: auto; touch-action: pan-x; font-variant-numeric: tabular-nums; }
 .stats > span { display: grid; grid-template-columns: auto auto; column-gap: 6px; align-items: center; justify-content: start; white-space: nowrap; }
 .stats .ico { grid-row: span 2; }
@@ -282,7 +282,7 @@ button.danger { color: #ffb6a3; }
 .next-up-count { flex: none; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ach-bar { display: block; height: 6px; border: 1px solid #937b52; background: #c6b58e; }
 .ach-bar > i { display: block; height: 100%; background: #527c38; transition: width .3s; }
-#toasts { position: absolute; top: calc(64px + env(safe-area-inset-top)); left: 50%; translate: -50% 0; display: grid; justify-items: center; gap: 10px; width: max-content; max-width: calc(100% - 32px); pointer-events: none; z-index: 3; }
+#toasts { position: absolute; top: calc(16px + env(safe-area-inset-top) + var(--hud-h, 48px)); left: 50%; translate: -50% 0; display: grid; justify-items: center; gap: 10px; width: max-content; max-width: calc(100% - 32px); pointer-events: none; z-index: 3; }
 .toast-wrap { position: relative; }
 .toast { --f: var(--frame-parchment); position: relative; display: flex; gap: 12px; align-items: center; min-width: 260px; padding: 6px 14px 6px 8px; color: var(--ink); pointer-events: auto; cursor: pointer; box-shadow: 0 8px 24px #0009; animation: toast-in .45s cubic-bezier(.2, 1.5, .4, 1) both; }
 .toast > div { display: grid; line-height: 1.25; }
@@ -357,7 +357,7 @@ button.danger { color: #ffb6a3; }
   .skill-node.is-offered .skill-node-tile { animation: none; filter: drop-shadow(0 0 6px #f2d77a); }
 }
 /* Lucky Chest: the corner button (counting down, then glowing to be opened), the boost running under it, and the show. */
-.chest-corner { position: absolute; top: calc(64px + env(safe-area-inset-top)); right: 8px; z-index: 2; display: grid; justify-items: end; gap: 6px; pointer-events: none; }
+.chest-corner { position: absolute; top: calc(16px + env(safe-area-inset-top) + var(--hud-h, 48px)); right: 8px; z-index: 2; display: grid; justify-items: end; gap: 6px; pointer-events: none; }
 .chest-corner > * { pointer-events: auto; }
 .chest-halo { position: absolute; top: -26px; right: -26px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(closest-side, #fff3c4cc, #f2d77a55 45%, transparent), repeating-conic-gradient(#fff3c4 0 9deg, transparent 9deg 30deg); mask: radial-gradient(closest-side, #000 40%, transparent); opacity: 0; transition: opacity .4s; pointer-events: none; }
 .chest-corner.ready .chest-halo { opacity: 1; animation: rays 6s linear infinite, halo-pulse 1.2s ease-in-out infinite alternate; }
@@ -530,6 +530,12 @@ button.danger { color: #ffb6a3; }
  * cards that scrolls sideways and folds down to its heading, and the map reaches under a notch (viewport-fit=cover).
  */
 @media (max-width: 899px) {
+  /* Stats plaque: wraps onto rows (resources, then the rest) instead of scrolling sideways, with rates shown without "/min". */
+  .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 12px; padding: 2px 6px; overflow: visible; }
+  .stats b { font-size: 16px; line-height: 20px; }
+  .stats small { font-size: 12px; line-height: 15px; }
+  .stats .per { display: none; }
+  .season-bar { width: 56px; }
   #tools { padding: 6px 8px 0; }
   #tutorial { margin: 6px 8px 0; font-size: 13px; }
   #panel { grid-template-columns: minmax(0, 1fr); gap: 6px; max-height: 38dvh; padding: 6px 8px; }
