@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { villagerCost } from '../src/core/economy';
-import { availableSkills, SKILL_IDS, SKILLS } from '../src/core/skills';
+import { availableSkills, SKILL_IDS, SKILLS, TRACK_IDS, TRACKS } from '../src/core/skills';
 import { getStats } from '../src/core/stats';
 import { skillBonus, skillStatus } from '../src/ui/skillInfo';
+import { skillIcon } from '../src/ui/text';
 import { smallWorld } from './helpers';
 
 describe('skill journal previews', () => {
@@ -53,5 +54,9 @@ describe('skill journal previews', () => {
     expect(skillBonus('deepWells', 0)).toBe(`Wells reach farms within ${getStats(s).wellRadius} tile`);
     s.skills.deepWells = 1;
     expect(skillBonus('deepWells', 1)).toBe(`Wells reach farms within ${getStats(s).wellRadius} tiles`);
+  });
+
+  it('gives every skill in a track its own icon', () => {
+    for (const t of TRACK_IDS) expect(new Set(TRACKS[t].map(skillIcon)).size).toBe(TRACKS[t].length);
   });
 });

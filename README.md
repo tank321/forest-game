@@ -138,6 +138,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - **Merchant Caravans** (Trade): as winter begins a caravan offers three deals (buy a resource at half its value, or sell one at double, sized to about 10 minutes of production). One may be taken; it leaves at spring.
 - **Guild Contracts**: three contracts sized to 3–6 minutes of the town's average production; each pays the market value of what it asks for, and a new one replaces it when claimed.
 - Saves migrate from v16 with an empty contract board and no caravan.
+- Every skill in a track has its own icon (29 new ones), and the Outpost has a sprite: a stockade with a watchtower.
 
 **v16** – Tailor, skill graph, Forestry, Farming, Herding and Mining skills.
 - Twenty new skills, each changing a rule rather than a number. Bonuses, jackpots and combos show as text rising from the map, and the HUD counts their goods under **Skill bonuses**:
