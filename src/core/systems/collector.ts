@@ -4,6 +4,7 @@ import { pathToAny, roadRoutes, type Route } from '../pathing';
 import type { Stats } from '../stats';
 import type { Building, Villager } from '../types';
 import type { World } from '../world';
+import { quitJob } from './jobs';
 import { arrived, deliver, goHome, walk } from './movement';
 
 const doorOf = (s: { w: number }, h: Building) => h.y * s.w + h.x; // houses are one tile
@@ -69,7 +70,10 @@ export function updateCollector(w: World, v: Villager, dt: number, st: Stats): v
         const atOffice = office !== undefined && buildingAt(s, tileAt(s, v.x, v.y)) === office;
         if (v.carry > 0 || (active && !atOffice)) {
           if (toOffice(w, v, office)) break;
-          if (v.carry === 0) return;
+          if (v.carry === 0) {
+            if (active) quitJob(v); // cut off from its office: someone who can reach it takes over
+            return;
+          }
           goHome(w, v, 'gold');
           break;
         }

@@ -57,7 +57,7 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   - `tax` uses `collector.ts`. Houses accrue `due` gold in `upkeepSystem` (capped at `taxHold`); a collector's round starts
     at its Tax Office, visits up to `taxStops` houses (`round` holds those visited) along `roadRoutes` (roads, hubs, its office),
     and the gold is delivered only back at the office. Re-routing in `commands.ts` sends collectors to their office, not a drop-off.
-  - `jobs.ts` staffs workplaces from empty-handed lumberjacks and returns workers only at
+  - `jobs.ts` staffs workplaces from the nearest empty-handed lumberjack by walk (`nearestTo`, so never one cut off from it) and returns workers only at
     `carry === 0`. That keeps resources conserved, and tests check the totals.
 - **Effective values.** Gameplay reads villager and production numbers from `getStats(s)`
   (`stats.ts`: config × upgrades × skills × season and upkeep), not from `CONFIG` directly.

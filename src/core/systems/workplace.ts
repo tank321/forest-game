@@ -7,6 +7,7 @@ import { lvl, type SkillId } from '../skills';
 import type { Stats } from '../stats';
 import type { Building, EventKey, Job, ResourceKey, Villager } from '../types';
 import { gainBonus, type Fx, type World } from '../world';
+import { quitJob } from './jobs';
 import { arrived, deliver, goHome, pathToWork, returnToWork, walk } from './movement';
 
 /** Jobs at a workplace from the WORK table: every job but lumberjacking and tax collecting (collector.ts). */
@@ -95,7 +96,8 @@ export function carried(st: Stats, v: Villager): { res: ResourceKey; n: number }
 /**
  * Workplace worker (farmer, orchardist, miner, herder, picker): idle -> toWork -> work -> toHome (drop-off) -> (deposit) -> toWork ...
  * Workplaces never run out. If the workplace is paused or cut off from the roads the worker delivers what it carries and goes
- * idle, where the job system hands it back to lumberjacking. dt-independent like the lumberjack.
+ * idle, where the job system hands it back to lumberjacking; one that can't walk to it at all goes back at once.
+ * dt-independent like the lumberjack.
  */
 export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void {
   const s = w.state;
@@ -115,7 +117,7 @@ export function updateWorker(w: World, v: Villager, dt: number, st: Stats): void
           break;
         }
         const path = pathToWork(s, v, place);
-        if (!path) return;
+        if (!path) return quitJob(v); // cut off from it (a building placed in the way): someone who can reach it takes over
         v.path = path;
         v.pathI = 0;
         v.state = 'toWork';

@@ -168,6 +168,12 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v33** – Workers who can reach their workplace.
+- A workplace now takes the nearest empty-handed lumberjack by walking route, not in a straight line. Before, it could
+  pick one that buildings or forest cut off from it (a Town Center and its neighbors can split a village in two), who then
+  stood idle forever while counting as its worker, so the workplace never produced. A worker that loses its way to its
+  workplace (a building placed in the way) also gives the job back for someone who can reach it. No save change.
+
 **v32** – Flags send lumberjacks.
 - Flagging a tree your land reaches sends the nearest lumberjack to it at once, instead of waiting for a lumberjack to
   finish its current trip. With Teamwork two go, with Felling Crews three. Lumberjacks walking home with a load, or

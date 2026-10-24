@@ -158,6 +158,20 @@ export function walkToTree(s: GameState, field: Field, from: number, tree: numbe
   return stand === -1 ? null : { path: trace(s, walk, stand), d: dist };
 }
 
+/**
+ * The tile nearest `b` by walk for which `pick` holds, or -1: searched back from the building, so only tiles a villager
+ * can walk into it from count (the same walks as `pathToAny` into it).
+ */
+export function nearestTo(s: GameState, b: Building, pick: (i: number) => boolean): number {
+  let found = -1;
+  search(s, footprint(s, b), (u) => {
+    if (!pick(u)) return false;
+    found = u;
+    return true;
+  }, new Set([b.id]), true);
+  return found;
+}
+
 /** Walk from `from` to the nearest of `goals` (walkable tiles), or null. */
 export function pathToAny(s: GameState, from: number, goals: ReadonlySet<number>): number[] | null {
   let goal = -1;
