@@ -37,7 +37,8 @@ function owners(s: GameState): Int32Array {
  * A walk steps onto a building's tiles only within the building it is in or into one of `enter`
  * (its destination): villagers walk out of buildings and around the others, not over them.
  * `reverse` searches from the destinations back (a drop-off field), so each step is walked v → u.
- * `only`, if given, limits the walk to the tiles marked 1 in it (the sources aside).
+ * `only`, if given, limits the walk to the tiles marked 1 in it (the sources aside). A `free` walk goes over anything:
+ * every tile is walkable, buildings and trees alike (a lumberjack fetching a flagged tree that is otherwise cut off).
  */
 function search(
   s: GameState,
@@ -46,6 +47,7 @@ function search(
   enter: ReadonlySet<number> = new Set(),
   reverse = false,
   only?: Uint8Array,
+  free = false,
 ): Field {
   const n = s.w * s.h;
   const dist = new Int32Array(n).fill(-1);
@@ -55,7 +57,7 @@ function search(
   const owner = owners(s);
   // Per tile: 0 not walkable, 1 anyone may step onto it, 2 only from within its own building.
   const kind = new Uint8Array(n);
-  for (let i = 0; i < n; i++) kind[i] = !isWalkable(s, i) || (only && !only[i]) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
+  for (let i = 0; i < n; i++) kind[i] = free ? 1 : !isWalkable(s, i) || (only && !only[i]) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
   // May the walk step between u and v (walked v → u when `reverse`)?
   const onto = (from: number, to: number) => kind[to] === 1 || (kind[to] === 2 && owner[to] === owner[from]);
   const open = reverse ? (u: number, v: number) => kind[v] !== 0 && onto(v, u) : onto;
@@ -170,6 +172,27 @@ export function nearestTo(s: GameState, b: Building, pick: (i: number) => boolea
     return true;
   }, new Set([b.id]), true);
   return found;
+}
+
+/** A walk over anything (see `search`) from `from` to the nearest of `goals`, and its length, or null if there are none. */
+export function freeWalk(s: GameState, from: number, goals: ReadonlySet<number>): { path: number[]; d: number } | null {
+  let goal = -1;
+  let dist = 0;
+  const walk = search(s, [from], (u, d) => {
+    if (!goals.has(u)) return false;
+    [goal, dist] = [u, d];
+    return true;
+  }, undefined, false, undefined, true);
+  return goal === -1 ? null : { path: trace(s, walk, goal), d: dist };
+}
+
+/** The tiles of linked drop-offs that accept `res`. */
+export function dropoffTiles(s: GameState, res: ResourceKey, linked = linkedBuildings(s)): Set<number> {
+  const out = new Set<number>();
+  for (const b of s.buildings) {
+    if (linked.has(b.id) && (BUILDINGS[b.kind].dropoff as readonly ResourceKey[]).includes(res)) for (const i of footprint(s, b)) out.add(i);
+  }
+  return out;
 }
 
 /** Walk from `from` to the nearest of `goals` (walkable tiles), or null. */

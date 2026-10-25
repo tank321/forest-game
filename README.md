@@ -27,7 +27,9 @@ shows a health bar. Zoom in close to see what each villager carries in a tag ove
 Right-clicking a tree (or holding a finger on it) flags it as a priority: a red flag once your land reaches it,
 yellow until then. Flagging a red one sends the nearest lumberjack straight there (two with Teamwork, three with
 Felling Crews), dropping the tree it was on; lumberjacks walking home with a load finish the delivery first. A yellow
-flag does the same the moment your land reaches it and it turns red. Tap a building to select it:
+flag does the same the moment your land reaches it and it turns red. Nothing stops a lumberjack from reaching a red flag:
+when buildings or forest cut the tree off (a strip of land sealed in behind a row of farms, say), it walks straight over
+them to get there and back, and it walks out the same way if it is left stranded. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
 upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
@@ -63,7 +65,8 @@ Tap a road to select it: **Move** it to another cleared tile, or **Sell** it bac
 Roads not yet joined to the Town Center are drawn darker. While placing a building, yellow means it can
 stand there but needs a road. Villagers prefer connected roads when walking (at the same speed).
 
-Select any building except the Town Center and choose **Move**, then tap a valid new location.
+Select any building except the Town Center and choose **Move**, then tap a valid new location. On a touch screen you
+can also hold a finger on a building to pick it up, drag it straight to its new spot, and tap its footprint to place it.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
 Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
 **Remove** takes two clicks: the first shows its refund and the share lost, and a second within 3 seconds removes the building. Removal returns 50%
@@ -168,6 +171,17 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v38** – Hold to move.
+- On a touch screen, holding a finger on a building (any but the Town Center) picks it up to move, with a short buzz on
+  phones that can: keep the finger down and drag it to the new spot, then tap its footprint to place it, as after **Move**.
+  No save change.
+
+**v37** – Nothing stands between a lumberjack and a flag.
+- A red-flagged tree that no path reaches (land sealed in by buildings and forest) is still fetched: the lumberjack takes
+  the normal route where there is one and otherwise walks straight over buildings and trees, there and back with its load.
+  A lumberjack left in such a pocket with nothing to chop walks out to a drop-off. Yellow flags still wait for your land.
+  No save change.
+
 **v36** – Phone building panel, reworked.
 - On a phone a selected building's panel fits without scrolling: its name shares one line with **Move**, **Remove**,
   **Pause** (where it has one) and **✕**; its status and total share one small line; and each upgrade is a single row,

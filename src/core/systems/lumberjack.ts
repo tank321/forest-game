@@ -1,7 +1,7 @@
 import { distToBuilding } from '../buildings';
 import { tileAt } from '../grid';
-import { loadFull } from '../flags';
-import { nearestTree } from '../pathing';
+import { loadFull, walkToMark } from '../flags';
+import { dropoffTiles, freeWalk, nearestTree } from '../pathing';
 import type { Stats } from '../stats';
 import type { Villager } from '../types';
 import { Tile } from '../types';
@@ -20,11 +20,21 @@ export function updateLumberjack(w: World, v: Villager, dt: number, st: Stats): 
   let t = dt;
   while (t > 0) {
     switch (v.state) {
-      case 'idle':
+      case 'idle': {
         if (assignTree(w, v, st)) break;
-        if (v.carry > 0) goHome(w, v, 'wood');
-        else return;
+        if (v.carry > 0) {
+          goHome(w, v, 'wood');
+          break;
+        }
+        // Empty-handed and stranded with nothing to chop (a sealed pocket, no way home): it walks out to a drop-off.
+        const at = tileAt(s, v.x, v.y);
+        const out = w.fields.wood.dist[at] === -1 ? freeWalk(s, at, dropoffTiles(s, 'wood')) : null;
+        if (!out) return;
+        v.path = out.path;
+        v.pathI = 0;
+        v.state = 'toHome';
         break;
+      }
       case 'toTree':
         if (s.tiles[v.target] !== Tile.Tree) {
           lostTarget(w, v, st);
@@ -86,7 +96,20 @@ function fullTrees(w: World, st: Stats): (tree: number) => boolean {
 
 function assignTree(w: World, v: Villager, st: Stats): boolean {
   const s = w.state;
-  const found = nearestTree(s, w.fields.wood, tileAt(s, v.x, v.y), fullTrees(w, st));
+  const at = tileAt(s, v.x, v.y);
+  const full = fullTrees(w, st);
+  let found = nearestTree(s, w.fields.wood, at, full);
+  // Flagged trees come first even when no normal walk reaches them (sealed in by buildings): the nearest is fetched over
+  // anything in the way. A flagged tree the normal search can reach has already won.
+  if (!found || !s.marked.includes(found.tree)) {
+    let best: { tree: number; path: number[]; d: number } | null = null;
+    for (const tree of s.marked) {
+      if (full(tree)) continue;
+      const walk = walkToMark(w, at, tree);
+      if (walk && (!best || walk.d < best.d)) best = { tree, ...walk };
+    }
+    if (best) found = best;
+  }
   if (!found) return false;
   v.target = found.tree;
   v.path = found.path;

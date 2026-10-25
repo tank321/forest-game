@@ -1,7 +1,7 @@
 import { BUILDINGS, buildingAt, buildingById, footprint, tallyTo, workersOf } from '../buildings';
 import { gain } from '../economy';
 import { tileAt } from '../grid';
-import { pathHome, pathToAny } from '../pathing';
+import { dropoffTiles, freeWalk, pathHome, pathToAny } from '../pathing';
 import { Tile, type Building, type GameState, type ResourceKey, type Villager, type Walker } from '../types';
 import type { Stats } from '../stats';
 import { gainBonus, type World } from '../world';
@@ -43,9 +43,15 @@ export function walk(w: World, v: Walker, t: number, speed: number, st: Pick<Sta
 
 export const arrived = (v: Walker) => v.pathI >= v.path.length;
 
-/** Heads for the nearest drop-off accepting `res`. */
+/**
+ * Heads for the nearest drop-off accepting `res`. A lumberjack with no way home (it fetched a flagged tree in a pocket
+ * buildings and forest seal off) walks out over anything; others deliver where they stand.
+ */
 export function goHome(w: World, v: Villager, res: ResourceKey): void {
-  v.path = pathHome(w.state, w.fields[res], tileAt(w.state, v.x, v.y));
+  const s = w.state;
+  const at = tileAt(s, v.x, v.y);
+  const out = v.job === 'lumber' && w.fields[res].dist[at] === -1 ? freeWalk(s, at, dropoffTiles(s, res)) : null;
+  v.path = out?.path ?? pathHome(s, w.fields[res], at);
   v.pathI = 0;
   v.state = 'toHome';
 }

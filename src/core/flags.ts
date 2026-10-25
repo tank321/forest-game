@@ -1,8 +1,18 @@
-import { isWalkable, neighbors4, tileAt } from './grid';
-import { walkToTree } from './pathing';
+import { isChoppable, isWalkable, neighbors4, tileAt } from './grid';
+import { freeWalk, walkToTree } from './pathing';
 import { getStats, type Stats } from './stats';
 import { Tile, type Villager } from './types';
 import type { World } from './world';
+
+/**
+ * The walk to a flagged tree that touches the land: the normal one when there is one (a tile beside it with a way home),
+ * else over anything in the way to a tile of land beside it. Null for a tree the land does not touch.
+ */
+export function walkToMark(w: World, from: number, tree: number): { path: number[]; d: number } | null {
+  const s = w.state;
+  if (!isChoppable(s, tree)) return null;
+  return walkToTree(s, w.fields.wood, from, tree) ?? freeWalk(s, from, new Set(neighbors4(s, tree).filter((n) => isWalkable(s, n))));
+}
 
 /** Load can't take more (within rounding), so a lumberjack's next stop is a drop-off. */
 export const loadFull = (v: Villager, st: Stats) => st.carry - v.carry < 1e-9;
@@ -22,7 +32,7 @@ export function rushToMark(w: World, tree: number): void {
     (v) => v.job === 'lumber' && (v.state === 'idle' || v.state === 'toTree' || v.state === 'chop') && !marked.has(v.target) && !loadFull(v, st),
   );
   const walks = free
-    .map((v) => ({ v, walk: walkToTree(s, w.fields.wood, tileAt(s, v.x, v.y), tree) }))
+    .map((v) => ({ v, walk: walkToMark(w, tileAt(s, v.x, v.y), tree) }))
     .filter((e): e is { v: Villager; walk: NonNullable<typeof e.walk> } => e.walk !== null)
     .sort((a, b) => a.walk.d - b.walk.d); // stable: ties keep villager order
   for (const { v, walk } of walks.slice(0, room)) {

@@ -9,7 +9,7 @@ export interface InputHandlers {
   stroke(wx: number, wy: number, start: boolean, alt: boolean): void; // a painted point; start = where the press began
   grab(): boolean; // whether a one-finger touch drag aims (drags) instead of panning; a touch tap still taps
   drag(wx: number, wy: number, start: boolean): void; // an aimed point; start = the first one past the tap slop
-  hold(wx: number, wy: number): boolean; // a touch held still for `holdMs`; true = handled, so its release is no tap
+  hold(wx: number, wy: number): boolean; // a touch held still for `holdMs`; true = handled, so its release is no tap (and a drag aims, if `grab` now says so)
 }
 
 /**
@@ -22,6 +22,7 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
   let pinch = { d: 0, mx: 0, my: 0 };
   let painting: { x: number; y: number; alt: boolean } | null = null; // last painted world point
   let aiming = false; // this one-finger gesture drags (aims) instead of panning
+  let dragged = false; // this gesture has aimed already (its first drag point is the start)
   let holdTimer = 0;
 
   const local = (e: PointerEvent | WheelEvent) => {
@@ -50,10 +51,13 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
     } else if (pts.size === 1) {
       downAt = p;
       aiming = touch && h.grab();
+      dragged = false;
       if (touch) {
         holdTimer = window.setTimeout(() => {
           holdTimer = 0;
-          if (downAt && h.hold(...cam.toWorld(downAt.x, downAt.y))) downAt = null;
+          if (!downAt || !h.hold(...cam.toWorld(downAt.x, downAt.y))) return;
+          downAt = null; // its release is no tap
+          aiming = h.grab(); // a hold that picked something up drags it in the same gesture
         }, CONFIG.camera.holdMs);
       }
     } else {
@@ -89,7 +93,8 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
     if (downAt && Math.hypot(p.x - downAt.x, p.y - downAt.y) < CONFIG.camera.tapSlop) return;
     cancelHold();
     if (aiming) {
-      h.drag(...cam.toWorld(p.x, p.y), downAt !== null);
+      h.drag(...cam.toWorld(p.x, p.y), !dragged);
+      dragged = true;
       downAt = null;
       return;
     }

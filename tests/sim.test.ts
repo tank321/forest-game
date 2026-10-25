@@ -4,6 +4,7 @@ import { tileAt } from '../src/core/grid';
 import { nearestTree, pathToAny } from '../src/core/pathing';
 import { simulate } from '../src/core/sim';
 import { Tile } from '../src/core/types';
+import { claimTile } from '../src/core/world';
 import { clearArea, smallWorld, totalWood } from './helpers';
 
 describe('villager simulation', () => {
@@ -102,6 +103,42 @@ describe('villager simulation', () => {
       chopTree(w, flag(6, 5)); // the tree in the way: the flag turns red
       expect(s.villagers.map((v) => v.target)).toEqual([-1, tree]);
       expect(s.villagers[1].state).toBe('toTree');
+    });
+
+    describe('a flagged tree only a sealed pocket of land touches', () => {
+      /** A clearing out in the forest, cut off from the village, with a flagged tree beside it. */
+      function pocket() {
+        const w = smallWorld(30, 1);
+        const s = w.state;
+        s.nextRelicAt = Infinity;
+        const o = s.origin.x;
+        claimTile(w, (o + 1) * s.w + o + 9); // three trees beyond the clearing's east edge
+        return { w, s, v: s.villagers[0], tree: (o + 1) * s.w + o + 10 };
+      }
+
+      it('is fetched over the trees in the way, felled, and its wood brought home', () => {
+        const { w, s, v, tree } = pocket();
+        Object.assign(v, { state: 'idle', target: -1, carry: 0, path: [], pathI: 0 });
+        s.wood[tree] = 3; // one load fells it
+        const wood = totalWood(w);
+        expect(toggleMark(w, tree)).toBe(true);
+        expect([v.target, v.state]).toEqual([tree, 'toTree']);
+        for (let k = 0; k < 120 && s.tiles[tree] === Tile.Tree; k++) simulate(w, 1, 1 / 30);
+        expect(s.tiles[tree]).not.toBe(Tile.Tree);
+        simulate(w, 60, 1 / 30);
+        expect(totalWood(w)).toBeCloseTo(wood, 6);
+        expect(w.fields.wood.dist[tileAt(s, v.x, v.y)]).not.toBe(-1); // walked back out of the pocket
+      });
+
+      it('is picked by a lumberjack that comes free later', () => {
+        const { w, s, v, tree } = pocket();
+        Object.assign(v, { state: 'toHome', target: -1, carry: 0, path: [], pathI: 0 }); // passes the flag by
+        toggleMark(w, tree);
+        expect(v.target).toBe(-1);
+        simulate(w, 1 / 30, 1 / 30);
+        expect(v.target).toBe(tree);
+        expect(s.tiles[tree]).toBe(Tile.Tree);
+      });
     });
 
     it('does not rush again when more land reaches a flag already reached', () => {

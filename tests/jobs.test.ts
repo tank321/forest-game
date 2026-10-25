@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { placeBuilding } from '../src/core/commands';
 import { simulate } from '../src/core/sim';
+import { tileAt } from '../src/core/grid';
 import { jobSystem } from '../src/core/systems/jobs';
 import { Tile } from '../src/core/types';
 import { clearArea, smallWorld } from './helpers';
@@ -35,12 +36,14 @@ describe('staffing', () => {
     expect([open.job, open.workplace]).toEqual(['farm', farm.id]);
   });
 
-  it('a worker that cannot walk to its workplace gives the job back, and is not given it again', () => {
-    const { w, farm, shut } = cutOff();
+  it('a worker that cannot walk to its workplace gives the job back, then walks out of its pocket', () => {
+    const { w, s, farm, shut } = cutOff();
     Object.assign(shut, { job: 'farm', workplace: farm.id });
     simulate(w, 1 / 30, 1 / 30); // it finds no walk and quits
     expect([shut.job, shut.workplace]).toEqual(['lumber', -1]);
-    simulate(w, 5, 1 / 30);
-    expect([shut.job, shut.workplace]).toEqual(['lumber', -1]);
+    simulate(w, 1 / 30, 1 / 30); // stranded with nothing to chop: it heads for a drop-off over the trees
+    expect(shut.state).toBe('toHome');
+    simulate(w, 20, 1 / 30);
+    expect(w.fields.wood.dist[tileAt(s, shut.x, shut.y)]).not.toBe(-1);
   });
 });

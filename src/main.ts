@@ -121,10 +121,18 @@ attachInput(canvas, cam, {
     if (start) grabOffset = ui.hover && onFootprint(ui, wx, wy) ? { x: ui.hover.x - wx, y: ui.hover.y - wy } : { x: 0, y: 0 };
     ui.hover = { x: wx + grabOffset.x, y: wy + grabOffset.y };
   },
-  // Holding a tree flags it, like a right-click.
+  // Holding a building picks it up to move, like its Move button; holding a tree flags it, like a right-click.
   hold(wx, wy) {
     if (aiming(ui) || !inBounds(s, wx, wy)) return false;
     const i = tileAt(s, wx, wy);
+    const b = s.tiles[i] === Tile.Building ? buildingAt(s, i) : undefined;
+    if (b && b.kind !== 'townCenter') {
+      ui.selected = ui.moving = b;
+      ui.road = null;
+      ui.hover = { x: b.x + BUILDINGS[b.kind].w / 2, y: b.y + BUILDINGS[b.kind].h / 2 }; // its footprint, under the finger
+      navigator.vibrate?.(20);
+      return true;
+    }
     if (s.tiles[i] !== Tile.Tree) return false;
     if (toggleMark(world, i)) navigator.vibrate?.(20);
     return true;

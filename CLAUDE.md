@@ -70,7 +70,8 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
 - **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or
   building), with integer costs (`STEP` 10, `DIAG` 14 per tile). A walk steps onto a building's tiles
   only within the building it starts in or the one it is heading to (the `enter` set; drop-offs for a
-  field), so villagers go around other buildings. Diagonals never cut past a tree or building
+  field), so villagers go around other buildings. A `free` search walks over anything; lumberjacks use it (`freeWalk`)
+  only when a flagged tree, or their way home, is otherwise cut off (`walkToMark` in `flags.ts`, `goHome`). Diagonals never cut past a tree or building
   corner; trees and relics are never walked through. Paths are straightened (`smooth`/`clearLine`)
   so villagers cross open ground in straight lines. Each resource has a multi-source distance field
   from its drop-off buildings.

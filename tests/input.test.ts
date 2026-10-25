@@ -97,6 +97,28 @@ describe('touch aiming', () => {
     expect([cam.x, cam.y]).toEqual([50, 50]);
   });
 
+  it('drags what a hold picked up in the same gesture, with no tap at the end', () => {
+    let held = false;
+    const { cam, calls, send } = setup({ hold: () => (held = true), grab: () => held });
+    send('pointerdown', 1, 200, 200);
+    vi.advanceTimersByTime(CONFIG.camera.holdMs);
+    send('pointermove', 1, 240, 200);
+    send('pointermove', 1, 280, 240);
+    send('pointerup', 1, 280, 240);
+    expect(calls).toEqual(['drag 51 50 start', 'drag 52 51']);
+    expect([cam.x, cam.y]).toEqual([50, 50]);
+  });
+
+  it('pans after a hold that picked nothing up (a flagged tree)', () => {
+    const { cam, calls, send } = setup();
+    send('pointerdown', 1, 200, 200);
+    vi.advanceTimersByTime(CONFIG.camera.holdMs);
+    send('pointermove', 1, 240, 200);
+    send('pointerup', 1, 240, 200);
+    expect(calls).toEqual(['hold 50 50']);
+    expect(cam.x).toBe(49);
+  });
+
   it('leaves a mouse drag panning', () => {
     const { cam, calls, send } = setup({ grab: () => true });
     send('pointerdown', 1, 200, 200, 'mouse');
