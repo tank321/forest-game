@@ -76,6 +76,16 @@ of the original construction materials, rounded down per resource; upgrade costs
 Workers deliver carried resources before returning to lumberjacking. Removing houses reduces the
 population cap but keeps existing villagers. The Town Center cannot be moved or removed.
 
+**Decorations** are only for looks, for those who like to lay out a town; nothing else in the game needs them.
+**Decorate**, the last card in the build menu, opens a palette: flower beds, stone paving, picket fences, hedges, lamp
+posts, benches, scarecrows, an ornamental cherry and a pond from the start, plus five trophies (a Golden Axe, a Relic
+Shrine, a Market Banner, a Town Fountain and a Snowman) that unlock with an achievement tier, stay unlocked across
+rebuilds, and show in silhouette until then. Each costs a little and comes back in full. 1×1 pieces are painted like road (tap or
+drag; start a drag on one of that kind to lift them); the pond and fountain are placed like a building. Fences and
+hedges join the ones beside them, and props can stand on paving. **Done**, Escape or a right-click ends placing. Tap a
+decoration to **Move** or **Remove** it (or hold a finger on it to pick it up). Villagers walk straight over them, and
+building or laying road over one hands it back. A new map after a rebuild starts without them.
+
 **Food:** a Farm (3×3) takes one empty-handed lumberjack as its farmer; farmers deliver food to
 the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. A **Fruit Orchard** (5×5; wood, stone and cloth)
 takes three orchardists, each walking ×2 as fast, harvesting ×2 as fast and carrying ×5 as much as a
@@ -148,7 +158,7 @@ The **Frontier Outpost** (3×3, the Settlement Mastery) is a second hub you can 
 land, once. It takes every resource, hires villagers like the Town Center, and roads touching it count as
 connected, so a new town can grow at the forest's edge.
 
-Every few felled trees a **relic** appears in the forest (a rune stone with a soft golden glow, so it is easy to spot in the forest; it glows brightly once your land touches it) and the map pans over to it, and again when your land first reaches it; the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
+Every few felled trees a **relic** appears in the forest (a rune stone with a soft golden glow, so it is easy to spot in the forest; it glows brightly once your land touches it) and a popup at the top of the map says so, and again when your land first reaches it (tap the popup to glide the map over to the relic); the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
 of the offered cards and press **Choose** to upgrade it; the relic is then taken and its tile becomes land. Close with ×
 or Escape to pick later: the relic stays on the map, glowing, and tapping it again offers the same skills. Once per relic,
@@ -171,6 +181,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `src/core/` – pure simulation, no DOM
   - `types.ts` state shape · `state.ts` new game · `world.ts` state + derived data (drop-off field, fog, max wood), `clearTree`
   - `trees.ts` ring-based tree wood · `buildings.ts` building defs + placement helpers · `roads.ts` road network, connected buildings, road stock
+  - `decor.ts` decorations (looks only): kinds, costs, trophy unlocks, where they fit
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, `roadRoutes` (walks kept to the roads), path straightening
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers) / `collector.ts` (tax collectors' rounds) · `mules.ts` Trading Posts' pack mules · `movement.ts` shared walking (faster along roads with Cobblestone), each worker's spot in its workplace · `grazing.ts` Grazing Flocks
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
@@ -182,13 +193,30 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `critters.ts` ambient forest creatures (season roster, wandering, shyness, snow tracks; display only), `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
-- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement toasts, `chest.ts` the Lucky Chest button, boost badge and opening show, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes and Lucky Chest sounds, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
+- `src/ui/` – `hud.ts` stats plaque, `panel.ts` build menu / selection, `skillModal.ts` skill tree and relic choices, `skillGraph.ts` skill tree layout, `panZoom.ts` drag/wheel/pinch pan-and-zoom viewport, `legacyModal.ts` Legacy perk tree and rebuild, `guideModal.ts` building guide, `achievementsModal.ts` achievement list and next-up button, `toast.ts` achievement and relic toasts, `chest.ts` the Lucky Chest button, boost badge and opening show, `audio.ts` the shared audio context and on/off buttons, `prefs.ts` per-browser settings, `tutorial.ts` the new-game tutorial steps and coach card, `sound.ts` synthesized achievement chimes and Lucky Chest sounds, `music.ts` generative seasonal background music, `skillInfo.ts` skill status and bonus previews, `seasonInfo.ts` season effect lines, `actions.ts` per-building actions, `market.ts` Market trading panel (plus caravan deals and contracts), `text.ts` labels, icons and cost chips, `skin.ts` bakes UI sprites into CSS
 - `src/assets/fonts/` – legacy Silkscreen font assets (SIL Open Font License, `OFL.txt`); the UI uses system fonts.
 - `src/main.ts` – wiring, fixed-timestep loop, offline catch-up, autosave, service worker registration
 - `public/` – web app manifest and icons · `pwa/sw.js` offline service worker, filled in by `vite.config.ts` at build
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v52** – Decorations.
+- **Decorate**, the last card in the build menu, opens a palette of decorations that are only for looks: villagers walk
+  over them and nothing works any differently. Flower beds, stone paving, picket fences, hedges, lamp posts, benches,
+  scarecrows, an ornamental cherry and a 2×2 pond are there from the start.
+- Five trophies unlock with an achievement tier: a Golden Axe (Timberrr! V), a Relic Shrine (Relic Hunter III), a Market
+  Banner (Treasure Trove IV), a 2×2 Town Fountain (Village Elder IV) and a Snowman (Weathered III). Earned trophies
+  stay unlocked across rebuilds.
+- Each costs a little (10 wood for a fence, 5 stone for paving, 100 stone for the fountain) and returns it all when removed,
+  or when a building or road is put over it. 1×1 pieces are painted like road; fences and hedges join their neighbors.
+- They change with the seasons: blossom and flowers fade in autumn, the cherry stands bare, hedges and benches carry
+  snow, and the pond and fountain freeze over in winter.
+- Save v28: no decorations yet.
+
+**v51** – Relic news waits for you.
+- The map no longer pans on its own when a relic appears or your land first reaches one. A popup at the top of the map
+  tells you instead, and stays 10 seconds; tap it to glide over to the relic. Several relics each get their own popup.
+
 **v50** – Bigger skill levels, and villagers born over time.
 - **Growing Families**, a new Settlement skill after Roomy Houses (offered once 4 Settlement levels are learned):
   a villager is born at the Town Center every 15 minutes, sooner with more connected Houses (10 minutes at 10, 5 at

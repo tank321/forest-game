@@ -1,8 +1,10 @@
+import { DECOR, DECOR_KINDS } from '../core/decor';
 import { bake } from '../render/bake';
 import {
   BUILDING_PALETTE,
   BUILDING_SPRITES,
   composeFrame,
+  seasonalDecor,
   composeRoad,
   GRASS,
   GROUND_PALETTE,
@@ -24,7 +26,8 @@ const url = (grid: readonly string[], palette: Record<string, Rgba> = UI_PALETTE
 
 /**
  * Bakes the UI sprites once and hands them to CSS: `--frame-<name>` and `--frame-<name>-down`
- * (raised and pressed), `--wood`, the Lucky Chest's `--chest`, `--chest-lid` and `--chest-base`, and `.ico-<name>` / `.thumb-<kind>` / `.thumb-road` background images.
+ * (raised and pressed), `--wood`, the Lucky Chest's `--chest`, `--chest-lid` and `--chest-base`, and `.ico-<name>` / `.thumb-<kind>` / `.thumb-road` /
+ * `.thumb-decor-<kind>` background images.
  */
 export function applySkin(): void {
   const vars = [`--wood:${url(UI_WOOD)}`];
@@ -35,13 +38,19 @@ export function applySkin(): void {
   vars.push(`--chest-lid:${url(UI_CHEST.lid)}`, `--chest-base:${url(UI_CHEST.base)}`, `--chest:${url([...UI_CHEST.lid, ...UI_CHEST.base])}`);
   const rules = [`:root{${vars.join(';')}}`];
   for (const name of UI_ICON_NAMES) rules.push(`.ico-${name}{background-image:${url(UI_ICONS[name])}}`);
-  for (const [kind, grid] of Object.entries(BUILDING_SPRITES)) {
+  const thumb = (name: string, grid: readonly string[], palette: Record<string, Rgba>) => {
     const [w, h] = [grid[0].length, grid.length];
     const big = Math.max(w, h);
     // whole-pixel magnification when it fits, else shrink smoothly to the box
     const k = big <= THUMB ? Math.floor(THUMB / big) : THUMB / big;
     const smooth = k < 1 ? ';image-rendering:auto' : '';
-    rules.push(`.thumb-${kind}{background-image:${url(grid, BUILDING_PALETTE)};background-size:${w * k}px ${h * k}px${smooth}}`);
+    rules.push(`.thumb-${name}{background-image:${url(grid, palette)};background-size:${w * k}px ${h * k}px${smooth}}`);
+  };
+  for (const [kind, grid] of Object.entries(BUILDING_SPRITES)) thumb(kind, grid, BUILDING_PALETTE);
+  // Decorations in their summer look; a fence or hedge as a short run.
+  for (const kind of DECOR_KINDS) {
+    const { grid, palette } = seasonalDecor(kind, 'summer', DECOR[kind].joins ? 2 | 8 : 0);
+    thumb(`decor-${kind}`, grid, palette);
   }
   // Road card: a straight east-west road over plain grass.
   const road = composeRoad(2 | 8).map((r, y) => [...r].map((c, x) => (c === '.' ? GRASS[0].grid[y][x] : c)).join(''));

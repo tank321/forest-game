@@ -57,11 +57,18 @@ import {
   WINTER_STUMP,
   WELL_FARM_TINTS,
   WINTER_TREES,
+  composeDecor,
   composeFrame,
+  DECOR_ARMS,
+  DECOR_PALETTE,
+  DECOR_SEASONS,
+  DECOR_SPRITES,
+  seasonalDecor,
   composeMule,
   composeVillager,
   seasonalBuilding,
 } from '../src/render/sprites';
+import { DECOR, DECOR_KINDS } from '../src/core/decor';
 import { SEASONS } from '../src/core/seasons';
 import type { Job } from '../src/core/types';
 
@@ -268,5 +275,35 @@ describe('sprites', () => {
       expect(row).toHaveLength(w);
       for (const ch of row) expect(ch === '.' || ch in UI_PALETTE).toBe(true);
     }
+  });
+
+  it('decoration sprites fit their footprint (props with the overhang) in every season and every join', () => {
+    for (const kind of DECOR_KINDS) {
+      const d = DECOR[kind];
+      const h = d.h * SPRITE_W + (d.layer === 'prop' ? OVERHANG_PX : 0);
+      expect(DECOR_SPRITES[kind]).toHaveLength(h);
+      for (const arm of DECOR_ARMS[kind] ?? []) expect(arm.length === 0 || arm.length === h).toBe(true);
+      expect(!!DECOR_ARMS[kind]).toBe(!!d.joins);
+      for (const season of SEASONS)
+        for (let mask = 0; mask < (d.joins ? 16 : 1); mask++) {
+          const { grid, palette } = seasonalDecor(kind, season, mask);
+          expect(grid).toHaveLength(h);
+          for (const row of grid) expect(row).toHaveLength(d.w * SPRITE_W);
+          for (const ch of grid.join('')) expect(ch === '.' || ch in palette).toBe(true);
+        }
+    }
+  });
+
+  it('decoration tints recolor chars their art uses', () => {
+    for (const season of SEASONS)
+      for (const [kind, look] of Object.entries(DECOR_SEASONS[season])) {
+        const art = new Set([...(look.grid ?? DECOR_SPRITES[kind as keyof typeof DECOR_SPRITES]), ...(DECOR_ARMS[kind as keyof typeof DECOR_ARMS] ?? []).flat()].join(''));
+        for (const ch of Object.keys(look.tint ?? {})) expect(ch in DECOR_PALETTE && art.has(ch), `${season} ${kind} ${ch}`).toBe(true);
+      }
+  });
+
+  it('a lone joining decoration is its plain sprite', () => {
+    expect(composeDecor('fence', 0)).toEqual(DECOR_SPRITES.fence);
+    expect(composeDecor('hedge', 2 | 8)).not.toEqual(DECOR_SPRITES.hedge);
   });
 });

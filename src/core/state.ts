@@ -51,6 +51,7 @@ export function createInitialState(
     counts: newCounts(),
     career,
     births: 0,
+    decor: [],
     chest: newChest(),
   };
   s.wood.set(maxWoodTable(s));

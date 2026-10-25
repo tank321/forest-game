@@ -2,10 +2,29 @@ import { CONFIG } from '../config';
 import { ACHIEVEMENTS, tiersOf, type AchievementDef, type AchievementGroup, type AchievementId } from '../core/achievements';
 import { unlocks, type BuildingKind } from '../core/buildings';
 import type { ChestReward } from '../core/chest';
+import type { DecorKind } from '../core/decor';
 import type { PerkId } from '../core/legacy';
 import type { SkillId, Track } from '../core/skills';
 import type { Cost, ResourceKey, Resources } from '../core/types';
 import { BUILDING_SPRITES, type UiIcon } from '../render/sprites';
+
+/** Decorations (core/decor.ts): looks only. */
+export const DECOR_TEXT: Record<DecorKind, { name: string; desc: string }> = {
+  flowerBed: { name: 'Flower Bed', desc: 'Mixed blooms in a soil bed. They fade in autumn and sleep under the snow.' },
+  paving: { name: 'Stone Paving', desc: 'Flagstones for a square or a path. Benches, lamps and the like can stand on it.' },
+  fence: { name: 'Picket Fence', desc: 'Joins the fences beside it, so a row of them makes a run with corners.' },
+  hedge: { name: 'Hedge', desc: 'A clipped hedge that joins the hedges beside it.' },
+  lamp: { name: 'Lamp Post', desc: 'An iron post with a lit lantern.' },
+  bench: { name: 'Bench', desc: 'Somewhere to sit. Nobody ever does.' },
+  scarecrow: { name: 'Scarecrow', desc: 'Looks at home beside a Farm. Scares nothing.' },
+  cherry: { name: 'Ornamental Cherry', desc: 'Blossoms in spring and summer and turns red in autumn. Nobody will ever chop it.' },
+  pond: { name: 'Pond', desc: 'A stone-rimmed pond with lily pads. It freezes over in winter.' },
+  axeStatue: { name: 'Golden Axe', desc: 'A golden axe in a stump, for a forester of note.' },
+  shrine: { name: 'Relic Shrine', desc: 'A rune stone with candles, for one who has opened many relics.' },
+  banner: { name: 'Market Banner', desc: 'A red banner with a gold coin, for a town that knows its trade.' },
+  fountain: { name: 'Town Fountain', desc: 'A tiered fountain in a round basin, for a town of many. It freezes over in winter.' },
+  snowman: { name: 'Snowman', desc: 'Built after many winters, and somehow it never melts.' },
+};
 
 export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }> = {
   townCenter: { name: 'Town Center', desc: 'Hire villagers. Drop-off for everything.' },

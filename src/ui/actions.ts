@@ -6,17 +6,22 @@ import { canAfford, commission, maxLevel, muleCost, popCap, upgradeCost, village
 import { lvl } from '../core/skills';
 import { getStats, type Stats } from '../core/stats';
 import { jobResource } from '../core/systems/workplace';
+import type { DecorKind } from '../core/decor';
 import type { Building, Cost, GameState, HireResource, Job, ResourceKey } from '../core/types';
 import type { World } from '../core/world';
 import { seasonName } from './seasonInfo';
 import { BUILDING_TEXT, duration, fmt, icon } from './text';
+
+/** A card's picture: a building's sprite, a road, or a decoration's (ui/skin.ts). */
+export type Thumb = BuildingKind | 'road' | `decor-${DecorKind}`;
 
 export interface Action {
   label: string;
   cost: Cost | null;
   enabled: boolean;
   run: () => void;
-  thumb?: BuildingKind | 'road'; // shown as a parchment card with the building's (or a road's) sprite
+  thumb?: Thumb; // shown as a parchment card with the building's (or a road's, or a decoration's) sprite
+  locked?: string; // a card not yet available: its thumb in silhouette and this in place of the cost
   refund?: Cost;
   secondary?: boolean;
   danger?: boolean;

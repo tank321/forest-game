@@ -1,15 +1,16 @@
 import { CONFIG } from '../config';
 import { border, BUILDINGS, type BuildingKind, buildingAt, buildingGap } from '../core/buildings';
-import { canMoveBuilding, canPlace, canPlaceRoad } from '../core/commands';
+import { canMoveBuilding, canMoveDecor, canPlace, canPlaceDecor, canPlaceRoad } from '../core/commands';
+import { DECOR, DECOR_KINDS, decorAt, type DecorKind } from '../core/decor';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import { getStats, wellFarms, wellReach } from '../core/stats';
 import { carried } from '../core/systems/workplace';
-import type { Building, GameState, Job, Mule, ResourceKey, Villager, Walker } from '../core/types';
+import type { Building, Decor, GameState, Job, Mule, ResourceKey, Villager, Walker } from '../core/types';
 import { RESOURCES, Tile } from '../core/types';
 import { visionRadius, type Fx, type World } from '../core/world';
-import { placementAt } from '../ui/placement';
+import { paints, placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
 import { fmt } from '../ui/text';
 import { bake, halo } from './bake';
@@ -50,6 +51,7 @@ import {
   ROAD_PALETTE,
   ROAD_TINTS,
   seasonalBuilding,
+  seasonalDecor,
   SPRITE_W,
   STUMP,
   TREE_PALETTE,
@@ -174,6 +176,13 @@ export class Renderer {
     const { grid, palette } = seasonalBuilding('farm', season, true)!;
     return bake(grid, palette, 1);
   });
+  /** Baked decorations: [season][kind][join mask] (only joining kinds have more than one). Like buildings, never fogged. */
+  private decorSprites = SEASONS.map((season) =>
+    Object.fromEntries(DECOR_KINDS.map((kind) => [kind, Array.from({ length: DECOR[kind].joins ? 16 : 1 }, (_, mask) => {
+      const { grid, palette } = seasonalDecor(kind, season, mask);
+      return bake(grid, palette, 1);
+    })])) as Record<DecorKind, HTMLCanvasElement[]>,
+  );
   /** Baked Christmas lights for winter houses, one per twinkle frame. */
   private lights = HOUSE_LIGHTS.map((g) => bake(g, LIGHTS_PALETTE, 1));
   /** Baked relic stone: [season][fog]; its outline glow and the halo behind it (lights, so never fogged). */
@@ -302,6 +311,7 @@ export class Renderer {
     ctx.imageSmoothingEnabled = k < SPRITE_W; // crisp pixels when magnified, averaged when shrunk
     const [ox, oy] = cam.toScreen(0, 0);
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
+    this.drawGroundDecor(s);
     this.drawTracks();
     this.drawScene(world, linkedBuildings(s, net));
     this.drawFlyers(now);
@@ -317,6 +327,12 @@ export class Renderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(sx, sy, d.w * k, d.h * k);
       reach(ui.selected.kind, ui.selected.x, ui.selected.y);
+    }
+    if (ui.decorSel) {
+      const [sx, sy] = cam.toScreen(ui.decorSel.x, ui.decorSel.y);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx, sy, DECOR[ui.decorSel.kind].w * k, DECOR[ui.decorSel.kind].h * k);
     }
     if (ui.road !== null) {
       const [sx, sy] = cam.toScreen(ui.road % s.w, (ui.road / s.w) | 0);
@@ -354,11 +370,53 @@ export class Renderer {
       rect(i % s.w, (i / s.w) | 0, 1, 1);
     }
 
+    // A decoration aimed (moved, or a bigger one placed): green where it fits, red where not.
+    const d = ui.decorSel;
+    const decorAim = ui.movingDecor && d ? d.kind : ui.decor && !paints(ui.decor) ? ui.decor : null;
+    if (decorAim && ui.hover) {
+      const { x, y } = placementAt(decorAim, ui.hover.x, ui.hover.y);
+      const valid = ui.movingDecor && d ? canMoveDecor(world, d.y * s.w + d.x, DECOR[d.kind].layer, x, y) : canPlaceDecor(world, decorAim, x, y);
+      ctx.fillStyle = valid ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+      rect(x, y, DECOR[decorAim].w, DECOR[decorAim].h);
+    }
+
+    // The decoration brush: orange where it would lift one of its kind, green where it would lay one, red where neither.
+    if (ui.decor && paints(ui.decor) && ui.hover && inBounds(s, ui.hover.x, ui.hover.y)) {
+      const i = tileAt(s, ui.hover.x, ui.hover.y);
+      const lift = decorAt(s, i, DECOR[ui.decor].layer)?.kind === ui.decor;
+      ctx.fillStyle = lift ? 'rgba(240,150,60,.55)' : canPlaceDecor(world, ui.decor, i % s.w, (i / s.w) | 0) ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
+      rect(i % s.w, (i / s.w) | 0, 1, 1);
+    }
+
     if (ui.movingRoad && ui.hover && inBounds(s, ui.hover.x, ui.hover.y)) {
       const i = tileAt(s, ui.hover.x, ui.hover.y);
       ctx.fillStyle = s.tiles[i] === Tile.Grass ? 'rgba(80,220,100,.55)' : 'rgba(230,60,60,.55)';
       rect(i % s.w, (i / s.w) | 0, 1, 1);
     }
+  }
+
+  /** Flat decorations (flower beds, paving, ponds): over the ground, under everything standing on it. */
+  private drawGroundDecor(s: GameState): void {
+    const { ctx, cam } = this;
+    const k = cam.zoom;
+    const { x0, x1, y0, y1 } = this.visibleTiles(s);
+    for (const d of s.decor) {
+      const { w, h, layer } = DECOR[d.kind];
+      if (layer !== 'ground' || d.x > x1 || d.x + w <= x0 || d.y > y1 || d.y + h <= y0) continue;
+      const [sx, sy] = cam.toScreen(d.x, d.y);
+      ctx.drawImage(this.decorSprites[this.seasonAt(s.time, d.y * s.w + d.x)][d.kind][0], sx, sy, w * k, h * k);
+    }
+  }
+
+  /** A standing decoration; a fence or hedge joins the pieces of its kind beside it (`joined`: their kind by tile). */
+  private drawDecor(s: GameState, d: Decor, joined: ReadonlyMap<number, DecorKind>): void {
+    const { w, h, joins } = DECOR[d.kind];
+    const i = d.y * s.w + d.x;
+    const same = (j: number) => joined.get(j) === d.kind;
+    const mask = !joins ? 0
+      : (d.y > 0 && same(i - s.w) ? 1 : 0) | (d.x < s.w - 1 && same(i + 1) ? 2 : 0) | (d.y < s.h - 1 && same(i + s.w) ? 4 : 0) | (d.x > 0 && same(i - 1) ? 8 : 0);
+    const [sx, sy] = this.cam.toScreen(d.x, d.y - OVERHANG);
+    this.ctx.drawImage(this.decorSprites[this.seasonAt(s.time, i)][d.kind][mask], sx, sy, w * this.cam.zoom, (h + OVERHANG) * this.cam.zoom);
   }
 
   /** Snowy tint over the map in winter, fading in and out at the season's edges. */
@@ -435,12 +493,20 @@ export class Renderer {
     for (const b of s.buildings) {
       props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id), now) });
     }
+    const view = this.visibleTiles(s);
+    const joined = new Map<number, DecorKind>();
+    for (const d of s.decor) if (DECOR[d.kind].joins) joined.set(d.y * s.w + d.x, d.kind);
+    for (const d of s.decor) {
+      const { w, h, layer } = DECOR[d.kind];
+      if (layer !== 'prop' || d.x > view.x1 || d.x + w <= view.x0 || d.y > view.y1 || d.y + h <= view.y0) continue;
+      props.push({ depth: d.y + h, draw: () => this.drawDecor(s, d, joined) });
+    }
     for (const v of s.villagers) props.push({ depth: villagerDepth(s, v), draw: () => this.drawVillager(world, v, now) });
     for (const m of s.mules) props.push({ depth: villagerDepth(s, m), draw: () => this.drawMule(world, m, now) });
     for (const c of this.critters.list) if (onGround(c)) props.push({ depth: c.y, draw: () => this.drawCritter(c, now) });
     props.sort((a, b) => a.depth - b.depth);
 
-    const { x0, x1, y0, y1 } = this.visibleTiles(s);
+    const { x0, x1, y0, y1 } = view;
     const marked = new Set(s.marked);
     const glow = 0.6 + 0.4 * Math.sin(now / 250);
     const faint = 0.5 + 0.5 * Math.sin(now / RELIC_HALO.ms);
@@ -532,7 +598,7 @@ export class Renderer {
       }
     }
 
-    if (ui.placing || ui.moving || ui.paving || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
+    if (ui.placing || ui.moving || ui.paving || ui.decor || ui.movingDecor || !ui.hover || !inBounds(s, ui.hover.x, ui.hover.y)) return;
     const i = tileAt(s, ui.hover.x, ui.hover.y);
     if (!visible(i)) return;
     const x = i % s.w;

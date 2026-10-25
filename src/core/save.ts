@@ -9,7 +9,7 @@ import { relicGap } from './relics';
 import { SKILLS, type SkillId } from './skills';
 import { Tile, type GameState, type Resources } from './types';
 
-const VERSION = 27;
+const VERSION = 28;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -223,6 +223,8 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   },
   // v27 adds Growing Families' progress toward the next birth.
   26: (f) => ({ ...f, version: 27, state: { ...f.state, births: 0 } }),
+  // v28 adds decorations.
+  27: (f) => ({ ...f, version: 28, state: { ...f.state, decor: [] } }),
 };
 
 /** Max levels of the skills v26 shortened. */

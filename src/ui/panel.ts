@@ -1,15 +1,17 @@
 import { CONFIG } from '../config';
 import { atLimit, BUILDINGS, buildingById, isUnlocked, type BuildingKind } from '../core/buildings';
-import { removeBuilding, removeRoad } from '../core/commands';
+import { removeBuilding, removeDecor, removeRoad } from '../core/commands';
+import { DECOR, DECOR_KINDS, isDecorUnlocked } from '../core/decor';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
 import { Tile } from '../core/types';
 import type { World } from '../core/world';
-import { ACTIONS, INFO, tallyHtml, type Action } from './actions';
+import { ACTIONS, INFO, tallyHtml, type Action, type Thumb } from './actions';
 import { MarketView } from './market';
 import { readPref, writePref } from './prefs';
+import { paints } from './placement';
 import type { UiState } from './state';
-import { BUILDING_TEXT, costHtml } from './text';
+import { achievementName, BUILDING_TEXT, costHtml, DECOR_TEXT } from './text';
 
 const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILDINGS[k].buildable);
 const REMOVE_MS = 3000; // a second tap on Remove within this long removes the building
@@ -45,7 +47,7 @@ export class Panel {
     custom?.update(); // updates itself in place, so it stays out of the change key
     const have = this.world().state.resources;
     const html = actions.map((a) => {
-      const cost = a.cost && !a.upgrade ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
+      const cost = a.locked ? `<span class="cost">${a.locked}</span>` : a.cost && !a.upgrade ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
       // Build card: icon and name share a fixed top row, costs run full width below.
       if (a.thumb) return `<i class="thumb thumb-${a.thumb}"></i><span class="name">${a.label}</span>${cost}`;
       const lost = `${Math.round(100 * (1 - CONFIG.economy.buildingRefund))}% lost`;
@@ -54,7 +56,7 @@ export class Panel {
     });
     const folded = !!foldable && this.folded;
     const narrow = this.narrow.matches;
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded, narrow,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, this.ui.decorSel, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded, narrow,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) {
@@ -83,11 +85,13 @@ export class Panel {
       };
     }
     const box = this.el.querySelector('.actions')!;
-    box.classList.toggle('build-grid', actions.length > 0 && actions.every((a) => a.thumb));
+    const cards = actions.filter((a) => !a.secondary);
+    box.classList.toggle('build-grid', cards.length > 0 && cards.every((a) => a.thumb));
     actions.forEach((a, i) => {
       const b = document.createElement('button');
       b.innerHTML = html[i];
       if (a.thumb) b.className = 'parchment';
+      if (a.locked) b.classList.add('locked');
       if (a.danger) b.classList.add('danger');
       b.disabled = !a.enabled;
       b.onclick = a.run;
@@ -126,7 +130,7 @@ export class Panel {
     return this.coarse.matches ? `Drag the footprint onto ${where}, then tap it to place it.` : `Tap ${where}.`;
   }
 
-  private view(): { title: string; thumb?: BuildingKind | 'road'; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView; foldable?: boolean } {
+  private view(): { title: string; thumb?: Thumb; sub: string; status?: string; tally?: string; actions: Action[]; custom?: MarketView; foldable?: boolean } {
     const w = this.world();
     const s = w.state;
     const { ui } = this;
@@ -150,6 +154,28 @@ export class Panel {
         title: `Place ${BUILDING_TEXT[ui.placing].name}`,
         sub: `${this.aim('your territory')} Green = valid; yellow = valid but needs a road to the Town Center.`,
         actions: [{ label: 'Cancel', cost: null, enabled: true, run: () => (ui.placing = null) }],
+      };
+    }
+    if (ui.decorSel && !s.decor.includes(ui.decorSel)) {
+      ui.decorSel = null; // built over, or lifted, while selected
+      ui.movingDecor = false;
+    }
+    if (ui.decorSel && ui.movingDecor) {
+      return {
+        title: `Move ${DECOR_TEXT[ui.decorSel.kind].name}`,
+        sub: `${this.aim('open ground for the new spot')} Moving is free.`,
+        actions: [{ label: 'Cancel move', cost: null, enabled: true, run: () => (ui.movingDecor = false) }],
+      };
+    }
+    if (ui.decor) {
+      const kind = ui.decor;
+      const how = paints(kind) ? 'Tap or drag over open ground to lay them; start a drag on one to lift it.' : this.aim('open ground');
+      return {
+        title: `Place ${DECOR_TEXT[kind].name}`,
+        thumb: `decor-${kind}`,
+        sub: `${how} Each one returns all it cost when removed.`,
+        status: `Each: ${costHtml(DECOR[kind].cost, s.resources)}`,
+        actions: [{ label: 'Done', cost: null, enabled: true, run: () => (ui.decor = null) }],
       };
     }
     if (ui.road !== null && s.tiles[ui.road] !== Tile.Road) ui.road = null; // lifted while selected
@@ -203,6 +229,43 @@ export class Panel {
       const busy = narrow && (!!info || !!custom || actions.some((a) => !a.secondary));
       return { title: BUILDING_TEXT[k].name, thumb: k, sub: busy ? '' : BUILDING_TEXT[k].desc, status: info, tally: tallyHtml(buildingById(s, b.id) ?? b), actions, custom };
     }
+    if (ui.decorSel) {
+      const d = ui.decorSel;
+      return {
+        title: DECOR_TEXT[d.kind].name,
+        thumb: `decor-${d.kind}`,
+        sub: `${DECOR_TEXT[d.kind].desc} Removing it returns all it cost.`,
+        actions: [
+          { label: 'Move', cost: null, secondary: true, enabled: true, run: () => (ui.movingDecor = true) },
+          { label: 'Remove', cost: null, secondary: true, danger: true, enabled: true, run: () => {
+            if (removeDecor(w, d.y * s.w + d.x, DECOR[d.kind].layer)) ui.decorSel = null;
+          } },
+          { label: this.narrow.matches ? '✕' : 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.decorSel = null) },
+        ],
+      };
+    }
+    if (ui.decorating) {
+      return {
+        title: 'Decorate',
+        sub: 'Decorations are only for looks: villagers walk over them and nothing works any differently. Building or laying road over one hands it back.',
+        // Trophies stay on show, in silhouette, until their achievement is earned.
+        actions: [
+          ...DECOR_KINDS.map((k): Action => {
+            const trophy = DECOR[k].trophy;
+            const open = isDecorUnlocked(s, k);
+            return {
+              label: DECOR_TEXT[k].name,
+              cost: DECOR[k].cost,
+              locked: open || !trophy ? undefined : `Earn ${achievementName(trophy.achievement, trophy.tier)}`,
+              enabled: open && canAfford(s, DECOR[k].cost),
+              run: () => (ui.decor = k),
+              thumb: `decor-${k}`,
+            };
+          }),
+          { label: 'Back', cost: null, secondary: true, enabled: true, run: () => (ui.decorating = false) },
+        ],
+      };
+    }
     return {
       title: 'Build',
       sub: 'Tap a building to select it.',
@@ -220,6 +283,7 @@ export class Panel {
             thumb: k,
           };
         }),
+        { label: 'Decorate', cost: null, enabled: true, run: () => (ui.decorating = true), thumb: 'decor-cherry' },
       ],
     };
   }

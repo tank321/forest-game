@@ -2,7 +2,10 @@ import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
 import { BUILDINGS, buildingAt } from './core/buildings';
 import { chestSpeed, chestTimeline, expireBoosts } from './core/chest';
-import { chopTree, moveBuilding, moveRoad, openRelic, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
+import {
+  canPlaceDecor, chopTree, moveBuilding, moveDecor, moveRoad, openRelic, placeBuilding, placeDecor, placeRoad, removeDecor, removeRoad, toggleMark,
+} from './core/commands';
+import { DECOR, decorAt, type DecorKind } from './core/decor';
 import { inBounds, isCollectable, tileAt } from './core/grid';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
@@ -21,13 +24,13 @@ import { GuideModal } from './ui/guideModal';
 import { Panel } from './ui/panel';
 import { LegacyModal } from './ui/legacyModal';
 import { Music } from './ui/music';
-import { aiming, onFootprint, placementAt } from './ui/placement';
+import { aiming, onFootprint, paints, placementAt } from './ui/placement';
 import { SkillModal } from './ui/skillModal';
 import { Sound } from './ui/sound';
 import { Toasts } from './ui/toast';
 import { createUiState } from './ui/state';
 import { applySkin } from './ui/skin';
-import { BUILDING_TEXT, duration, fmt } from './ui/text';
+import { BUILDING_TEXT, DECOR_TEXT, duration, fmt } from './ui/text';
 import { Tutorial } from './ui/tutorial';
 import './style.css';
 
@@ -86,24 +89,27 @@ else for (const { id, tier } of already) toasts.achievement(id, tier);
 const tutorial = new Tutorial(document.getElementById('tutorial')!, () => world, ui, (x, y) => cam.glideTo(x, y), !loaded);
 
 // A road stroke lays road on open ground, or lifts it if it starts on a road. Right-click ends road mode instead.
+// A 1×1 decoration is painted the same way.
 let lifting = false;
-let lastRoadTile = -1;
+let lastTile = -1;
 let grabOffset = { x: 0, y: 0 }; // from the finger to the aimed point while dragging a placement
 attachInput(canvas, cam, {
   hover: (x, y) => (ui.hover = { x, y }),
   leave: () => (ui.hover = null),
-  brush: () => ui.paving,
+  brush: () => ui.paving || (ui.decor !== null && paints(ui.decor)),
   stroke(wx, wy, start, alt) {
     ui.hover = { x: wx, y: wy };
     // Right-click is handled by the contextmenu listener below; the rest of a drag that used the last road does nothing.
-    if (alt || !ui.paving) return;
+    if (alt) return;
+    if (ui.decor && paints(ui.decor)) return paintDecor(ui.decor, wx, wy, start);
+    if (!ui.paving) return;
     const i = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
     if (start) {
       lifting = i >= 0 && s.tiles[i] === Tile.Road;
-      lastRoadTile = -1;
+      lastTile = -1;
     }
-    if (i < 0 || i === lastRoadTile) return;
-    lastRoadTile = i;
+    if (i < 0 || i === lastTile) return;
+    lastTile = i;
     const noneLeft = `No roads left. Each house adds ${CONFIG.roads.perHouse} more.`;
     if (lifting) removeRoad(world, i);
     else if (placeRoad(world, i)) {
@@ -127,8 +133,17 @@ attachInput(canvas, cam, {
     const b = s.tiles[i] === Tile.Building ? buildingAt(s, i) : undefined;
     if (b && b.kind !== 'townCenter') {
       ui.selected = ui.moving = b;
-      ui.road = null;
+      ui.road = ui.decorSel = null;
       ui.hover = { x: b.x + BUILDINGS[b.kind].w / 2, y: b.y + BUILDINGS[b.kind].h / 2 }; // its footprint, under the finger
+      navigator.vibrate?.(20);
+      return true;
+    }
+    const d = decorOn(i);
+    if (d) {
+      ui.decorSel = d;
+      ui.movingDecor = true;
+      ui.selected = ui.road = null;
+      ui.hover = { x: d.x + DECOR[d.kind].w / 2, y: d.y + DECOR[d.kind].h / 2 };
       navigator.vibrate?.(20);
       return true;
     }
@@ -150,6 +165,13 @@ attachInput(canvas, cam, {
       } else hud.message('Cannot move there. Choose cleared land.');
       return;
     }
+    if (ui.movingDecor && ui.decorSel) {
+      const d = ui.decorSel;
+      const { x, y } = placementAt(d.kind, wx, wy);
+      if (moveDecor(world, d.y * s.w + d.x, DECOR[d.kind].layer, x, y)) ui.movingDecor = false;
+      else hud.message('Cannot move there. Choose open ground.');
+      return;
+    }
     if (ui.moving) {
       const b = ui.moving;
       const { x, y } = placementAt(b.kind, wx, wy);
@@ -166,10 +188,18 @@ attachInput(canvas, cam, {
       else hud.message("Can't build there");
       return;
     }
+    if (ui.decor) {
+      // Stays in place mode, to set down another.
+      if (alt) return;
+      const { x, y } = placementAt(ui.decor, wx, wy);
+      if (!placeDecor(world, ui.decor, x, y)) hud.message(canPlaceDecor(world, ui.decor, x, y) ? `Not enough for a ${DECOR_TEXT[ui.decor].name}.` : "Can't place it there");
+      return;
+    }
     if (!inBounds(s, wx, wy)) return;
     const i = tileAt(s, wx, wy);
     ui.selected = s.tiles[i] === Tile.Building ? (buildingAt(s, i) ?? null) : null;
     ui.road = s.tiles[i] === Tile.Road ? i : null;
+    ui.decorSel = decorOn(i) ?? null;
     if (s.tiles[i] === Tile.Relic) {
       if (!openRelic(world, i)) hud.message('Clear a path to the relic first');
       else if (s.cards.length) skillModal.open('choose', i);
@@ -185,17 +215,42 @@ addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
   if (ui.moving) ui.moving = null;
   else if (ui.movingRoad) ui.movingRoad = false;
+  else if (ui.movingDecor) ui.movingDecor = false;
   else if (ui.paving) ui.paving = false;
-  else ui.placing = ui.selected = ui.road = null;
+  else if (ui.decor) ui.decor = null; // back to the decoration palette
+  else if (ui.placing || ui.selected || ui.road !== null || ui.decorSel) ui.placing = ui.selected = ui.road = ui.decorSel = null;
+  else ui.decorating = false;
 });
-// Right click anywhere (map or sidebar, even after a right-drag) cancels placing a building or ends road mode.
+// Right click anywhere (map or sidebar, even after a right-drag) cancels placing a building or decoration, or ends road mode.
 // A long press on a touch screen can also open a context menu; that one cancels nothing.
 addEventListener('contextmenu', (e) => {
-  if (!(ui.placing || ui.paving) || e.button !== 2 || (e as PointerEvent).pointerType === 'touch') return;
+  if (!(ui.placing || ui.paving || ui.decor) || e.button !== 2 || (e as PointerEvent).pointerType === 'touch') return;
   e.preventDefault();
-  ui.placing = null;
+  ui.placing = ui.decor = null;
   ui.paving = false;
 });
+
+/** The decoration standing on tile `i`, else the one lying there (none on a building, road or tree). */
+function decorOn(i: number) {
+  return s.tiles[i] === Tile.Grass ? (decorAt(s, i, 'prop') ?? decorAt(s, i, 'ground')) : undefined;
+}
+
+/** A decoration stroke lays `kind` on open ground, or lifts that kind if it starts on one. */
+function paintDecor(kind: DecorKind, wx: number, wy: number, start: boolean): void {
+  const i = inBounds(s, wx, wy) ? tileAt(s, wx, wy) : -1;
+  const { layer } = DECOR[kind];
+  const mine = () => decorAt(s, i, layer)?.kind === kind;
+  if (start) {
+    lifting = i >= 0 && mine();
+    lastTile = -1;
+  }
+  if (i < 0 || i === lastTile) return;
+  lastTile = i;
+  const [x, y] = [i % s.w, (i / s.w) | 0];
+  if (lifting) {
+    if (mine()) removeDecor(world, i, layer);
+  } else if (!placeDecor(world, kind, x, y) && canPlaceDecor(world, kind, x, y)) hud.message(`Not enough for a ${DECOR_TEXT[kind].name}.`);
+}
 
 function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
@@ -223,9 +278,8 @@ function catchUp(seconds: number): void {
   const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
   const born = s.villagers.length - pop;
   const villagers = born > 0 ? `, +${born} villager${born === 1 ? '' : 's'}` : '';
-  const relic = panToRelic();
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${villagers}${relic ? `. ${relic}` : ''}`, 8000);
-  else if (relic) hud.message(relic);
+  relicNews();
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${villagers}`, 8000);
 }
 
 // A finger doesn't hover, so on touch a placement starts with its footprint in sight: over the building or road being
@@ -237,28 +291,28 @@ function startAim(): void {
   const kind = aiming(ui);
   if (kind && !aimed && touchInput) {
     const b = ui.moving;
+    const d = ui.movingDecor ? ui.decorSel : null;
     if (b) ui.hover = { x: b.x + BUILDINGS[b.kind].w / 2, y: b.y + BUILDINGS[b.kind].h / 2 };
+    else if (d) ui.hover = { x: d.x + DECOR[d.kind].w / 2, y: d.y + DECOR[d.kind].h / 2 };
     else if (kind === 'road') ui.hover = { x: (ui.road! % s.w) + 0.5, y: ((ui.road! / s.w) | 0) + 0.5 };
     else ui.hover = { x: cam.x, y: cam.y };
   }
   aimed = kind;
 }
 
-const NEW_RELIC = 'New relic discovered!';
-const RELIC_UNCOVERED = 'Relic uncovered! Tap it to choose a skill.';
-let relicsSeen = s.relicsSpawned; // the camera glides to each relic spawned after this
-let uncovered = s.relics.filter((r) => isCollectable(s, r)); // and to each one your land reaches after this
-/** Glide to a relic that has spawned, or that your land has reached, since the last check; returns its news, if any. */
-function panToRelic(): string | null {
+let relicsSeen = s.relicsSpawned; // a toast offers to show each relic spawned after this
+let uncovered = s.relics.filter((r) => isCollectable(s, r)); // and each one your land reaches after this
+/** Toasts for relics that have spawned, or that your land has reached, since the last check; tapping one glides there. */
+function relicNews(): void {
   const reached = s.relics.filter((r) => isCollectable(s, r));
-  const fresh = reached.find((r) => !uncovered.includes(r));
+  const fresh = reached.filter((r) => !uncovered.includes(r));
   uncovered = reached;
+  const glide = (r: number) => () => cam.glideTo((r % s.w) + 0.5, ((r / s.w) | 0) + 0.5);
+  for (const r of fresh) toasts.relic('Relic uncovered', 'Your land reaches a relic', glide(r));
   const spawned = s.relicsSpawned !== relicsSeen;
   relicsSeen = s.relicsSpawned;
-  const r = fresh ?? (spawned ? s.relics.at(-1) : undefined);
-  if (r === undefined) return null;
-  cam.glideTo((r % s.w) + 0.5, ((r / s.w) | 0) + 0.5);
-  return fresh === undefined ? NEW_RELIC : RELIC_UNCOVERED;
+  const r = s.relics.at(-1);
+  if (spawned && r !== undefined && !fresh.includes(r)) toasts.relic('Relic discovered', 'A relic appeared in the forest', glide(r));
 }
 if (loaded) catchUp((Date.now() - loaded.savedAt) / 1000);
 
@@ -276,8 +330,7 @@ function frame(now: number): void {
       acc -= dt;
     }
   }
-  const relic = panToRelic();
-  if (relic) hud.message(relic);
+  relicNews();
   let wool = 0;
   for (const fx of world.fx.splice(0)) {
     if (fx.kind === 'festival') hud.message(`Harvest Festival! Farms and orchards bring in ${fmt(fx.n)} food.`, 6000);

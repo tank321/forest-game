@@ -1,4 +1,5 @@
 import type { BuildingKind } from '../core/buildings';
+import type { DecorKind } from '../core/decor';
 import type { Season } from '../core/seasons';
 import type { Job } from '../core/types';
 
@@ -1955,6 +1956,548 @@ export function seasonalBuilding(kind: BuildingKind, season: Season, wellFed = f
     return r ? row.replace(/./g, (ch) => (r.snow.includes(ch) ? 'z' : r.shade.includes(ch) ? 'A' : ch)) : row;
   };
   return { grid: grid.map(snowy), palette: { ...BUILDING_PALETTE, ...tint, ...(wellFed ? WELL_FARM_TINTS[season] : {}) } };
+}
+
+/** RGBA per decoration grid char. */
+export const DECOR_PALETTE: Record<string, Rgba> = {
+  o: [36, 22, 12, 255], // #24160c outline
+  x: [0, 0, 0, 70], // #000000 shadow
+  b: [90, 58, 31, 255], // #5a3a1f wood dark
+  B: [138, 90, 48, 255], // #8a5a30 wood
+  h: [168, 116, 63, 255], // #a8743f wood lit
+  w: [242, 239, 230, 255], // #f2efe6 white paint, snow
+  W: [196, 190, 174, 255], // #c4beae white in shade
+  S: [195, 202, 210, 255], // #c3cad2 stone lit
+  a: [154, 163, 172, 255], // #9aa3ac stone
+  s: [120, 131, 142, 255], // #78838e stone shade
+  g: [31, 82, 40, 255], // #1f5228 leaf dark
+  G: [46, 122, 51, 255], // #2e7a33 leaf
+  H: [79, 156, 60, 255], // #4f9c3c leaf lit
+  J: [134, 196, 84, 255], // #86c454 leaf highlight
+  y: [239, 203, 98, 255], // #efcb62 gold lit
+  Y: [201, 154, 58, 255], // #c99a3a gold
+  v: [138, 101, 38, 255], // #8a6526 gold shade
+  c: [159, 208, 236, 255], // #9fd0ec water lit
+  u: [86, 156, 214, 255], // #569cd6 water
+  U: [58, 120, 176, 255], // #3a78b0 deep water
+  r: [178, 59, 46, 255], // #b23b2e red cloth
+  R: [132, 42, 32, 255], // #842a20 red in shade
+  p: [229, 138, 160, 255], // #e58aa0 pink
+  P: [246, 190, 206, 255], // #f6bece pink lit
+  q: [196, 96, 128, 255], // #c46080 pink deep
+  e: [252, 240, 246, 255], // #fcf0f6 blossom white
+  f: [255, 240, 160, 255], // #fff0a0 lamplight
+  F: [246, 190, 70, 255], // #f6be46 lamplight edge
+  n: [107, 74, 42, 255], // #6b4a2a soil
+  N: [78, 52, 28, 255], // #4e341c soil dark
+  k: [43, 39, 34, 255], // #2b2722 iron
+  K: [86, 82, 78, 255], // #56524e iron lit
+  t: [222, 196, 132, 255], // #dec484 straw lit
+  T: [180, 142, 78, 255], // #b48e4e straw
+  i: [74, 111, 165, 255], // #4a6fa5 blue cloth
+  I: [50, 78, 120, 255], // #324e78 blue in shade
+  l: [164, 135, 216, 255], // #a487d8 violet
+  L: [232, 140, 48, 255], // #e88c30 orange
+  '1': [204, 196, 178, 255], // #ccc4b2 paving lit
+  '2': [172, 164, 146, 255], // #aca492 paving
+  '3': [140, 132, 116, 255], // #8c8474 paving shade
+  '4': [104, 96, 84, 255], // #686054 paving joint
+};
+
+/**
+ * Decoration sprites (core/decor.ts): props are w·SPRITE_W × h·SPRITE_W + OVERHANG_PX like buildings; ground
+ * decorations lie flat at w·SPRITE_W × h·SPRITE_W. A joining kind's sprite is its lone piece (see composeDecor).
+ */
+export const DECOR_SPRITES: Record<DecorKind, readonly string[]> = {
+  flowerBed: [
+    '................',
+    '....NNNNNNNN....',
+    '..NNGHpPGHyYNN..',
+    '.NGpPpGlLGyyHGN.',
+    '.NHGpGHlllGGpPN.',
+    'NGyYGHGGlGHppPpN',
+    'NGyyGpPGHGGGpGHN',
+    'NHGGHpPpGyYGHGlN',
+    'NGlLGGpGGyyGGllN',
+    'NGllGHGGHGGpPGGN',
+    '.NHGyYGpPGlLGHN.',
+    '.NGGyyGPpGlllGN.',
+    '..NNGHGGpGGHNN..',
+    '....NNNNNNNN....',
+    '................',
+    '................',
+  ],
+  paving: [
+    '1111112411111124',
+    '1222223412222234',
+    '2333333423333334',
+    '4444444444444444',
+    '1124111111241111',
+    '2234122222341222',
+    '3334233333342333',
+    '4444444444444444',
+    '1111112411111124',
+    '1222223412222234',
+    '2333333423333334',
+    '4444444444444444',
+    '1124111111241111',
+    '2234122222341222',
+    '3334233333342333',
+    '4444444444444444',
+  ],
+  fence: [
+    ...Array(7).fill('................'),
+    '.......oo.......',
+    '......owwo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......owWo......',
+    '......oooox.....',
+    '.......xxx......',
+    '................',
+  ],
+  hedge: [
+    ...Array(6).fill('................'),
+    '.....oooooo.....',
+    '....oJJHHHHo....',
+    '...oJHHHJHHHo...',
+    '...oHHHHHHHGo...',
+    '...oHHHJHGHGo...',
+    '...oGHGHGGGgo...',
+    '...oGGGGGgGgo...',
+    '...ogGGgGGggo...',
+    '...oGgGGggGgo...',
+    '...ogggGggggo...',
+    '....oggggggo....',
+    '.....oooooo.....',
+    '................',
+    '................',
+  ],
+  lamp: [
+    '................',
+    '.......oo.......',
+    '......okko......',
+    '.....okKKko.....',
+    '....okkkkkko....',
+    '.....ofFFfox....',
+    '.....oFfffox....',
+    '.....oFfffox....',
+    '.....ofFFfox....',
+    '....okkkkkkox...',
+    '......oKkoxx....',
+    '......oKkox.....',
+    '......oKkox.....',
+    '......oKkox.....',
+    '......oKkox.....',
+    '......oKkox.....',
+    '.....okKkkox....',
+    '....okKkkkkox...',
+    '....oooooooox...',
+    '.....xxxxxxxx...',
+  ],
+  bench: [
+    ...Array(7).fill('................'),
+    '..oooooooooooo..',
+    '..ohhhhhhhhhhox.',
+    '..oBBBBBBBBBBox.',
+    '..oooooooooooox.',
+    '..ohhhhhhhhhhox.',
+    '..oBBBBBBBBBBox.',
+    '.oooooooooooooo.',
+    '.ohhhhhhhhhhhhox',
+    '.obbbbbbbbbbbbox',
+    '.oooooooooooooox',
+    '..oko......okoxx',
+    '..ooo......ooox.',
+    '...xx.......xx..',
+  ],
+  scarecrow: [
+    '................',
+    '......oooo......',
+    '.....otttTo.....',
+    '.....otTTTo.....',
+    '...ootttttToo...',
+    '...oTTTTTTTTox..',
+    '....oottttoox...',
+    '.....okttkox....',
+    '.....otttTox....',
+    '.oo.ooiiiiooo.o.',
+    'otToiiiiIiiiiotT',
+    'oTtiiiiiIiiiiiTo',
+    '.oooooiiIiiooooo',
+    '.....oiiIiiox...',
+    '.....oIIIIIox...',
+    '.....oToTtTox...',
+    '.......obox.....',
+    '......obbbox....',
+    '.....oooooox....',
+    '......xxxxx.....',
+  ],
+  cherry: [
+    '.....oooooo.....',
+    '...ooPPePPPoo...',
+    '..oPPePPPPpPPo..',
+    '.oPPPPPPpPPePPo.',
+    '.oPePPPppPPPppo.',
+    'oPPPPPpPPPePPppo',
+    'oPPPPpPPPPPPpppo',
+    'opPPePPPPpPPpqpo',
+    'oppPPPpPPPPppqpo',
+    '.oppppPPpppppqo.',
+    '.oqppppppppqqqo.',
+    '..ooqqpqqqqqoo..',
+    '....ooobBooo....',
+    '.......bBx......',
+    '.......bBx......',
+    '......obBxo.....',
+    '....oSabBaSox...',
+    '....osaaaasoxx..',
+    '.....oooooox....',
+    '......xxxxxx....',
+  ],
+  pond: [
+    '................................',
+    '................................',
+    '...........SsSSSasaaa...........',
+    '........sSSSSsUUUUsaaaas........',
+    '.......SSsUUUUUUUUUUUUaas.......',
+    '.....sSSUUUUUUuuuuUUUUUUasa.....',
+    '....SSsUUUuuuuuuuuuuuuUUUasa....',
+    '....SSUUuuuuuuuuuuuuuuuuUUas....',
+    '...sSUUuuuuuuuuuuuuuuuuuuUUas...',
+    '..SSUUuuuuuuuuuuuuuuuuuuuuUUas..',
+    '..SSUuuuuuuuuuuuuuuuuccuuuuUaa..',
+    '.sSUuuuuuuuuuuuuuuuuuuuuuuuuUaa.',
+    '.asUuuuuuuuuuuuuuuuuuuuuuuuuUaa.',
+    '.aauuuuucccuuuuuuuuuuPpGuuuuuaa.',
+    '.aUuuuuuuuuuuuuuuuuuGHPHGuuuuUa.',
+    '.aUuuuuuuuuuuuuuuuuuGHHuGuuuuUs.',
+    '.suuuuuuuuuuuuuuuuuuuGgGuuuuuua.',
+    '.auuuuuPpGuuuuuuuuuuuuuuuuuuuua.',
+    '.aauuuGHPHGuuuuuuuuuuuuuuuuuuaa.',
+    '.aauuuGHHuGuuuuuuuuuuuuuuuuuusa.',
+    '.aauuuuGgGuGGGuuuuuccccuuuuuuas.',
+    '..aauuuuuuGHHHGuuuuuuuuuuuuuaa..',
+    '..sauuuuuuGHHuGuuuuuuuuuuuuuaa..',
+    '...sauuuuuuGgGuuuuuuuuuuuuuas...',
+    '....sauuuuuuuuuuuuuuuuuuuuaa....',
+    '....asauuuuuuuuuuuuuuuuuusaa....',
+    '.....asauuuuuuuuuuuuuuuuaas.....',
+    '.......saauuuuuuuuuuuusaa.......',
+    '........saaaasuuuusaaaas........',
+    '...........aaasaaaasa...........',
+    '................................',
+    '................................',
+  ],
+  axeStatue: [
+    '................',
+    '............oo..',
+    '...........oyvo.',
+    '..........oyvox.',
+    '.........oyvox..',
+    '........oyvox...',
+    '.......oyvox....',
+    '...oooooyvox....',
+    '..oyyyyyyvo.....',
+    '..oyYYYYYvo.....',
+    '...oYYYYvvooo...',
+    '..ohovvvvohhhox.',
+    '.ohhBooooBBBhhox',
+    '.ohhhhhhhhhhhhox',
+    '.obBbBBBbBBbBbox',
+    '.oBbBBbBBbBBbbox',
+    '.obBBbBBbBBbBbox',
+    'oobbobbbbbbobboo',
+    '.oo.oooooooo.oox',
+    '..xxxxxxxxxxxxx.',
+  ],
+  shrine: [
+    '................',
+    '......oooo......',
+    '.....oSaaso.....',
+    '.....oSaYsox....',
+    '.....oSYysox....',
+    '.....oSaYsox....',
+    '.....oSYasox....',
+    '.....oSaysox....',
+    '.....oSYYsox....',
+    '..o..oSaasox.o..',
+    '.ofo.oSaasoxofo.',
+    '.oFo.oSaasoxoFo.',
+    '.oto.oSaasoxoto.',
+    '.oooooooooooooo.',
+    '.oSSSSSSSSSSSaox',
+    '.oSaaaaaaaaaasox',
+    '.ossssssssssssox',
+    '.oooooooooooooox',
+    '..xxxxxxxxxxxxxx',
+    '................',
+  ],
+  banner: [
+    '..oo............',
+    '.oyYo...........',
+    '..oboooooooooo..',
+    '..obhhhhhhhhhho.',
+    '..oboooooooooox.',
+    '..obo.orrrrrRox.',
+    '..obo.orrrrrRox.',
+    '..obo.oryyyrRox.',
+    '..obo.orYvYrRox.',
+    '..obo.oryyyrRox.',
+    '..obo.orrrrrRox.',
+    '..obo.orrrrrRox.',
+    '..obo.orrorrRox.',
+    '..obo.oro.orRox.',
+    '..obo.oo...ooxx.',
+    '..obox..........',
+    '..obox..........',
+    '.obbbox.........',
+    '.ooooox.........',
+    '..xxxxx.........',
+  ],
+  fountain: [
+    ...Array(4).fill('................................'),
+    '.............c....c.............',
+    '...............cc...............',
+    '............c.cuuc.c............',
+    '..............oaso..............',
+    '..............oSao..............',
+    '.............oSaaso.............',
+    '.............oSaaso.............',
+    '..........oooSSSSSSooo..........',
+    '.........oSSuuuuuuuuSSo.........',
+    '........oacauuuuuuuuacao........',
+    '.........oaaaaaaaaaaaao.........',
+    '.........cossssssssssoc.........',
+    '...........oooSaasooo...........',
+    '.........c.oooSaasooo.c.........',
+    '.......o.ooSSSSaasSSSoo.o.......',
+    '.....ooScSSSSSSaasSSSSScSoo.....',
+    '....oSSSSUUUUUSaasUUUUUSSSSo....',
+    '...oSSSUUUUUUUSaasUUUUUUUSSSo...',
+    '..oSSuuuuuuccuSaasuuuuuuuuuSSo..',
+    '.oSSuuuuuuuuuuSaasuuuuccuuuuSSo.',
+    '.oSSuuuuuuuuuuSaasuuuuuuuuuuSSox',
+    'oaauuuuuuuuuuuSaasuuuuuuuuuuuaao',
+    'oSaauuucccuuuuSaasuuuuuuuuuuaaso',
+    'oSaauuuuuuuuuuuuuuuuccccuuuuaaso',
+    'oSSaauuuuuuuuuuuuuuuuuuuuuuaasso',
+    'oSSSaaauuuuuuuuuuuuuuuuuuaaassso',
+    '.oSSSaaaauuuuuuuuuuuuuuaaaassso.',
+    '.oSSSSSaaaaaaaaaaaaaaaaaasssssox',
+    '..oSSSSSSSaaaaaaaaaaaassssssso.x',
+    '...oSSSSSSaaaaaaaaaaaasssssso.x.',
+    '....oSSSSSaaaaaaaaaaaassssso.x..',
+    '.....ooSSSaaaaaaaaaaaasssoo.x...',
+  ],
+  snowman: [
+    '................',
+    '......oooo......',
+    '......okKox.....',
+    '......okkox.....',
+    '....oooooooox...',
+    '.....owwwwox....',
+    '....owkwwkWox...',
+    '....owwLLwWox...',
+    '.....owwwWox....',
+    '....orrrrrrRo...',
+    '.b..owwwrRWWo.b.',
+    '..bowwwwwwwWWob.',
+    '...owwwkwwwWWox.',
+    '..owwwwwwwwwWWox',
+    '..owwwwkwwwwWWox',
+    '..owwwwwwwwwWWox',
+    '...owwwwwwwWWox.',
+    '....oooooooooox.',
+    '.....xxxxxxxxx..',
+    '................',
+  ],
+};
+/** Arms a joining decoration adds toward the north, east, south and west piece of its kind (bits 1, 2, 4, 8 of its mask). */
+export const DECOR_ARMS: Partial<Record<DecorKind, readonly (readonly string[])[]>> = {
+  fence: [
+    [
+      '................',
+      '......oooo......',
+      '......owWo......',
+      '......owWo......',
+      '......owWo......',
+      '......owWo......',
+      '......owWo......',
+      ...Array(13).fill('................'),
+    ],
+    [
+      ...Array(7).fill('................'),
+      '...............o',
+      '..............ow',
+      '..........ooooow',
+      '..........wwwwow',
+      '..........ooooow',
+      '..............ow',
+      '..........ooooow',
+      '..........wwwwow',
+      '..........ooooow',
+      '..............ow',
+      '..............oo',
+      '...........xxxxx',
+      '................',
+    ],
+    [], // south: the piece below reaches up to meet this one
+    [
+      ...Array(7).fill('................'),
+      'o...............',
+      'Wo..............',
+      'Wooooo..........',
+      'Wowwww..........',
+      'Wooooo..........',
+      'Wo..............',
+      'Wooooo..........',
+      'Wowwww..........',
+      'Wooooo..........',
+      'Wo..............',
+      'oo..............',
+      'xxxxxx..........',
+      '................',
+    ],
+  ],
+  hedge: [
+    [
+      '...oHHJHHHHHo...',
+      '...oHHHHHJHHo...',
+      '...oJHHHHHHHo...',
+      '...oHHHHJHHHo...',
+      '...oHJHHHHHHo...',
+      '...oHHHHHHJHo...',
+      '...oHHJHHHHHo...',
+      '...oHHHHHHHHo...',
+      '...oHHHHJHHHo...',
+      '...oHJHHHHHHo...',
+      '...oHHHHHHHHo...',
+      ...Array(9).fill('................'),
+    ],
+    [
+      ...Array(6).fill('................'),
+      '........oooooooo',
+      '........JJJJJJJJ',
+      '........HHHHJHHH',
+      '........HHJHHHHH',
+      '........JHHHHHHJ',
+      '........gGGGGgGG',
+      '........GGGgGGGG',
+      '........gggggggg',
+      '........GGGGgGGG',
+      '........gggggggg',
+      '........gggggggg',
+      '........oooooooo',
+      '................',
+      '................',
+    ],
+    [
+      ...Array(11).fill('................'),
+      '...oHHHHHHJHo...',
+      '...oHJHHHHHHo...',
+      '...oHHHHHHHHo...',
+      '...oHHHJHHHHo...',
+      '...oHHHHHHHHo...',
+      '...oJHHHHHJHo...',
+      '...oHHHHHHHHo...',
+      '...oHHHJHHHHo...',
+      '................',
+    ],
+    [
+      ...Array(6).fill('................'),
+      'oooooooo........',
+      'JJJJJJJJ........',
+      'HHHHHJHH........',
+      'HHHJHHHH........',
+      'HJHHHHHH........',
+      'GGGgGGGG........',
+      'GgGGGGgG........',
+      'gggggggg........',
+      'GGgGGGGg........',
+      'gggggggg........',
+      'gggggggg........',
+      'oooooooo........',
+      '................',
+      '................',
+    ],
+  ],
+};
+
+/** A joining decoration's piece: the lone piece plus an arm for each set bit of `mask` (1 north, 2 east, 4 south, 8 west). */
+export function composeDecor(kind: DecorKind, mask: number, art: readonly string[] = DECOR_SPRITES[kind]): string[] {
+  const g = art.map((r) => [...r]);
+  const arms = DECOR_ARMS[kind];
+  // East and west first, then north and south over them, so a run north to south reads as one unbroken top.
+  if (arms) for (const k of [1, 3, 0, 2]) if (mask & (1 << k)) arms[k].forEach((r, y) => [...r].forEach((c, x) => c !== '.' && (g[y][x] = c)));
+  return g.map((r) => r.join(''));
+}
+
+/** The ornamental cherry in winter: bare branches with snow on them, like the forest's winter trees. */
+const WINTER_CHERRY: readonly string[] = [
+  '..w..w......W...',
+  '..b..b...W..b...',
+  '..bw.b...b.Wb...',
+  '.w.b..b..b.b..W.',
+  '.b.b..b..b.b.Wb.',
+  'w.b.b.b..b.bWbWW',
+  'bb.bbwb..b.bb.bb',
+  '.....bb.b.b.....',
+  '.ww...bwbb...WW.',
+  '.bb.ww.bb.WWWbb.',
+  '...bbb.BbWbbb...',
+  '......bbbb......',
+  '.......bB.......',
+  '.......bBx......',
+  '.......bBx......',
+  '......obBxo.....',
+  '....owabBaWox...',
+  '....osaaaasoxx..',
+  '.....oooooox....',
+  '......xxxxxx....',
+];
+
+const ICE: Rgba = [196, 222, 240, 255];
+const ICE_DEEP: Rgba = [168, 204, 232, 255];
+const ICE_GLINT: Rgba = [236, 246, 252, 255];
+/** Leaf colors in autumn: olive and amber. */
+const AUTUMN_LEAVES = { g: [74, 82, 34, 255], G: [118, 120, 46, 255], H: [160, 150, 60, 255], J: [204, 176, 84, 255] } satisfies Record<string, Rgba>;
+const FROZEN = { c: ICE_GLINT, u: ICE, U: ICE_DEEP } satisfies Record<string, Rgba>;
+
+/** Seasonal looks over the summer art, like BUILDING_SEASONS: a tint, or a grid where the shape changes. */
+export const DECOR_SEASONS: Record<Season, Partial<Record<DecorKind, { tint?: Record<string, Rgba>; grid?: readonly string[] }>>> = {
+  spring: {
+    flowerBed: { tint: { y: [255, 216, 58, 255], Y: [243, 154, 44, 255], p: [242, 122, 158, 255], l: [156, 108, 234, 255], G: [56, 138, 58, 255], H: [96, 172, 70, 255] } }, // livelier, like the ground's flowers
+    hedge: { tint: { H: [92, 170, 66, 255], J: [156, 210, 96, 255] } },
+  },
+  summer: {},
+  autumn: {
+    flowerBed: { tint: { y: [168, 68, 30, 255], Y: [140, 76, 34, 255], p: [188, 58, 32, 255], P: [232, 150, 64, 255], l: [124, 70, 38, 255], L: [216, 116, 42, 255], G: AUTUMN_LEAVES.G, H: AUTUMN_LEAVES.H } }, // fallen leaves
+    hedge: { tint: AUTUMN_LEAVES },
+    cherry: { tint: { e: [250, 214, 120, 255], P: [240, 150, 60, 255], p: [214, 90, 40, 255], q: [160, 50, 30, 255] } }, // red and orange leaves
+    pond: { tint: { H: [160, 150, 60, 255], G: [118, 120, 46, 255] } },
+  },
+  winter: {
+    flowerBed: { tint: { G: SNOW_SHADE, H: SNOW, p: SNOW, P: SNOW, y: SNOW, Y: SNOW, l: SNOW, L: SNOW } }, // buried
+    paving: { tint: { '1': SNOW, '2': [214, 220, 228, 255] } },
+    hedge: { tint: { J: SNOW, H: SNOW, G: [36, 92, 52, 255] } }, // snow on top
+    bench: { tint: { h: SNOW } },
+    cherry: { grid: WINTER_CHERRY, tint: { w: SNOW, W: SNOW_SHADE } },
+    pond: { tint: { ...FROZEN, G: ICE_DEEP, H: ICE, g: ICE_DEEP, P: ICE_GLINT, p: ICE, S: SNOW } },
+    fountain: { tint: FROZEN },
+    axeStatue: { tint: { h: SNOW } },
+  },
+};
+
+/** A decoration's grid and palette in a season (`mask`: a joining kind's neighbors). */
+export function seasonalDecor(kind: DecorKind, season: Season, mask = 0): { grid: readonly string[]; palette: Record<string, Rgba> } {
+  const { grid = DECOR_SPRITES[kind], tint } = DECOR_SEASONS[season][kind] ?? {};
+  return { grid: composeDecor(kind, mask, grid), palette: { ...DECOR_PALETTE, ...tint } };
 }
 
 /** RGBA per relic grid char. */

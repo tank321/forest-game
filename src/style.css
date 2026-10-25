@@ -92,6 +92,8 @@ button:disabled { filter: saturate(.35) brightness(.7); cursor: default; }
 #panel .build-grid button { display: grid; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: 48px; align-content: start; align-items: center; gap: 4px 8px; padding: 4px 6px; }
 #panel .build-grid .name { line-height: 1.25; overflow-wrap: anywhere; }
 #panel .build-grid .cost { grid-column: 1 / -1; gap: 0 10px; }
+#panel .build-grid button.locked .thumb { filter: brightness(0); opacity: .3; } /* a trophy not yet earned, in silhouette */
+#panel .build-grid button.locked .cost { font-size: 13px; }
 .building-controls { display: flex; flex-wrap: wrap; gap: 6px; }
 .building-controls:empty { display: none; }
 .building-controls button { min-height: 40px; }

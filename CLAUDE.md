@@ -131,6 +131,11 @@ must be handled:
   on the bottom edge gets a `BUILDING_ENTRANCES` column so roads join there.
   To lock it until a skill is learned, set its `unlock` to a one-level skill placed in a track;
   the build menu hides it and `canPlace` refuses it until then. A `limit` caps how many may stand (the Outpost: 1).
+- **Decoration:** add it to `DECOR` (`decor.ts`; `layer` ground or prop, a flat `cost`, `joins` for fence-like runs,
+  `trophy` to lock it behind an achievement tier), its grid to `DECOR_SPRITES` (plus `DECOR_ARMS` if it joins, and any
+  `DECOR_SEASONS` looks) in `render/sprites.ts`, and its text to `DECOR_TEXT`. Decorations are looks only: tiles under them
+  stay `Tile.Grass` and nothing in the simulation reads `GameState.decor`; `returnDecor` (`commands.ts`) refunds any a
+  building or road covers. A decoration kind must not share a name with a building kind (`ui/placement.ts` aims either).
 - **Guild Contracts and caravan deals** live in `guild.ts` and are saved in `GameState.contracts` / `caravan`;
   `tick` tops the board up and brings the caravan at season boundaries, and the Market panel (`ui/market.ts`) shows both.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up

@@ -1,6 +1,7 @@
 import type { AchievementId, Counter } from './achievements';
 import type { BuildingKind } from './buildings';
 import type { ChestState } from './chest';
+import type { DecorKind } from './decor';
 import type { PerkId } from './legacy';
 import type { SkillId } from './skills';
 
@@ -54,6 +55,13 @@ export interface Building {
   mules?: number; // Trading Post: pack mules it keeps, its first included (see systems/mules.ts)
 }
 
+/** A decoration (see decor.ts): looks only, never read by the simulation. */
+export interface Decor {
+  kind: DecorKind;
+  x: number; // top-left tile
+  y: number;
+}
+
 export interface Rect {
   x: number;
   y: number;
@@ -99,6 +107,7 @@ export interface GameState {
   counts: Record<EventKey, number>; // this run's event counters
   career: { past: Record<Counter, number>; earned: Partial<Record<AchievementId, number>> }; // kept across rebuilds: past runs' counters, achievement tiers earned
   births: number; // Growing Families: progress toward the next birth, 0–1
+  decor: Decor[]; // decorations placed this run (see decor.ts)
   chest: ChestState; // Lucky Chest: when it can next be opened and the boost running, in wall-clock ms (kept across rebuilds)
 }
 

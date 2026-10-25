@@ -6,6 +6,7 @@ const LEAVE_MS = 300; // matches the toast-out animation in style.css
 const FLASH_MS = 900; // matches the toast-flash animation
 /** By rank (index 1–3): how long a toast stays up, and how much confetti it throws. */
 const SHOW_MS = [0, 4000, 5000, 7000];
+const RELIC_MS = 10000; // relic news waits longer, so there is time to tap it
 const CONFETTI = [0, 14, 28, 56];
 const CONFETTI_COLORS = ['#f2d77a', '#d9a93c', '#f8efd6', '#c0392b', '#6f9e4f', '#5c9ed6'];
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
@@ -42,19 +43,30 @@ function confetti(n: number, delay = 0): string {
   return out;
 }
 
+type Toast = { html: string; rank: 1 | 2 | 3; ms?: number; onClick?: () => void };
+
 /**
- * Achievement toasts: up to three at once, the rest wait their turn. The higher the rank, the bigger the show:
+ * Achievement and relic toasts: up to three at once, the rest wait their turn. The higher the rank, the bigger the show:
  * more confetti, spinning rays behind the medal, and for rank 3 a second burst, a gold flash over the map and a wobble.
+ * Tapping an achievement toast opens the achievements; tapping a relic toast runs its own action and dismisses it.
  */
 export class Toasts {
-  private queue: { html: string; rank: 1 | 2 | 3 }[] = [];
+  private queue: Toast[] = [];
+  private actions = new WeakMap<Element, () => void>();
 
   constructor(
     private box: HTMLElement,
     onClick: () => void,
     private chime: (rank: 1 | 2 | 3) => void,
   ) {
-    box.onclick = (e) => (e.target as HTMLElement).closest('.toast') && onClick();
+    box.onclick = (e) => {
+      const wrap = (e.target as HTMLElement).closest('.toast-wrap');
+      if (!wrap || wrap.classList.contains('leaving')) return;
+      const action = this.actions.get(wrap);
+      if (!action) return onClick();
+      action();
+      this.dismiss(wrap as HTMLElement);
+    };
   }
 
   achievement(id: AchievementId, tier: number): void {
@@ -70,30 +82,40 @@ export class Toasts {
     this.push(`<span class="toast-medal">${icon('trophy')}</span><div><small>Achievements</small><b>${text}</b></div>`, 2);
   }
 
-  private push(html: string, rank: 1 | 2 | 3): void {
-    this.queue.push({ html, rank });
+  /** News about a relic; tapping it runs `onClick` (gliding the camera there). */
+  relic(title: string, text: string, onClick: () => void): void {
+    this.push(`<span class="toast-medal">${icon('relic')}</span><div><small>${title}</small><b>${text}</b><span>Tap to look</span></div>`, 1, RELIC_MS, onClick);
+  }
+
+  private push(html: string, rank: 1 | 2 | 3, ms?: number, onClick?: () => void): void {
+    this.queue.push({ html, rank, ms, onClick });
     this.next();
+  }
+
+  /** Slides a toast out and lets the next one in. */
+  private dismiss(wrap: HTMLElement): void {
+    if (wrap.classList.contains('leaving')) return;
+    wrap.classList.add('leaving');
+    window.setTimeout(() => {
+      wrap.remove();
+      this.next();
+    }, LEAVE_MS);
   }
 
   /** Shows queued toasts while there is room. Toasts that appear together play one chime, the biggest. */
   private next(): void {
     let loudest = 0;
     while (this.box.childElementCount < MAX_SHOWN && this.queue.length) {
-      const { html, rank } = this.queue.shift()!;
+      const { html, rank, ms, onClick } = this.queue.shift()!;
       const wrap = document.createElement('div');
+      if (onClick) this.actions.set(wrap, onClick);
       wrap.className = `toast-wrap rank-${rank}`;
       const burst = calm.matches ? '' : `<div class="toast-burst">${confetti(CONFETTI[rank])}${rank === 3 ? confetti(CONFETTI[rank] / 2, 350) : ''}</div>`;
       wrap.innerHTML = `<div class="toast frame">${html}</div>${burst}`;
       this.box.append(wrap);
       loudest = Math.max(loudest, rank);
       if (rank === 3 && !calm.matches) this.flash();
-      window.setTimeout(() => {
-        wrap.classList.add('leaving');
-        window.setTimeout(() => {
-          wrap.remove();
-          this.next();
-        }, LEAVE_MS);
-      }, SHOW_MS[rank]);
+      window.setTimeout(() => this.dismiss(wrap), ms ?? SHOW_MS[rank]);
     }
     if (loudest) this.chime(loudest as 1 | 2 | 3);
   }

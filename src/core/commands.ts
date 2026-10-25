@@ -5,6 +5,7 @@ import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, 
 import {
   buildingCost, buildingRefund, gain, marketQuote, muleCost, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
+import { DECOR, decorAt, decorFits, decorTiles, isDecorUnlocked, type DecorKind, type DecorLayer } from './decor';
 import { inBounds, isChoppable, isCollectable, neighbors4, neighbors8 } from './grid';
 import { rushToMark } from './flags';
 import { contractDone, newContract } from './guild';
@@ -214,6 +215,7 @@ export function placeBuilding(w: World, kind: BuildingKind, x: number, y: number
   const cost = buildingCost(s, kind);
   if (!pay(s, cost)) return false;
   addBuilding(s, kind, x, y, cost);
+  returnDecor(s, footprint(s, { kind, x, y }));
   refreshRoadRoutes(w); // villagers walk around buildings, so any building can change the way home
   return true;
 }
@@ -232,6 +234,7 @@ export function moveBuilding(w: World, id: number, x: number, y: number): boolea
   b.x = x;
   b.y = y;
   for (const i of footprint(w.state, b)) w.state.tiles[i] = Tile.Building;
+  returnDecor(w.state, footprint(w.state, b));
   refreshBuildingRoutes(w, b, false);
   return true;
 }
@@ -282,6 +285,7 @@ export function canPlaceRoad(w: World, i: number): boolean {
 export function placeRoad(w: World, i: number): boolean {
   if (!canPlaceRoad(w, i)) return false;
   w.state.tiles[i] = Tile.Road;
+  returnDecor(w.state, [i]);
   refreshRoadRoutes(w);
   return true;
 }
@@ -301,6 +305,7 @@ export function moveRoad(w: World, from: number, to: number): boolean {
   if (!Number.isInteger(from) || !Number.isInteger(to) || s.tiles[from] !== Tile.Road || s.tiles[to] !== Tile.Grass) return false;
   s.tiles[from] = Tile.Grass;
   s.tiles[to] = Tile.Road;
+  returnDecor(s, [to]);
   refreshRoadRoutes(w);
   return true;
 }
@@ -310,6 +315,52 @@ function refreshRoadRoutes(w: World): void {
   onBuildingsChanged(w);
   rerouteMules(w.state);
   for (const v of w.state.villagers) if (v.state === 'toHome') homeward(w, v);
+}
+
+/** A new decoration needs its kind unlocked (trophies) and open ground free of its layer. */
+export function canPlaceDecor(w: World, kind: DecorKind, x: number, y: number): boolean {
+  return isDecorUnlocked(w.state, kind) && decorFits(w.state, kind, x, y);
+}
+
+/** Places a decoration for its flat cost. Decorations are looks only: nothing else changes. */
+export function placeDecor(w: World, kind: DecorKind, x: number, y: number): boolean {
+  const s = w.state;
+  if (!canPlaceDecor(w, kind, x, y) || !pay(s, DECOR[kind].cost)) return false;
+  s.decor.push({ kind, x, y });
+  return true;
+}
+
+/** Removes the decoration of `layer` covering tile `i`, returning all it cost. */
+export function removeDecor(w: World, i: number, layer: DecorLayer): boolean {
+  const s = w.state;
+  if (!Number.isInteger(i) || i < 0 || i >= s.tiles.length || !decorAt(s, i, layer)) return false;
+  returnDecor(s, [i], layer);
+  return true;
+}
+
+export function canMoveDecor(w: World, i: number, layer: DecorLayer, x: number, y: number): boolean {
+  const s = w.state;
+  const d = Number.isInteger(i) && i >= 0 && i < s.tiles.length ? decorAt(s, i, layer) : undefined;
+  return d !== undefined && decorFits(s, d.kind, x, y, d);
+}
+
+/** Moves the decoration of `layer` covering tile `i` to (x, y), for free. */
+export function moveDecor(w: World, i: number, layer: DecorLayer, x: number, y: number): boolean {
+  if (!canMoveDecor(w, i, layer, x, y)) return false;
+  const d = decorAt(w.state, i, layer)!;
+  d.x = x;
+  d.y = y;
+  return true;
+}
+
+/** Takes up the decorations (of `layer`, or both) covering any of `tiles` and returns their cost: building or laying road over one never loses it. */
+function returnDecor(s: GameState, tiles: number[], layer?: DecorLayer): void {
+  const hit = new Set(tiles);
+  s.decor = s.decor.filter((d) => {
+    if ((layer && DECOR[d.kind].layer !== layer) || !decorTiles(s, d).some((i) => hit.has(i))) return true;
+    for (const [r, n] of Object.entries(DECOR[d.kind].cost)) s.resources[r as ResourceKey] += n;
+    return false;
+  });
 }
 
 /**
