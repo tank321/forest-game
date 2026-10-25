@@ -18,8 +18,8 @@ the repository's **Settings → Pages** with **Source: GitHub Actions**, and ser
 
 ## Controls
 A new game opens with a short **tutorial** at the top of the sidebar: one goal at a time, from the first taps through
-hiring, a House, a Farm, a Lumber Camp and the axe, to the first relic and skill. Each goal finishes when you do it,
-and whatever it points at pulses. **Skip tutorial** (click twice) ends it for good; it isn't shown for existing saves.
+hiring, a House, a Farm, a road out to the trees, a Lumber Camp and the axe, a Barn and the first farm upgrade, to the
+first relic and skill, the skill tree and Legacy. Each goal finishes when you do it, and whatever it points at pulses. **Skip tutorial** (click twice) ends it for good; it isn't shown for existing saves.
 
 Drag to pan, wheel or pinch to zoom (on a touch screen two fingers also pan). Tap a tree next to your land for +1 wood.
 Hover over a tree to see its wood left out of its full-grown wood; a tree that has been chopped
@@ -171,6 +171,14 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v39** – The tutorial teaches roads, the Barn, skills and Legacy.
+- New steps: **Lay a road** (after the Farm: drag a road from the Town Center out toward the trees; skipped if one is
+  already joined), **Better farms** (after the axe: build a Barn near your farms and buy the first farm upgrade) and
+  **Explore your skills** (after the first skill: open the skill tree). The last card now explains **Legacy** rebuilds
+  and points at its button. The Lumber Camp goes at the end of the new road.
+- Progress in the old 8-step tutorial carries over to the matching step. No save change (tutorial progress is a
+  browser setting).
+
 **v38** – Hold to move.
 - On a touch screen, holding a finger on a building (any but the Town Center) picks it up to move, with a short buzz on
   phones that can: keep the finger down and drag it to the new spot, then tap its footprint to place it, as after **Move**.

@@ -293,7 +293,10 @@ const save = () => !resetting && saveGame(s);
 
 // Menu: skills popup, save export/import, dev tap multiplier, game speed and reset.
 const $ = (id: string) => document.getElementById(id)!;
-$('skillsBtn').onclick = () => skillModal.open();
+$('skillsBtn').onclick = () => {
+  skillModal.open();
+  tutorial.sawSkillTree();
+};
 $('exportBtn').onclick = () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([serialize(s)], { type: 'application/json' }));

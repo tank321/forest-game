@@ -1,16 +1,22 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind } from '../core/buildings';
 import { canAfford, villagerCost } from '../core/economy';
-import { linkedBuildings } from '../core/roads';
+import { legacyRequirement } from '../core/legacy';
+import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
 import type { World } from '../core/world';
 import { readPref, writePref } from './prefs';
 import type { UiState } from './state';
+
+/** What the player has done in the UI this session, for goals the game state doesn't record. */
+export interface Seen {
+  skillTree: boolean; // opened with the Skills button
+}
 
 /** One goal on the coach card. Its text and highlight can change as the player gets partway there. */
 interface Step {
   title: string;
   text: (w: World, ui: UiState) => string;
-  done?: (w: World) => boolean; // none on the last step: the player closes the card
+  done?: (w: World, seen: Seen) => boolean; // none on the last step: the player closes the card
   target?: (w: World, ui: UiState) => Element | null; // pulsed while the step is shown
   focus?: (w: World) => { x: number; y: number }; // the camera glides here when the step starts
 }
@@ -31,6 +37,15 @@ function placed(w: World, kind: BuildingKind): 'none' | 'isolated' | 'linked' {
   if (!all.length) return 'none';
   const linked = linkedBuildings(s);
   return all.some((b) => linked.has(b.id)) ? 'linked' : 'isolated';
+}
+
+/** A building that takes deliveries and sells an upgrade: build it, connect it, then buy the first level. */
+function workshopTarget(kind: 'lumberCamp' | 'barn') {
+  return (w: World, ui: UiState) => {
+    const at = placed(w, kind);
+    if (at !== 'linked') return buildCard(at === 'none' ? kind : 'road');
+    return ui.selected?.kind === kind ? document.querySelector('#panel .upgrade-card button') : null;
+  };
 }
 
 const { basePop, popPerHouse } = CONFIG.economy;
@@ -75,19 +90,33 @@ export const STEPS: Step[] = [
     target: (w) => buildCard(placed(w, 'farm') === 'isolated' ? 'road' : 'farm'),
   },
   {
+    title: 'Lay a road',
+    text: (w) =>
+      `Buildings work only while they touch the Town Center or a road joined to it. Choose Road and drag from the Town Center out toward the trees. You have ${roadStock(w.state) - roadsBuilt(w.state)} roads left, and each House adds ${CONFIG.roads.perHouse}.`,
+    done: (w) => roadNetwork(w.state).includes(1),
+    target: () => buildCard('road'),
+  },
+  {
     title: 'Sharpen the axes',
     text: (w) => {
       const camp = placed(w, 'lumberCamp');
-      if (camp === 'none') return 'Build a Lumber Camp out by the trees: lumberjacks drop their wood there instead of walking back to the Town Center.';
+      if (camp === 'none') return 'Build a Lumber Camp at the end of your road, out by the trees: lumberjacks drop their wood there instead of walking back to the Town Center.';
       if (camp === 'isolated') return 'Connect your Lumber Camp to the Town Center with a road, so it starts working.';
       return 'Tap your Lumber Camp and upgrade the axe, so lumberjacks chop faster and carry more.';
     },
     done: (w) => w.state.upgrades.axe >= 1,
-    target: (w, ui) => {
-      const camp = placed(w, 'lumberCamp');
-      if (camp !== 'linked') return buildCard(camp === 'none' ? 'lumberCamp' : 'road');
-      return ui.selected?.kind === 'lumberCamp' ? document.querySelector('#panel .upgrade-card button') : null;
+    target: workshopTarget('lumberCamp'),
+  },
+  {
+    title: 'Better farms',
+    text: (w) => {
+      const barn = placed(w, 'barn');
+      if (barn === 'none') return 'A Barn takes food and cloth, like the Lumber Camp takes wood. Build one near your farms, so farmers walk less.';
+      if (barn === 'isolated') return 'Connect your Barn to the Town Center with a road, so it starts working.';
+      return 'Tap your Barn and upgrade farms, so farmers harvest faster and carry more.';
     },
+    done: (w) => w.state.upgrades.farm >= 1,
+    target: workshopTarget('barn'),
   },
   {
     title: 'Find a relic',
@@ -105,17 +134,36 @@ export const STEPS: Step[] = [
     },
   },
   {
-    title: "You're on your way",
-    text: () => 'More relics appear as you clear land, each with a new skill. The Guide lists every building and what unlocks it. Good luck!',
-    target: () => document.getElementById('guideBtn'),
+    title: 'Explore your skills',
+    text: () =>
+      'More relics appear as you clear land, each with a new skill. Skills shows all six tracks: each skill you learn opens the ones that grow from it, and some unlock new buildings such as the Quarry and the Market. Open it to see where you are headed.',
+    done: (_, seen) => seen.skillTree,
+    target: () => document.getElementById('skillsBtn'),
+  },
+  {
+    title: 'Rebuild with Legacy',
+    text: (w) =>
+      `Once you have learned ${legacyRequirement(w.state)} skill levels, Legacy turns gold: rebuild on a new map and keep one perk forever. The Guide lists every building and what unlocks it. Good luck!`,
+    target: () => document.getElementById('legacyBtn'),
   },
 ];
 
 /** The first step from `from` on that isn't done yet. The last step is never done on its own. */
-export function nextStep(w: World, from: number): number {
+export function nextStep(w: World, from: number, seen: Seen = { skillTree: false }): number {
   let i = from;
-  while (STEPS[i].done?.(w)) i++;
+  while (STEPS[i].done?.(w, seen)) i++;
   return i;
+}
+
+/** Where each step of the 8-step tutorial (v38 and earlier, kept under `CONFIG.tutorial.oldKey`) is now. */
+const OLD_STEPS = [0, 1, 2, 3, 4, 6, 8, 9];
+
+/** The step to resume from the stored progress (or the old tutorial's), or -1 when finished or never started. */
+export function resumeStep(kept: string | null, old: string | null): number {
+  const n = Number(kept ?? NaN);
+  if (kept !== null) return Number.isInteger(n) ? Math.min(Math.max(n, 0), STEPS.length - 1) : -1;
+  const o = Number(old ?? NaN);
+  return Number.isInteger(o) ? OLD_STEPS[Math.min(Math.max(o, 0), OLD_STEPS.length - 1)] : -1;
 }
 
 /**
@@ -127,6 +175,7 @@ export class Tutorial {
   private shown = -1;
   private glow: Element | null = null;
   private armed = 0;
+  private seen: Seen = { skillTree: false };
   private count: HTMLElement;
   private title: HTMLElement;
   private body: HTMLElement;
@@ -139,9 +188,8 @@ export class Tutorial {
     private glide: (x: number, y: number) => void,
     fresh: boolean,
   ) {
-    const kept = Number(readPref(CONFIG.tutorial.key) ?? NaN);
-    this.step = fresh ? 0 : Number.isInteger(kept) ? Math.min(Math.max(kept, 0), STEPS.length - 1) : -1;
-    if (fresh) writePref(CONFIG.tutorial.key, '0');
+    this.step = fresh ? 0 : resumeStep(readPref(CONFIG.tutorial.key), readPref(CONFIG.tutorial.oldKey));
+    if (fresh || this.step >= 0) writePref(CONFIG.tutorial.key, String(this.step));
     this.count = el.querySelector('small')!;
     this.title = el.querySelector('h3')!;
     this.body = el.querySelector('p')!;
@@ -158,10 +206,15 @@ export class Tutorial {
     el.hidden = this.step < 0;
   }
 
+  /** The Skills button opened the skill tree. */
+  sawSkillTree(): void {
+    this.seen.skillTree = true;
+  }
+
   update(): void {
     if (this.step < 0) return;
     const w = this.world();
-    const step = nextStep(w, this.step);
+    const step = nextStep(w, this.step, this.seen);
     if (step !== this.step) {
       this.step = step;
       writePref(CONFIG.tutorial.key, String(step));

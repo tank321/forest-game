@@ -177,6 +177,7 @@ export const CONFIG = {
   // grabPad = tiles of slack around a placement footprint for a finger
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900, holdMs: 450, grabPad: 0.3 },
   buildMenu: { key: 'forest-game-build-menu' }, // browser storage key: "hidden" while the build menu is folded away on a phone
-  tutorial: { key: 'forest-game-tutorial' }, // browser storage key for the tutorial's step (or "done")
+  // browser storage key for the tutorial's step (or "done"); oldKey held the 8-step tutorial's, up to v38
+  tutorial: { key: 'forest-game-tutorial-2', oldKey: 'forest-game-tutorial' },
   save: { key: 'forest-game-save', intervalMs: 10_000 },
 } as const;
