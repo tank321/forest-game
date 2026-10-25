@@ -12,6 +12,7 @@ export interface UiState {
   road: number | null; // selected road tile
   movingRoad: boolean; // the selected road awaits its new tile
   decorating: boolean; // the decoration palette is open in place of the build menu
+  trophies: boolean; // the palette shows the trophies rather than the town decorations
   decor: DecorKind | null; // the decoration being placed (a 1×1 kind is painted like road)
   decorSel: Decor | null; // selected decoration
   movingDecor: boolean; // the selected decoration awaits its new spot
@@ -27,6 +28,7 @@ export const createUiState = (): UiState => ({
   road: null,
   movingRoad: false,
   decorating: false,
+  trophies: false,
   decor: null,
   decorSel: null,
   movingDecor: false,

@@ -15,7 +15,7 @@ export interface DecorDef {
   w: number;
   h: number;
   layer: DecorLayer;
-  joins?: true; // joins the same kind beside it, like a road (fences, hedges; see render/sprites.ts)
+  joins?: true; // joins the same kind of its layer beside it, like a road (fences, hedges, walls, paths; see render/sprites.ts)
   cost: Cost; // flat; removing it, or building over it, returns all of it
   trophy?: { achievement: AchievementId; tier: number }; // locked until that achievement tier is earned (kept across rebuilds)
 }
@@ -32,6 +32,14 @@ export const DECOR = {
   scarecrow: def({ cost: { wood: 20, cloth: 5 } }),
   cherry: def({ cost: { wood: 50, food: 25 } }),
   pond: def({ w: 2, h: 2, layer: 'ground', cost: { stone: 40 } }),
+  path: def({ layer: 'ground', joins: true, cost: { stone: 2 } }),
+  wall: def({ joins: true, cost: { stone: 10 } }),
+  vegPatch: def({ layer: 'ground', cost: { food: 10 } }),
+  woodpile: def({ cost: { wood: 25 } }),
+  stall: def({ w: 2, cost: { wood: 30, cloth: 10 } }),
+  haystack: def({ cost: { food: 15 } }),
+  square: def({ w: 3, h: 3, layer: 'ground', cost: { stone: 40 } }),
+  garden: def({ w: 3, h: 2, layer: 'ground', cost: { food: 40 } }),
   axeStatue: def({ cost: { gold: 50 }, trophy: { achievement: 'trees', tier: 5 } }),
   shrine: def({ cost: { stone: 50 }, trophy: { achievement: 'relics', tier: 3 } }),
   banner: def({ cost: { cloth: 20, gold: 20 }, trophy: { achievement: 'gold', tier: 4 } }),

@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { border, BUILDINGS, type BuildingKind, buildingAt, buildingGap } from '../core/buildings';
 import { canMoveBuilding, canMoveDecor, canPlace, canPlaceDecor, canPlaceRoad } from '../core/commands';
-import { DECOR, DECOR_KINDS, decorAt, type DecorKind } from '../core/decor';
+import { DECOR, DECOR_KINDS, decorAt, type DecorKind, type DecorLayer } from '../core/decor';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
 import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
@@ -400,23 +400,20 @@ export class Renderer {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const { x0, x1, y0, y1 } = this.visibleTiles(s);
+    const joined = joinedDecor(s, 'ground');
     for (const d of s.decor) {
       const { w, h, layer } = DECOR[d.kind];
       if (layer !== 'ground' || d.x > x1 || d.x + w <= x0 || d.y > y1 || d.y + h <= y0) continue;
       const [sx, sy] = cam.toScreen(d.x, d.y);
-      ctx.drawImage(this.decorSprites[this.seasonAt(s.time, d.y * s.w + d.x)][d.kind][0], sx, sy, w * k, h * k);
+      ctx.drawImage(this.decorSprites[this.seasonAt(s.time, d.y * s.w + d.x)][d.kind][joinMask(s, d, joined)], sx, sy, w * k, h * k);
     }
   }
 
-  /** A standing decoration; a fence or hedge joins the pieces of its kind beside it (`joined`: their kind by tile). */
+  /** A standing decoration; a fence, hedge or wall joins the pieces of its kind beside it (`joined`: their kind by tile). */
   private drawDecor(s: GameState, d: Decor, joined: ReadonlyMap<number, DecorKind>): void {
-    const { w, h, joins } = DECOR[d.kind];
-    const i = d.y * s.w + d.x;
-    const same = (j: number) => joined.get(j) === d.kind;
-    const mask = !joins ? 0
-      : (d.y > 0 && same(i - s.w) ? 1 : 0) | (d.x < s.w - 1 && same(i + 1) ? 2 : 0) | (d.y < s.h - 1 && same(i + s.w) ? 4 : 0) | (d.x > 0 && same(i - 1) ? 8 : 0);
+    const { w, h } = DECOR[d.kind];
     const [sx, sy] = this.cam.toScreen(d.x, d.y - OVERHANG);
-    this.ctx.drawImage(this.decorSprites[this.seasonAt(s.time, i)][d.kind][mask], sx, sy, w * this.cam.zoom, (h + OVERHANG) * this.cam.zoom);
+    this.ctx.drawImage(this.decorSprites[this.seasonAt(s.time, d.y * s.w + d.x)][d.kind][joinMask(s, d, joined)], sx, sy, w * this.cam.zoom, (h + OVERHANG) * this.cam.zoom);
   }
 
   /** Snowy tint over the map in winter, fading in and out at the season's edges. */
@@ -494,8 +491,7 @@ export class Renderer {
       props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id), now) });
     }
     const view = this.visibleTiles(s);
-    const joined = new Map<number, DecorKind>();
-    for (const d of s.decor) if (DECOR[d.kind].joins) joined.set(d.y * s.w + d.x, d.kind);
+    const joined = joinedDecor(s, 'prop');
     for (const d of s.decor) {
       const { w, h, layer } = DECOR[d.kind];
       if (layer !== 'prop' || d.x > view.x1 || d.x + w <= view.x0 || d.y > view.y1 || d.y + h <= view.y0) continue;
@@ -828,6 +824,21 @@ export class Renderer {
 }
 
 /** Whether a house hangs Christmas lights in winter, by a hash of its id (about half do): its twinkle offset in frames, or null. */
+/** Joining decorations of one layer by tile, so a path under a wall never joins it. */
+function joinedDecor(s: GameState, layer: DecorLayer): Map<number, DecorKind> {
+  const joined = new Map<number, DecorKind>();
+  for (const d of s.decor) if (DECOR[d.kind].joins && DECOR[d.kind].layer === layer) joined.set(d.y * s.w + d.x, d.kind);
+  return joined;
+}
+
+/** Bits for the neighbors a joining decoration joins (1 north, 2 east, 4 south, 8 west); 0 for other kinds. */
+function joinMask(s: GameState, d: Decor, joined: ReadonlyMap<number, DecorKind>): number {
+  if (!DECOR[d.kind].joins) return 0;
+  const i = d.y * s.w + d.x;
+  const same = (j: number) => joined.get(j) === d.kind;
+  return (d.y > 0 && same(i - s.w) ? 1 : 0) | (d.x < s.w - 1 && same(i + 1) ? 2 : 0) | (d.y < s.h - 1 && same(i + s.w) ? 4 : 0) | (d.x > 0 && same(i - 1) ? 8 : 0);
+}
+
 function houseLights(b: Building): number | null {
   const h = hash(b.id + 1);
   return h % 2 ? null : ((h >>> 1) % 8) / 8;

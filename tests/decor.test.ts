@@ -49,6 +49,22 @@ describe('decorations', () => {
     expect(decorAt(s, at(w, 6, 10), 'prop')).toBeUndefined();
   });
 
+  it('let props stand on a town square, and a wall run along a dirt path', () => {
+    const w = yard();
+    const s = w.state;
+    expect(placeDecor(w, 'square', 6, 6)).toBe(true);
+    expect(decorAt(s, at(w, 8, 8), 'ground')?.kind).toBe('square'); // a 3×3 covers all nine tiles
+    expect(placeDecor(w, 'stall', 6, 7)).toBe(true); // a 2×1 prop on the square
+    expect(decorAt(s, at(w, 7, 7), 'prop')?.kind).toBe('stall');
+    expect(placeDecor(w, 'garden', 7, 8)).toBe(false); // the ground there is taken
+    expect(canPlaceDecor(w, 'garden', 16, 16)).toBe(false); // a 3×2 half off the clearing
+    expect(placeDecor(w, 'garden', 14, 6)).toBe(true);
+    expect(placeDecor(w, 'path', 6, 14)).toBe(true);
+    expect(placeDecor(w, 'wall', 6, 14)).toBe(true); // one of each layer
+    expect(decorAt(s, at(w, 6, 14), 'ground')?.kind).toBe('path');
+    expect(decorAt(s, at(w, 6, 14), 'prop')?.kind).toBe('wall');
+  });
+
   it('keep trophies locked until their achievement tier is earned, and across a rebuild', () => {
     const w = yard();
     const s = w.state;

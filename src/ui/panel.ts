@@ -245,12 +245,17 @@ export class Panel {
       };
     }
     if (ui.decorating) {
+      // Two pages, switched by a button: the town decorations, and the trophies earned with achievements.
+      const trophies = DECOR_KINDS.filter((k) => DECOR[k].trophy);
+      const earned = trophies.filter((k) => isDecorUnlocked(s, k)).length;
       return {
-        title: 'Decorate',
-        sub: 'Decorations are only for looks: villagers walk over them and nothing works any differently. Building or laying road over one hands it back.',
+        title: ui.trophies ? 'Trophies' : 'Decorate',
+        sub: ui.trophies
+          ? 'Trophies unlock with an achievement tier and stay unlocked across rebuilds. Like all decorations, they are only for looks.'
+          : 'Decorations are only for looks: villagers walk over them and nothing works any differently. Building or laying road over one hands it back.',
         // Trophies stay on show, in silhouette, until their achievement is earned.
         actions: [
-          ...DECOR_KINDS.map((k): Action => {
+          ...DECOR_KINDS.filter((k) => !!DECOR[k].trophy === ui.trophies).map((k): Action => {
             const trophy = DECOR[k].trophy;
             const open = isDecorUnlocked(s, k);
             return {
@@ -262,6 +267,7 @@ export class Panel {
               thumb: `decor-${k}`,
             };
           }),
+          { label: ui.trophies ? 'Town decorations' : `Trophies (${earned}/${trophies.length})`, cost: null, secondary: true, enabled: true, run: () => (ui.trophies = !ui.trophies) },
           { label: 'Back', cost: null, secondary: true, enabled: true, run: () => (ui.decorating = false) },
         ],
       };

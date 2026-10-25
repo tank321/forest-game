@@ -78,11 +78,13 @@ population cap but keeps existing villagers. The Town Center cannot be moved or 
 
 **Decorations** are only for looks, for those who like to lay out a town; nothing else in the game needs them.
 **Decorate**, the last card in the build menu, opens a palette: flower beds, stone paving, picket fences, hedges, lamp
-posts, benches, scarecrows, an ornamental cherry and a pond from the start, plus five trophies (a Golden Axe, a Relic
-Shrine, a Market Banner, a Town Fountain and a Snowman) that unlock with an achievement tier, stay unlocked across
-rebuilds, and show in silhouette until then. Each costs a little and comes back in full. 1×1 pieces are painted like road (tap or
-drag; start a drag on one of that kind to lift them); the pond and fountain are placed like a building. Fences and
-hedges join the ones beside them, and props can stand on paving. **Done**, Escape or a right-click ends placing. Tap a
+posts, benches, scarecrows, an ornamental cherry, a pond, dirt paths, stone walls, vegetable patches, woodpiles, haystacks,
+a 2×1 market stall, a 3×3 town square and a 3×2 flower garden from the start. The **Trophies** button beside **Back**
+switches it to the five trophies (a Golden Axe, a Relic Shrine, a Market Banner, a Town Fountain and a Snowman), which
+unlock with an achievement tier, stay unlocked across rebuilds, and show in silhouette until then; it counts how many
+you have earned, and **Town decorations** switches back. Each costs a little and comes back in full. 1×1 pieces are painted like road (tap or
+drag; start a drag on one of that kind to lift them); bigger ones are placed like a building. Fences, hedges, walls and
+paths join the ones beside them, and props can stand on paving, paths, the square and the garden. **Done**, Escape or a right-click ends placing. Tap a
 decoration to **Move** or **Remove** it (or hold a finger on it to pick it up). Villagers walk straight over them, and
 building or laying road over one hands it back. A new map after a rebuild starts without them.
 
@@ -200,6 +202,15 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v53** – More decorations, and trophies get their own page.
+- The decoration palette is split in two: the town decorations, and the five trophies. A **Trophies** button beside
+  **Back** (showing how many you have earned) switches to them, and **Town decorations** switches back.
+- Eight new decorations: dirt paths and stone walls that join their neighbors, vegetable patches (seedlings, cabbages,
+  pumpkins, then bare furrows), woodpiles (stacked high in autumn, burned down in winter), haystacks, a 2×1 market stall,
+  a 3×3 cobbled town square and a 3×2 flower garden (tulips in spring, roses in summer). Benches, lamps and stalls can
+  stand on the square, the garden and paths.
+- The Town Fountain's basin is drawn whole: it was cut off at the bottom of its tiles.
+
 **v52** – Decorations.
 - **Decorate**, the last card in the build menu, opens a palette of decorations that are only for looks: villagers walk
   over them and nothing works any differently. Flower beds, stone paving, picket fences, hedges, lamp posts, benches,
