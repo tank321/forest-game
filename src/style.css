@@ -548,20 +548,29 @@ button.danger { color: #ffb6a3; }
   #panel.folded > :not(h2), #panel.folded > .actions.build-grid { display: none; }
   #panel.folded:has(.tutorial-glow) > .actions.build-grid { display: grid; } /* the tutorial's target stays in reach */
   #panel:has(.build-grid) > .sub { display: none; }
-  /* A selected building: Move, Remove and Close sit right under its name, and the upgrade card is compact. */
-  #panel > h2 { order: -2; }
-  #panel > .building-controls { order: -1; gap: 4px; }
+  /*
+   * A selected building, road or placement (panel.ts renders it compact): one header line with the name beside
+   * Move, Remove, Pause and ✕; status and tally on one small line; upgrades as rows. The next-up card steps aside.
+   */
+  #panel { grid-template-columns: minmax(0, 1fr) auto; max-height: 50dvh; }
+  #panel > * { grid-column: 1 / -1; }
+  #panel > h2 { order: -2; grid-column: 1; font-size: 18px; line-height: 22px; overflow-wrap: anywhere; }
+  #panel > .building-controls { order: -1; grid-column: 2; grid-row: 1; align-self: center; justify-content: flex-end; gap: 4px; }
   .building-controls button { min-height: 36px; padding: 0 8px; font-size: 14px; }
   .building-controls .refund { font-size: 12px; }
-  #panel .sub, .building-status, .building-tally { font-size: 13px; line-height: 1.4; }
-  .building-status, .building-tally { padding: 4px 8px; }
-  .upgrade-card { gap: 4px; padding: 6px 8px; }
-  .upgrade-heading h3 { font-size: 16px; }
-  .upgrade-card table { font-size: 13px; }
-  .upgrade-card caption { padding-bottom: 2px; }
-  .upgrade-card th, .upgrade-card td { padding: 3px 2px; }
-  .upgrade-cost { padding-top: 4px; font-size: 13px; }
-  .upgrade-card > button, .action-with-hint button { min-height: 38px; }
+  #panel .sub { font-size: 13px; line-height: 1.4; }
+  .building-status { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 4px 8px; font-size: 13px; line-height: 1.4; }
+  .building-status .building-tally { display: inline-flex; padding: 0; border: 0; background: none; font-size: 13px; }
+  .upgrade-card.compact { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 6px 6px 8px; }
+  .upgrade-card.compact h3 { font-size: 15px; line-height: 20px; }
+  .upgrade-card.compact h3 small { color: #654222; font-size: 12px; font-weight: 400; }
+  .upgrade-card.compact p { font-size: 13px; line-height: 18px; }
+  .upgrade-card.compact > button { flex-direction: column; gap: 0; width: auto; min-width: 116px; min-height: 44px; padding: 2px 8px; }
+  .upgrade-card.compact > button .cost { justify-content: center; gap: 0 8px; font-size: 13px; }
+  .gold .chip.short { color: #b3261e; }
+  .action-with-hint button { min-height: 38px; }
+  #side:has(#panel.detail) #nextUpBtn { display: none; }
+  #side:has(#panel.detail) #tools:has(#pickSkillBtn[hidden]) { display: none; }
   #panel .actions.build-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #panel .build-grid button { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px auto; justify-items: center; gap: 2px; text-align: center; }
   #panel .build-grid .name { font-size: 14px; }

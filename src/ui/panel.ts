@@ -12,12 +12,24 @@ import type { UiState } from './state';
 import { BUILDING_TEXT, costHtml } from './text';
 
 const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILDINGS[k].buildable);
+const REMOVE_MS = 3000; // a second tap on Remove within this long removes the building
+
+/** An upgrade's stat change, the unit said once: "57 wood" and "65 wood" read "57 → 65 wood". */
+function change(current: string, next: string | null): string {
+  if (next === null) return current;
+  const [a, ...unitA] = current.split(' ');
+  const [b, ...unitB] = next.split(' ');
+  const unit = unitA.join(' ');
+  return unit === unitB.join(' ') ? `${a} → <b class="upgrade-next">${b}</b>${unit ? ` ${unit}` : ''}` : `${current} → <b class="upgrade-next">${next}</b>`;
+}
 
 /** Bottom panel: placement prompt, selected building's actions, or the build menu. */
 export class Panel {
   private key = '';
   private market: MarketView;
   private coarse = matchMedia('(pointer: coarse)'); // touch screens aim a placement before placing it
+  private narrow = matchMedia('(max-width: 899px)'); // the phone layout (style.css): a compact panel
+  private removing: { id: number; until: number } | null = null; // Remove tapped once, awaiting the second tap
   private folded = readPref(CONFIG.buildMenu.key) === 'hidden'; // on a phone the build menu folds down to its heading
 
   constructor(
@@ -41,7 +53,8 @@ export class Panel {
       return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
     const folded = !!foldable && this.folded;
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded,
+    const narrow = this.narrow.matches;
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded, narrow,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
       actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
     if (key === this.key) {
@@ -52,10 +65,15 @@ export class Panel {
     }
     this.key = key;
     this.el.classList.toggle('folded', folded);
+    this.el.classList.toggle('detail', !foldable); // a building, road or placement: the phone layout hides the next-up card
     // The fold button only shows on narrow screens (style.css).
     const fold = foldable ? `<button class="fold" aria-expanded="${!folded}" aria-label="${folded ? 'Show' : 'Hide'} the build menu"><i class="fold-arrow"></i></button>` : '';
     const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}${fold}</h2>` : `<h2>${title}${fold}</h2>`;
-    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
+    // On a phone the status and the tally share one line.
+    const info = narrow
+      ? (status || tally !== undefined ? `<p class="building-status">${status ?? ''}${tally !== undefined ? `<span class="building-tally">${tally}</span>` : ''}</p>` : '')
+      : `${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}`;
+    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${info}<div class="actions"></div><div class="building-controls"></div>`;
     const foldBtn = this.el.querySelector<HTMLButtonElement>('.fold');
     if (foldBtn) {
       foldBtn.onclick = () => {
@@ -78,8 +96,17 @@ export class Panel {
         const card = document.createElement('section');
         card.className = 'upgrade-card frame parchment';
         card.setAttribute('aria-label', u.title);
-        card.innerHTML = `<div class="upgrade-heading"><h3>${u.title}</h3><span class="upgrade-level">Level ${u.level} of ${u.max}</span></div><table><caption>${u.scope}</caption><thead><tr><th scope="col">Stat</th><th scope="col">Current</th><th scope="col">Next</th></tr></thead><tbody>${u.rows.map((row) => `<tr><th scope="row">${row.label}</th><td>${row.current}</td><td class="upgrade-next">${row.next ?? '—'}</td></tr>`).join('')}</tbody></table>${a.cost ? `<div class="upgrade-cost"><span>Cost</span><span class="cost">${costHtml(a.cost, have)}</span></div>` : '<p class="upgrade-complete">All levels unlocked.</p>'}`;
         b.classList.add('gold');
+        if (narrow) {
+          // One row: the title, level and stat changes beside an Upgrade button that carries its cost.
+          card.classList.add('compact');
+          card.innerHTML = `<div class="upgrade-info"><h3>${u.title} <small>${u.level}/${u.max}</small></h3>${u.rows.map((row) => `<p>${row.label} ${change(row.current, row.next)}</p>`).join('')}</div>`;
+          b.innerHTML = a.cost ? `<span>Upgrade</span><span class="cost">${costHtml(a.cost, have)}</span>` : 'Max level';
+          card.append(b);
+          box.append(card);
+          return;
+        }
+        card.innerHTML = `<div class="upgrade-heading"><h3>${u.title}</h3><span class="upgrade-level">Level ${u.level} of ${u.max}</span></div><table><caption>${u.scope}</caption><thead><tr><th scope="col">Stat</th><th scope="col">Current</th><th scope="col">Next</th></tr></thead><tbody>${u.rows.map((row) => `<tr><th scope="row">${row.label}</th><td>${row.current}</td><td class="upgrade-next">${row.next ?? '—'}</td></tr>`).join('')}</tbody></table>${a.cost ? `<div class="upgrade-cost"><span>Cost</span><span class="cost">${costHtml(a.cost, have)}</span></div>` : '<p class="upgrade-complete">All levels unlocked.</p>'}`;
         card.append(b);
         box.append(card);
       } else if (a.hint) {
@@ -152,20 +179,29 @@ export class Panel {
     if (ui.selected) {
       const b = ui.selected;
       const k = b.kind;
+      const narrow = this.narrow.matches;
       const actions = ACTIONS[k]?.(w, ui.selected) ?? [];
+      // On a phone, Pause and the like join Move and Remove in the header row.
+      if (narrow) for (const a of actions) if (a.compact) Object.assign(a, { label: a.compact, hint: undefined, secondary: true });
       if (k !== 'townCenter') {
+        // Remove takes a second tap within a few seconds; the first shows the refund.
+        const armed = this.removing?.id === b.id && performance.now() < this.removing.until;
         actions.push(
           { label: 'Move', cost: null, secondary: true, enabled: true, run: () => (ui.moving = b) },
-          { label: 'Remove', cost: null, refund: buildingRefund(b), secondary: true, danger: true, enabled: true, run: () => {
+          { label: armed ? 'Confirm remove' : 'Remove', cost: null, refund: armed ? buildingRefund(b) : undefined, secondary: true, danger: true, enabled: true, run: () => {
+            if (!armed) return void (this.removing = { id: b.id, until: performance.now() + REMOVE_MS });
+            this.removing = null;
             if (removeBuilding(w, b.id)) ui.selected = null;
           } },
         );
       }
-      actions.push({ label: 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.selected = null) });
+      actions.push({ label: narrow ? '✕' : 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.selected = null) });
       const isolated = BUILDINGS[k].road && !linkedBuildings(s).has(b.id);
       const info = isolated ? 'Isolated: not connected to the Town Center, so it does nothing. Lay a road from it to the Town Center.' : INFO[k]?.(w, ui.selected);
       const custom = k === 'market' ? this.market : undefined;
-      return { title: BUILDING_TEXT[k].name, thumb: k, sub: BUILDING_TEXT[k].desc, status: info, tally: tallyHtml(buildingById(s, b.id) ?? b), actions, custom };
+      // A phone leaves out the description (the Guide has it) when the building has more to show.
+      const busy = narrow && (!!info || !!custom || actions.some((a) => !a.secondary));
+      return { title: BUILDING_TEXT[k].name, thumb: k, sub: busy ? '' : BUILDING_TEXT[k].desc, status: info, tally: tallyHtml(buildingById(s, b.id) ?? b), actions, custom };
     }
     return {
       title: 'Build',

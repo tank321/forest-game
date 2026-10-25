@@ -20,6 +20,7 @@ export interface Action {
   secondary?: boolean;
   danger?: boolean;
   hint?: string;
+  compact?: string; // on a phone: a short label for the header row beside Move and Remove (its hint is left out)
   upgrade?: {
     title: string;
     level: number;
@@ -84,6 +85,7 @@ function pauseAction(w: World, b: Building): Action {
   const mule = b.kind === 'tradingPost';
   return {
     label: active ? 'Pause production' : 'Resume production',
+    compact: active ? 'Pause' : 'Resume',
     hint: mule
       ? (active ? 'The mule finishes its delivery, then waits at the post.' : 'The mule will start loading again.')
       : (active ? 'Workers finish deliveries, then return to chopping.' : 'Available villagers will return to this workplace.'),

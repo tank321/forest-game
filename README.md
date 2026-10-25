@@ -66,7 +66,7 @@ stand there but needs a road. Villagers prefer connected roads when walking (at 
 Select any building except the Town Center and choose **Move**, then tap a valid new location.
 Moves are free; a green footprint marks valid cleared land, and city buildings (houses, Markets,
 Tax Offices) still need to touch the Town Center or another city building. The original building stays until you place it; **Cancel move** or Escape cancels.
-**Remove** shows its refund and the share lost, and removes the building in one click. Removal returns 50%
+**Remove** takes two clicks: the first shows its refund and the share lost, and a second within 3 seconds removes the building. Removal returns 50%
 of the original construction materials, rounded down per resource; upgrade costs are excluded.
 Workers deliver carried resources before returning to lumberjacking. Removing houses reduces the
 population cap but keeps existing villagers. The Town Center cannot be moved or removed.
@@ -168,6 +168,14 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v36** – Phone building panel, reworked.
+- On a phone a selected building's panel fits without scrolling: its name shares one line with **Move**, **Remove**,
+  **Pause** (where it has one) and **✕**; its status and total share one small line; and each upgrade is a single row,
+  stats on the left (current → next) beside an **Upgrade** button that carries the cost. The description is left out when
+  there is more to show (the Guide has it), and the next-up achievement steps aside while a building is selected or placed.
+- **Remove** takes two taps everywhere: the first shows the refund and turns it into **Confirm remove**, and a second
+  tap within 3 seconds removes the building.
+
 **v35** – Phone building panel.
 - On a phone a selected building's **Move**, **Remove** and **Close** sit right under its name instead of below its
   upgrades, and the upgrade card, status and tally lines are more compact, so the panel takes less of the screen.

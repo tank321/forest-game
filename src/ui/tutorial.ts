@@ -23,7 +23,7 @@ const panelButton = (pick: (text: string) => boolean) =>
 const hireButton = (ui: UiState) => (ui.selected?.kind === 'townCenter' ? panelButton((t) => t.startsWith('Hire villager with wood')) : null);
 /** The build menu card for `kind`, or the Close button while a building's panel is in the way. */
 const buildCard = (kind: BuildingKind | 'road') =>
-  document.querySelector(`#panel .build-grid .thumb-${kind}`)?.closest('button') ?? panelButton((t) => t === 'Close');
+  document.querySelector(`#panel .build-grid .thumb-${kind}`)?.closest('button') ?? panelButton((t) => t === 'Close' || t === '✕');
 
 function placed(w: World, kind: BuildingKind): 'none' | 'isolated' | 'linked' {
   const s = w.state;
