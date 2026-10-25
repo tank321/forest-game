@@ -15,10 +15,10 @@ describe('legacy', () => {
   it('rebuilds once enough skill levels are learned, following the perk tree', () => {
     const w = smallWorld(30, 2);
     const s = w.state;
-    s.skills = { sharpAxes: 5, bigBaskets: 5, swiftFeet: 4 };
+    s.skills = { sharpAxes: 2, powerSwing: 2, momentum: 3, keenEyes: 2, heartwood: 3, swiftFeet: 2 };
     expect(canPrestige(s)).toBe(false);
     expect(prestige(w, 'masterHarvest')).toBeNull();
-    s.skills.swiftFeet = 5;
+    s.skills.bigBaskets = 1;
     expect(canPrestige(s)).toBe(true);
     expect(prestige(w, 'urbanCore')).toBeNull(); // not yet reachable
 
@@ -30,6 +30,12 @@ describe('legacy', () => {
     expect(legacyRequirement(next)).toBe(CONFIG.legacy.base + CONFIG.legacy.step);
     expect(roadStock(next)).toBe(roadStock(s) + CONFIG.legacy.roadsPerRun);
     expect(availablePerks(next)).toEqual(['swiftAndStrong']);
+  });
+
+  it('asks for 5 more levels at each of the first two rebuilds, then 10 more, up to every skill', () => {
+    const s = smallWorld().state;
+    const at = (runs: number) => legacyRequirement({ ...s, legacy: { runs, perks: {} } });
+    expect([0, 1, 2, 3, 4, 8, 9, 20].map(at)).toEqual([15, 20, 25, 35, 45, 85, 92, 92]);
   });
 
   it('multiplies gathering, walking and carrying', () => {

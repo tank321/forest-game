@@ -111,13 +111,13 @@ describe('building refunds', () => {
     const w = ready();
     w.state.skills = { masterBuilders: 1, masons: 2, wells: 1 };
     const b = build(w, 'well', 4, 4);
-    expect(b.paidCost).toEqual({ wood: 120, stone: 23 });
-    expect(buildingRefund(b)).toEqual({ wood: 60, stone: 11 });
+    expect(b.paidCost).toEqual({ wood: 120, stone: 18 });
+    expect(buildingRefund(b)).toEqual({ wood: 60, stone: 9 });
     w.state.skills = {};
     moveBuilding(w, b.id, 20, 20);
     const before = { ...w.state.resources };
     removeBuilding(w, b.id);
-    expect(w.state.resources).toEqual({ wood: before.wood + 60, food: before.food, stone: before.stone + 11, cloth: before.cloth, gold: before.gold });
+    expect(w.state.resources).toEqual({ wood: before.wood + 60, food: before.food, stone: before.stone + 9, cloth: before.cloth, gold: before.gold });
   });
 
   it('refunds wood, food and stone for a late house and keeps existing villagers', () => {

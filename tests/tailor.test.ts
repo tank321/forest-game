@@ -1,12 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../src/config';
-import { upgrade } from '../src/core/commands';
+import { addBuilding, atLimit } from '../src/core/buildings';
+import { removeBuilding, upgrade } from '../src/core/commands';
 import { maxLevel, upgradeCost } from '../src/core/economy';
 import { deserialize, serialize } from '../src/core/save';
 import { getStats } from '../src/core/stats';
-import { smallWorld } from './helpers';
+import { smallWorld, unlockBuildings } from './helpers';
 
 describe('tailor', () => {
+  it('only one may stand', () => {
+    const w = unlockBuildings(smallWorld(30));
+    expect(atLimit(w.state, 'tailor')).toBe(false);
+    const tailor = addBuilding(w.state, 'tailor', 2, 2);
+    expect(atLimit(w.state, 'tailor')).toBe(true); // so canPlace refuses a second and the build menu hides it
+    expect(removeBuilding(w, tailor.id)).toBe(true);
+    expect(atLimit(w.state, 'tailor')).toBe(false);
+  });
+
   it('shoes speed every walker and change no carry', () => {
     const w = smallWorld();
     const before = getStats(w.state);

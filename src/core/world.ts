@@ -18,7 +18,7 @@ const SOURCE_KEYS: Record<Source, true> = { lumber: true, farm: true, orchard: t
 
 /** A moment for the UI to show: floating text over tile `i` (a combo multiplier or an amount `n`), or the festival's food `n`. */
 export interface Fx {
-  kind: 'combo' | 'heartwood' | 'timber' | 'festival' | 'shearing' | 'fleece' | 'geode' | 'grazed' | 'blast' | 'fair' | 'caravan' | 'achievement';
+  kind: 'combo' | 'heartwood' | 'timber' | 'festival' | 'shearing' | 'fleece' | 'geode' | 'grazed' | 'blast' | 'fair' | 'caravan' | 'birth' | 'springBirths' | 'achievement';
   i: number; // -1 for the festival
   n: number; // an achievement's tier
   id?: AchievementId; // the achievement earned

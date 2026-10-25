@@ -93,9 +93,11 @@ const FX_TEXT: Record<Fx['kind'], (n: string, raw: number) => string> = {
   blast: (n) => (n === '0' ? 'BOOM!' : `BOOM! +${n} stone`),
   fair: () => 'Midsummer Fair!', // shown as toasts
   caravan: () => 'Caravan!',
+  birth: (n, raw) => `+${n} villager${raw === 1 ? '' : 's'}`,
+  springBirths: () => 'Spring Births!', // shown as a toast
   achievement: () => '',
 };
-const FX_COLOR: Partial<Record<Fx['kind'], string>> = { combo: '#bfe6ff', blast: '#ff9a4a', shearing: '#f2efe6' };
+const FX_COLOR: Partial<Record<Fx['kind'], string>> = { combo: '#bfe6ff', blast: '#ff9a4a', shearing: '#f2efe6', birth: '#ffc8dc' };
 const WINTER_FADE = 10; // s the winter tint takes to fade in or out
 const SEASON_STAGGER = 15; // s over which tiles turn to a new season, each at its own moment
 const STAGE_AT = [0.7, 0.4, 0.15]; // wood fraction above which each growth stage shows; below → stump
@@ -270,15 +272,22 @@ export class Renderer {
       const [sx, sy] = cam.toScreen(x, y);
       ctx.fillRect(sx, sy, w * k, h * k);
     };
-    /** A Well's reach around its tile at (x, y): a dashed water-blue square. */
-    const wellSquare = (x: number, y: number) => {
-      const r = wellReach(s);
+    /** A building's reach of `r` tiles around its footprint at (x, y): a dashed square. */
+    const reachSquare = (kind: BuildingKind, x: number, y: number, r: number, color: string) => {
       const [sx, sy] = cam.toScreen(x - r, y - r);
-      ctx.strokeStyle = 'rgb(110,190,255)';
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
-      ctx.strokeRect(sx, sy, (BUILDINGS.well.w + 2 * r) * k, (BUILDINGS.well.h + 2 * r) * k);
+      ctx.strokeRect(sx, sy, (BUILDINGS[kind].w + 2 * r) * k, (BUILDINGS[kind].h + 2 * r) * k);
       ctx.setLineDash([]);
+    };
+    /** A Well's reach in water blue; with Camp Crews, a Lumber Camp's faster-chopping reach in sawdust gold. */
+    const reach = (kind: BuildingKind, x: number, y: number) => {
+      if (kind === 'well') reachSquare(kind, x, y, wellReach(s), 'rgb(110,190,255)');
+      if (kind === 'lumberCamp') {
+        const st = getStats(s);
+        if (st.campBonus > 1) reachSquare(kind, x, y, st.campRadius, 'rgb(240,190,90)');
+      }
     };
 
     const net = roadNetwork(s);
@@ -307,7 +316,7 @@ export class Renderer {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
       ctx.strokeRect(sx, sy, d.w * k, d.h * k);
-      if (ui.selected.kind === 'well') wellSquare(ui.selected.x, ui.selected.y);
+      reach(ui.selected.kind, ui.selected.x, ui.selected.y);
     }
     if (ui.road !== null) {
       const [sx, sy] = cam.toScreen(ui.road % s.w, (ui.road / s.w) | 0);
@@ -325,7 +334,7 @@ export class Renderer {
       const linked = !d.road || touchesNetwork(s, { kind: placing, x, y }, net);
       ctx.fillStyle = !valid ? 'rgba(230,60,60,.55)' : linked ? 'rgba(80,220,100,.55)' : 'rgba(240,200,60,.55)';
       rect(x, y, d.w, d.h);
-      if (placing === 'well') wellSquare(x, y);
+      reach(placing, x, y);
       // Outline in water blue the connected farms a Well here would boost.
       if (placing === 'well' && valid) {
         const reach = wellReach(s);

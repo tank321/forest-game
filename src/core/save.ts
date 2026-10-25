@@ -6,9 +6,10 @@ import type { BuildingKind } from './buildings';
 import { isChoppable } from './grid';
 import { newLegacy } from './legacy';
 import { relicGap } from './relics';
+import { SKILLS, type SkillId } from './skills';
 import { Tile, type GameState, type Resources } from './types';
 
-const VERSION = 25;
+const VERSION = 27;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -208,6 +209,26 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   },
   // v25 lets a relic's offer be reshuffled once: an offer already dealt hasn't been.
   24: (f) => ({ ...f, version: 25, state: { ...f.state, reshuffled: false } }),
+  // v26 condenses the stat skills into fewer, bigger levels: each keeps about its share of the old maximum, rounded up.
+  // Roomy Houses keeps +1 per level but stops at 2, so a third level is dropped.
+  // Cards for a skill now maxed are dropped from an open offer (an empty offer is dealt again at the relic).
+  25: (f) => {
+    const skills = { ...f.state.skills };
+    for (const [id, old] of Object.entries(V25_MAX) as [SkillId, number][]) {
+      const level = skills[id];
+      if (level) skills[id] = Math.min(SKILLS[id].max, Math.ceil((level * SKILLS[id].max) / old));
+    }
+    const cards = f.state.cards.filter((id) => (skills[id] ?? 0) < SKILLS[id].max);
+    return { ...f, version: 26, state: { ...f.state, skills, cards, reshuffled: cards.length ? f.state.reshuffled : false } };
+  },
+  // v27 adds Growing Families' progress toward the next birth.
+  26: (f) => ({ ...f, version: 27, state: { ...f.state, births: 0 } }),
+};
+
+/** Max levels of the skills v26 shortened. */
+const V25_MAX: Partial<Record<SkillId, number>> = {
+  sharpAxes: 5, bigBaskets: 5, swiftFeet: 5, greenThumbs: 5, stonecutters: 5, taxCollectors: 5,
+  recruiters: 3, masons: 3, rootCellars: 3, roomyHouses: 3,
 };
 
 /** The Lucky Chest in v21: one chest, one boost and one unclaimed reward. */

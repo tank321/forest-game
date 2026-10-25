@@ -86,7 +86,7 @@ food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
 carry stone to the Town Center. Pause a quarry to give its miners back. Stone pays for axe/farm
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
 within 1 tile harvest ×3 and carry ×2 (wells don't stack). A boosted farm looks irrigated: damp soil, lusher crops
-and water channels between the beds, frozen in winter. A Well that is selected, being placed or being moved shows its reach as a dashed blue square, and while placing it the farms it would boost are outlined in blue.
+and water channels between the beds, frozen in winter. A Well that is selected, being placed or being moved shows its reach as a dashed blue square, and while placing it the farms it would boost are outlined in blue. Once **Camp Crews** is learned, a Lumber Camp shows the 3 tiles around it where lumberjacks chop ×1.5 the same way, as a dashed gold square.
 
 **Cloth:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
 gathers cloth and carries it to the Town Center or the nearest Barn. A **Cotton Plantation** (6×6,
@@ -96,7 +96,7 @@ herding and picking speed and carry too. Pause a sheep farm or plantation to giv
 The **Fertile Herding** skill makes herders (not pickers) bring back as much food as cloth. Cloth pays for
 cloth-priced villagers, the last two axe/farm/pick levels, Tailor upgrades, and houses from the 10th.
 
-**Tailor** (2×2, wood and cloth; unlocked by the Tailoring skill, after Sheep Farms) takes no deliveries:
+**Tailor** (2×2, 800 wood and 60 cloth; unlocked by the Tailoring skill, after Sheep Farms; one per town) takes no deliveries:
 its upgrades are paid straight from the stockpile. **Shoes** make every villager walk ×1.05 faster per level,
 **Backpacks** give every gatherer +2 carry per level on top of its own, and **Coats** cut winter firewood by 25% per level.
 
@@ -112,6 +112,12 @@ season (or tap it, or press Enter on it) to see what this season and the next on
 them eats 0.1 food/s all year and burns 0.1 wood/s in winter. Nobody dies, but when a stock runs
 out the town slows down: **Hungry** (no food) halves chopping and mining, **Cold** (no firewood in
 winter) halves farming, mining, herding and picking. Food and wood rates on the plaque are net of upkeep; hover over (or tap) a resource for its sources and upkeep.
+**Growing Families** (Settlement, after Roomy Houses, once 4 Settlement levels are learned) brings villagers for free:
+one is born at the Town Center every 15 minutes, sooner with more connected Houses (×1 + 0.05 per House: 10 minutes
+at 10 Houses, 5 at 40), while there is population room and a food surplus (10 food per villager in stock). Otherwise
+the next birth waits; the Town Center's panel says when it comes or what it waits for. Its second level adds **Spring
+Births**: as spring begins, 1 villager per 5 connected Houses (at least 1), room and surplus allowing. Born villagers
+eat like any other but aren't hires, so villager prices don't rise.
 **Coats** at the Town Center (wood and cloth, 3 levels) cut firewood by 25% per level.
 The **Wheelbarrow** at the Town Center (10 levels) makes every villager walk 5% faster per level and adds
 a flat 2 to every gatherer's carry per level, the same for every job. It costs wood,
@@ -132,7 +138,7 @@ straight-line gap between the two buildings (10 gold at 10 tiles, 28 at 20), so 
 from the Market. Without a Market the post stands idle. Select the post and **Buy a pack mule** for up to 5 on its
 route (wood, food and gold): the first extra costs 400 wood, 150 food and 100 gold, and each one bought anywhere in the
 town costs ×1.6 the last (a removed post's mules are not refunded). Gold pays for houses from the 13th. Skills:
-**Tax Collectors** (+20% tax per level), **Deputies** (a second collector per Tax Office), **Pack Mules** (+25% gold per trip per level) and
+**Tax Collectors** (+50% tax per level), **Deputies** (a second collector per Tax Office), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
 With **Guild Contracts**, the Market panel also lists three contracts (gather a resource, fell trees or
 reach a population); tap a finished one to claim its gold. With **Merchant Caravans**, a caravan's three
@@ -154,7 +160,7 @@ buttons in the corner and the + and − keys. A link turns solid once its parent
 (or tap it, on phones) for a popup beside it with its current and next-level bonus; skills on offer from a relic
 glow, and clicking one (tapping it a second time on phones) learns it right there. Keyboard users can tab through
 skills (the view and the popup follow focus) and learn an offered one with Enter or Space. **Legacy** opens the Legacy perk tree;
-it turns gold once you have learned enough skill levels to rebuild. Pick an available perk and click **Rebuild** twice
+it turns gold once you have learned enough skill levels to rebuild: 15 on the first run, 5 more after each of the first two rebuilds, then 10 more after each one (15, 20, 25, 35, 45 …), up to every skill learned (92). Pick an available perk and click **Rebuild** twice
 to start over on a new map with that perk kept forever. A relic offers 3 skills to choose from, one more after each rebuild
 up to 5 (6 with Relic Hunters). **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
@@ -168,7 +174,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `pathing.ts` 8-directional Dijkstra: per-resource drop-off fields, `pathHome`, `nearestTree` (marked first, then shortest trip), `pathToAny`, `roadRoutes` (walks kept to the roads), path straightening
   - `systems/` – `jobs.ts` staffs workplaces · `villagers.ts` dispatches by job to `lumberjack.ts` (re-picks a tree after every delivery) / `workplace.ts` (farmers, orchardists, miners, herders, pickers) / `collector.ts` (tax collectors' rounds) · `mules.ts` Trading Posts' pack mules · `movement.ts` shared walking (faster along roads with Cobblestone), each worker's spot in its workplace · `grazing.ts` Grazing Flocks
   - `sim.ts` system list, `tick` (split at season boundaries), `simulate` · `stats.ts` effective values (upgrades, skills, well-boosted farms, season and upkeep, tax, gold per trade trip)
-  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, gold owed by houses
+  - `seasons.ts` season from simulated time · `systems/upkeep.ts` food and firewood consumption, gold owed by houses · `systems/births.ts` Growing Families and Spring Births
   - `skills.ts` skill defs, tracks and prerequisites, card dealing · `relics.ts` relic milestones and placement
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
   - `achievements.ts` achievement table, lifetime counters (career), tier checks, next-up pick
@@ -183,6 +189,34 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v50** – Bigger skill levels, and villagers born over time.
+- **Growing Families**, a new Settlement skill after Roomy Houses (offered once 4 Settlement levels are learned):
+  a villager is born at the Town Center every 15 minutes, sooner with more connected Houses (10 minutes at 10, 5 at
+  40), while there is room and a food surplus (10 food per villager in stock). Level 2, **Spring Births**: as spring
+  begins, 1 villager per 5 connected Houses at once. Born villagers aren't hires, so prices don't rise. The Town
+  Center's panel shows the next birth, the season popup the coming Spring Births, and the away message the villagers
+  born while you were gone. Skills now add up to 92 levels.
+- The stat skills have fewer levels, each a bigger step. Sharp Axes, Green Thumbs, Stonecutters and Tax Collectors are
+  2 levels of +50% (were 5 of +20%); Swift Feet 2 of +25% walking (5 of +10%); Big Baskets 2 of +5 carry (5 of +2);
+  Recruiters, Masons and Root Cellars 2 of −25% (3 of −15%). At their maximum they are as strong as before, or a
+  little stronger. Roomy Houses stops at 2 levels (+2 population per house; was 3).
+- With the condensed skills, the skill levels add up to 90 instead of 112 (92 with Growing Families). Every track still
+  has enough levels for its Mastery.
+- Rebuilds ask for more from the third on: 15 skill levels on the first run, 5 more after each of the first two
+  rebuilds, then 10 more after each one (15, 20, 25, 35, 45 … 85, then every skill learned after the 9th rebuild;
+  was +5 a run, every skill after the 16th). The perks stack up fast, so a flat +5 made the middle runs quick.
+- Save v27: progress toward the next birth starts at none.
+- Save v26: learned levels of these skills convert to their share of the new maximum, rounded up (Sharp Axes 3 → 2,
+  2 → 1; Recruiters 2 → 2; Roomy Houses 3 → 2). A card in an open relic offer for a skill that is now maxed is removed from the offer.
+- With Camp Crews learned, a Lumber Camp that is selected, being placed or being moved shows its 3-tile reach as a
+  dashed gold square, like a Well's.
+- The season popup is one line per season: "Summer, 2m 13s left: Normal harvest", then "Next: Autumn: Harvest ×1.5".
+  Winter adds the firewood it will burn ("No harvest · Firewood 18 wood/min"), and seasonal skills appear once learned:
+  Shearing Day in spring, Midsummer Fair in summer, Harvest Festival, Deep Shafts and Merchant Caravans in winter.
+  Food upkeep (in the food rate) and shortage penalties (on the Hungry/Cold chip) are no longer repeated there.
+- Only one Tailor may stand: its upgrades already cover the whole town. Once it is built it leaves the build menu,
+  like the Frontier Outpost, and comes back if it is removed. A town that already has more keeps them.
+
 **v49** – Upgrades without end.
 - The Axe, Farm, Pick, Shoes and Backpack upgrades go on past level 10: each further level multiplies the track's
   effects (×1.15 speed and carry; Shoes ×1.05 walking; Backpack ×1.15 extra carry) and costs ×1.35 the level before.

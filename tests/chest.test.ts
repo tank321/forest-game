@@ -202,7 +202,7 @@ describe('Lucky Chest', () => {
 
   it('keeps its chests and boosts across a rebuild', () => {
     const w = smallWorld(30, 2);
-    w.state.skills = { sharpAxes: 5, bigBaskets: 5, swiftFeet: 5 };
+    w.state.skills = { sharpAxes: 2, powerSwing: 2, momentum: 3, keenEyes: 2, heartwood: 3, swiftFeet: 2, bigBaskets: 2 };
     w.state.chest = { stored: 2, readyAt: T0, boosts: [{ kind: 'speed2', until: T0 + 5, ms: 5 }], pending: ['taps'] };
     expect(prestige(w, 'masterHarvest')!.chest).toEqual(w.state.chest);
   });

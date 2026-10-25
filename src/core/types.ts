@@ -98,6 +98,7 @@ export interface GameState {
   caravan: Deal[] | null; // Merchant Caravan deals while it is in town (null = away)
   counts: Record<EventKey, number>; // this run's event counters
   career: { past: Record<Counter, number>; earned: Partial<Record<AchievementId, number>> }; // kept across rebuilds: past runs' counters, achievement tiers earned
+  births: number; // Growing Families: progress toward the next birth, 0–1
   chest: ChestState; // Lucky Chest: when it can next be opened and the boost running, in wall-clock ms (kept across rebuilds)
 }
 

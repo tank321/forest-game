@@ -43,10 +43,12 @@ export function cardsPerPick(s: Pick<GameState, 'legacy'>): number {
 
 export const skillLevels = (s: GameState) => SKILL_IDS.reduce((n, id) => n + lvl(s, id), 0);
 
-/** Skill levels needed to rebuild: rises every run, never past every skill maxed. */
+/** Skill levels needed to rebuild: rises every run, faster after the first few, never past every skill maxed. */
 export function legacyRequirement(s: GameState): number {
+  const { base, step, steady, later } = CONFIG.legacy;
+  const { runs } = s.legacy;
   const all = SKILL_IDS.reduce((n, id) => n + SKILLS[id].max, 0);
-  return Math.min(CONFIG.legacy.base + CONFIG.legacy.step * s.legacy.runs, all);
+  return Math.min(base + step * Math.min(runs, steady) + later * Math.max(0, runs - steady), all);
 }
 
 export const canPrestige = (s: GameState) => skillLevels(s) >= legacyRequirement(s);

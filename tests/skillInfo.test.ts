@@ -32,21 +32,21 @@ describe('skill journal previews', () => {
 
   it('shows exponential tap gains and additive production bonuses', () => {
     const s = smallWorld().state;
-    s.skills = { powerSwing: 2, sharpAxes: 3 };
+    s.skills = { powerSwing: 2, sharpAxes: 2 };
     const st = getStats(s);
     expect(skillBonus('powerSwing', 0)).toBe('×1 wood per tap');
     expect(skillBonus('powerSwing', 2)).toBe(`×${st.manualChop} wood per tap`);
-    expect(skillBonus('sharpAxes', 3)).toBe('+60% villager chop speed');
-    expect(st.chopRate / getStats({ ...s, skills: {} }).chopRate).toBeCloseTo(1.6);
+    expect(skillBonus('sharpAxes', 2)).toBe('+100% villager chop speed');
+    expect(st.chopRate / getStats({ ...s, skills: {} }).chopRate).toBeCloseTo(2);
   });
 
   it('previews compounding discounts rather than adding the percentages', () => {
     const s = smallWorld().state;
     s.hires.wood = 0;
     s.skills.recruiters = 2;
-    expect(skillBonus('recruiters', 2)).toBe('27.8% lower villager costs');
-    expect(skillBonus('masons', 3)).toBe('Buildings and upgrades need 38.6% less stone');
-    expect(villagerCost(s).wood).toBe(7);
+    expect(skillBonus('recruiters', 1)).toBe('25% lower villager costs');
+    expect(skillBonus('masons', 2)).toBe('Buildings and upgrades need 43.8% less stone');
+    expect(villagerCost(s).wood).toBe(6);
   });
 
   it('shows the base and upgraded well reach used by the simulation', () => {

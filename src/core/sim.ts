@@ -5,6 +5,7 @@ import { fillContracts, rollDeals } from './guild';
 import { seasonLeft, seasonOf, SUMMER, WINTER } from './seasons';
 import { lvl } from './skills';
 import { getStats } from './stats';
+import { birthSystem, springBirths } from './systems/births';
 import { grazingSystem } from './systems/grazing';
 import { jobSystem } from './systems/jobs';
 import { muleSystem } from './systems/mules';
@@ -16,12 +17,12 @@ import { gainBonus, type World } from './world';
 export type System = (w: World, dt: number) => void;
 
 /** Run order matters; new systems (production, growth, events) are appended here. */
-const systems: System[] = [jobSystem, upkeepSystem, villagerSystem, muleSystem, grazingSystem];
+const systems: System[] = [jobSystem, upkeepSystem, villagerSystem, muleSystem, grazingSystem, birthSystem];
 
 /**
  * Advances `dt`, split at season boundaries so no step straddles a change of season. Harvest Festival
  * pays out on the step that ends autumn, at the harvest rates of autumn; Shearing Day on the step
- * that ends winter, at the wool rates of winter. The Midsummer Fair opens and the Merchant Caravan
+ * that ends winter, at the wool rates of winter, along with Spring Births. The Midsummer Fair opens and the Merchant Caravan
  * comes and goes on these steps too, and the Guild Contracts board is topped up after every step.
  * Achievements are checked after `dt` has run, a few times per simulated second.
  */
@@ -57,7 +58,10 @@ export function tick(w: World, dt: number): void {
       s.caravan = rollDeals(s);
       w.fx.push({ kind: 'caravan', i: -1, n: 0 });
     }
-    if (ending === WINTER) s.caravan = null;
+    if (ending === WINTER) {
+      s.caravan = null;
+      springBirths(w);
+    }
     if (lvl(s, 'guildContracts')) fillContracts(s);
   }
   if (Math.floor(s.time * checks) !== checkedAt) achievementSystem(w);

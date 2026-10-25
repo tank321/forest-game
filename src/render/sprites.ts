@@ -3110,7 +3110,7 @@ export const UI_ICON_NAMES = [
   'basket', 'boot', 'bolt', 'house', 'hammer', 'pick', 'pair', 'drop', 'gold',
   'sweep', 'combo', 'eye', 'rings', 'fall', 'run', 'bowl', 'map', 'plots', 'fork', 'barrel', 'glass', 'sheaf',
   'meadow', 'shears', 'fleece', 'yarn', 'sheep', 'vein', 'gem', 'cobble', 'mine', 'tnt', 'toll', 'purse', 'scroll',
-  'scales', 'sun', 'wagon', 'trophy', 'sound', 'music',
+  'scales', 'sun', 'wagon', 'heart', 'trophy', 'sound', 'music',
 ] as const;
 export type UiIcon = (typeof UI_ICON_NAMES)[number];
 
@@ -3871,5 +3871,19 @@ export const UI_ICONS: Record<UiIcon, readonly string[]> = {
     'omomoooomomo',
     'ohmho..ohmho',
     '.ooo....ooo.',
+  ],
+  heart: [
+    '............',
+    '..oo....oo..',
+    '.oWro..orro.',
+    'oWrrroorrrro',
+    'orrrrrrrrrRo',
+    'orrrrrrrrrRo',
+    '.orrrrrrrRo.',
+    '..orrrrrRo..',
+    '...orrrRo...',
+    '....orRo....',
+    '.....oo.....',
+    '............',
   ],
 };

@@ -50,6 +50,7 @@ export function createInitialState(
     caravan: null,
     counts: newCounts(),
     career,
+    births: 0,
     chest: newChest(),
   };
   s.wood.set(maxWoodTable(s));

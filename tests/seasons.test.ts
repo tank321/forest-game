@@ -62,22 +62,25 @@ describe('seasons', () => {
 });
 
 describe('season effects text', () => {
-  it('describes farms and the town upkeep for each season', () => {
-    const small = getStats(town(2).state);
-    expect(seasonEffects(small, 0)).toEqual([
-      'Farms and orchards harvest normally',
-      'No food upkeep yet (the first 5 villagers are free)',
-      'No firewood needed',
-    ]);
-    expect(seasonEffects(small, WINTER)[2]).toBe('No firewood needed yet');
-    const big = getStats(town(8).state); // spring stats still describe winter's burn
-    expect(seasonEffects(big, 2)[0]).toBe('Farms and orchards harvest ×1.5');
-    expect(seasonEffects(big, WINTER)).toEqual([
-      'Farms and orchards lie fallow',
-      'Villagers eat 0.30 food/s',
-      'Fires burn 0.30 wood/s',
-      'Out of food: chopping and mining ×0.5',
-      'Out of firewood: farming, mining, herding and picking ×0.5',
+  it('sums up each season: the harvest, and firewood in winter', () => {
+    const small = town(2).state;
+    expect(seasonEffects(small, getStats(small), 0)).toEqual(['Normal harvest']);
+    expect(seasonEffects(small, getStats(small), WINTER)).toEqual(['No harvest']); // the first villagers burn nothing
+    const big = town(8).state; // spring stats still describe winter's burn
+    const st = getStats(big);
+    expect(seasonEffects(big, st, 2)).toEqual(['Harvest ×1.5']);
+    expect(seasonEffects(big, st, WINTER)).toEqual(['No harvest', 'Firewood 18 wood/min']);
+  });
+
+  it('adds the seasonal skills learned', () => {
+    const s = town(2).state;
+    s.skills = { shearingDay: 1, midsummerFair: 1, harvestFestival: 1, greenhouses: 1, deepShafts: 1, merchantCaravans: 1 };
+    const st = getStats(s);
+    expect(seasonEffects(s, st, 0)).toEqual(['Normal harvest', 'Shearing Day: 60 s of wool']);
+    expect(seasonEffects(s, st, 1)).toEqual(['Normal harvest', 'Fair: no commission, trade ×1.5']);
+    expect(seasonEffects(s, st, 2)).toEqual(['Harvest ×1.5']);
+    expect(seasonEffects(s, st, WINTER)).toEqual([
+      'Harvest ×0.5', 'Festival: 60 s of harvest, walk ×1.25', 'Mining ×1.5', 'Caravan: 3 deals',
     ]);
   });
 });

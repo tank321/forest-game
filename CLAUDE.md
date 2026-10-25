@@ -34,7 +34,7 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   Pathing steps between connected road tiles cost `CONFIG.roads.pathCost` × normal, and `smooth` keeps
   villagers on the road. Tests can call `pave(w)` (`tests/helpers.ts`) to connect every building.
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`, `villagerSystem`,
-  `muleSystem`, then `grazingSystem`. `tick` splits its step at season boundaries, where Harvest Festival and Shearing Day pay out (`seasons.ts`; the season is
+  `muleSystem`, `grazingSystem`, then `birthSystem` (Growing Families). `tick` splits its step at season boundaries, where Harvest Festival, Shearing Day and Spring Births pay out (`seasons.ts`; the season is
   derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps
   (`CONFIG.sim`). Villager updaters must be **dt-independent**: they spend their whole time budget
   across state transitions inside one call. Tests assert identical results at both step sizes.

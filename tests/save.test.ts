@@ -38,9 +38,9 @@ it('migrates v5 building costs from build order and saved discounts, then preser
   for (const b of old.state.buildings) delete b.paidCost;
   const { state, savedAt } = deserialize(JSON.stringify(old));
   expect(savedAt).toBe(123);
-  expect(state.buildings.map((b) => b.paidCost)).toEqual([{}, { wood: 120, stone: 27 }, { wood: 180, stone: 41 }]);
+  expect(state.buildings.map((b) => b.paidCost)).toEqual([{}, { wood: 120, stone: 24 }, { wood: 180, stone: 36 }]);
   state.skills = {};
-  expect(buildingRefund(state.buildings[1])).toEqual({ wood: 60, stone: 13 });
+  expect(buildingRefund(state.buildings[1])).toEqual({ wood: 60, stone: 12 });
   expect(deserialize(serialize(state)).state).toEqual(state);
 });
 
@@ -79,10 +79,10 @@ it('migrates a v12 save to v13, unlocking the building kinds it already has', ()
   addBuilding(w.state, 'quarry', 0, 0);
   addBuilding(w.state, 'market', 2, 0);
   addBuilding(w.state, 'farm', 4, 0);
-  w.state.skills = { stonecutters: 2 };
+  w.state.skills = { stonecutters: 1 };
   const old = JSON.parse(serialize(w.state));
   old.version = 12;
-  expect(deserialize(JSON.stringify(old)).state.skills).toEqual({ stonecutters: 2, quarrying: 1, markets: 1 });
+  expect(deserialize(JSON.stringify(old)).state.skills).toEqual({ stonecutters: 1, quarrying: 1, markets: 1 });
 });
 
 it('migrates a v9 save to v10, renaming leather to cloth', () => {
@@ -127,4 +127,22 @@ it('migrates a v23 save: each skill pick still owed becomes a relic at the edge 
   expect(state.cards).toEqual(w.state.cards); // the offer dealt stays
   expect(state.counts.relics).toBe(1); // counted again when picked
   expect(state.treesLeft).toBe(w.state.treesLeft - 2);
+});
+
+it('migrates a v25 save: stat skills condense to their new levels, and a card now maxed leaves the offer', () => {
+  const w = smallWorld(30, 1);
+  w.state.skills = { sharpAxes: 5, swiftFeet: 2, bigBaskets: 1, recruiters: 3, masons: 2, rootCellars: 1, roomyHouses: 3, powerSwing: 2 };
+  w.state.cards = ['sharpAxes', 'greenThumbs', 'masons'];
+  w.state.reshuffled = true;
+  const old = JSON.parse(serialize(w.state, 7));
+  old.version = 25;
+  const { state } = deserialize(JSON.stringify(old));
+  expect(state.skills).toEqual({ sharpAxes: 2, swiftFeet: 1, bigBaskets: 1, recruiters: 2, masons: 2, rootCellars: 1, roomyHouses: 2, powerSwing: 2 });
+  expect(state.cards).toEqual(['greenThumbs']);
+  expect(state.reshuffled).toBe(true);
+
+  old.state.cards = ['sharpAxes'];
+  const emptied = deserialize(JSON.stringify(old)).state;
+  expect(emptied.cards).toEqual([]); // dealt again when the relic is tapped
+  expect(emptied.reshuffled).toBe(false);
 });

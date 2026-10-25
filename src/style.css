@@ -34,8 +34,7 @@ b, h2, .chip { font-weight: 700; }
 #seasonInfo { position: absolute; top: calc(100% + 6px); width: max-content; max-width: min(320px, 100%); padding: 6px 12px; font-size: 14px; line-height: 20px; pointer-events: auto; }
 #seasonInfo h3 { font-size: 15px; }
 #seasonInfo h3 small { font-weight: 400; color: #654222; }
-#seasonInfo ul { padding-left: 18px; }
-#seasonInfo ul + h3 { margin-top: 6px; }
+#seasonInfo p + h3 { margin-top: 6px; }
 #resourceInfo { position: absolute; top: calc(100% + 6px); width: max-content; min-width: 200px; max-width: min(320px, 100%); padding: 6px 12px; font-size: 14px; line-height: 22px; pointer-events: auto; font-variant-numeric: tabular-nums; }
 #resourceInfo li { display: flex; justify-content: space-between; gap: 24px; list-style: none; }
 #resourceInfo .pos { color: #365b29; font-weight: 700; }

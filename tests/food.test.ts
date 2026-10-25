@@ -122,8 +122,8 @@ describe('food economy', () => {
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'farm')).toBe(true);
     s.skills = { greenThumbs: 1, bigBaskets: 1 };
     const st = getStats(s);
-    expect(st.farmRate).toBeCloseTo(base.farmRate * 1.05 ** 10 * 1.2);
-    expect(st.farmCarry).toBeCloseTo((5 + 20 + 2) * 1.02 ** 10);
+    expect(st.farmRate).toBeCloseTo(base.farmRate * 1.05 ** 10 * 1.5);
+    expect(st.farmCarry).toBeCloseTo((5 + 20 + 5) * 1.02 ** 10);
     expect(upgrade(w, 'farm')).toBe(true); // past the table: ×1.15 harvest, carry and herding
     const past = getStats(s);
     expect(past.farmRate).toBeCloseTo(st.farmRate * 1.15);

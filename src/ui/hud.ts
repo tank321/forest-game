@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { SEASONS, seasonLeft } from '../core/seasons';
 import { getStats, type Stats } from '../core/stats';
 import { jobResource } from '../core/systems/workplace';
-import { RESOURCES, type ResourceKey, type Resources } from '../core/types';
+import { RESOURCES, type GameState, type ResourceKey, type Resources } from '../core/types';
 import { SOURCES, type Source, type World } from '../core/world';
 import { seasonEffects, seasonName } from './seasonInfo';
 import { duration, fmt, icon } from './text';
@@ -157,7 +157,7 @@ export class Hud {
     this.updateResourceInfo(st);
     this.set(this.els.season, seasonName(st.season));
     this.updateSeasonBar(st.season, s.time);
-    this.updateSeasonInfo(st, s.time);
+    this.updateSeasonInfo(s, st);
     this.updateShortage(s.time, st.hungry, st.cold, st.wellFed);
     this.set(this.els.pop, `${s.villagers.length}/${popCap(s)}`);
     this.set(this.els.land, fmt(s.w * s.h - s.treesLeft - s.relics.length));
@@ -178,17 +178,17 @@ export class Hud {
   }
 
   /** Current and next season's effects, under the season chip while hovered or pinned. */
-  private updateSeasonInfo(st: Stats, time: number): void {
+  private updateSeasonInfo(s: GameState, st: Stats): void {
     const open = this.seasonHover || this.seasonPinned;
     const info = this.seasonInfo;
     info.hidden = !open;
     this.seasonChip.setAttribute('aria-expanded', String(open));
     if (!open) return;
     const next = (st.season + 1) % SEASONS.length;
-    const list = (i: number) => `<ul>${seasonEffects(st, i).map((e) => `<li>${e}</li>`).join('')}</ul>`;
+    const line = (i: number) => `<p>${seasonEffects(s, st, i).join(' · ')}</p>`;
     const html =
-      `<h3>Now: ${seasonName(st.season)} <small>${duration(seasonLeft(time))} left</small></h3>${list(st.season)}` +
-      `<h3>Next: ${seasonName(next)}</h3>${list(next)}`;
+      `<h3>${seasonName(st.season)} <small>${duration(seasonLeft(s.time))} left</small></h3>${line(st.season)}` +
+      `<h3>Next: ${seasonName(next)}</h3>${line(next)}`;
     if (html !== this.seasonHtml) info.innerHTML = this.seasonHtml = html;
     // Under the chip, kept inside the HUD (the plaque scrolls sideways on narrow screens).
     const hud = info.offsetParent!.getBoundingClientRect();

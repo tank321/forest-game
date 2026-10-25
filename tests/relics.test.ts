@@ -212,8 +212,8 @@ describe('skill tracks', () => {
     expect(availableSkills(s)).not.toContain('cottonFields');
     s.skills.openPastures = 3;
     expect(availableSkills(s)).toContain('cottonFields');
-    s.skills = { greenThumbs: 3 };
-    expect(availableSkills(s)).not.toContain('orchards'); // 3 levels, but Farmhands is missing
+    s.skills = { greenThumbs: 2, rootCellars: 2 };
+    expect(availableSkills(s)).not.toContain('orchards'); // 4 levels, but Farmhands is missing
   });
 
   it('lay the tree out with children below their parent and no overlapping nodes', () => {
@@ -268,11 +268,11 @@ describe('skill effects', () => {
     const base = getStats(s);
     s.skills = { sharpAxes: 2, bigBaskets: 1, swiftFeet: 1, powerSwing: 1, roomyHouses: 1, recruiters: 1, masterBuilders: 1 };
     const st = getStats(s);
-    expect(st.chopRate).toBeCloseTo(base.chopRate * 1.4);
-    expect(st.carry).toBe(base.carry + 2);
-    expect(st.speed).toBeCloseTo(base.speed * 1.1);
+    expect(st.chopRate).toBeCloseTo(base.chopRate * 2);
+    expect(st.carry).toBe(base.carry + 5);
+    expect(st.speed).toBeCloseTo(base.speed * 1.25);
     expect(st.manualChop).toBe(5);
-    expect(villagerCost(s).wood).toBe(9); // round(10 × 0.85)
+    expect(villagerCost(s).wood).toBe(8); // round(10 × 0.75)
     expect(buildingCost(s, 'house').wood).toBe(80);
     s.resources.wood = 1e6;
     placeBuilding(w, 'house', s.origin.x, s.origin.y + 1);

@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 
 export const SEASONS = ['spring', 'summer', 'autumn', 'winter'] as const;
 export type Season = (typeof SEASONS)[number];
+export const SPRING = 0;
 export const SUMMER = 1;
 export const WINTER = 3;
 

@@ -39,7 +39,7 @@ function withFarms(n: number, villagers = 0): World {
 describe('forestry and farming skills', () => {
   it('offer a Mastery once its track has 8 levels', () => {
     const s = smallWorld().state;
-    s.skills = { sharpAxes: 5, powerSwing: 2 };
+    s.skills = { sharpAxes: 2, powerSwing: 2, momentum: 3 };
     expect(availableSkills(s)).not.toContain('timber');
     s.skills.campCrews = 1;
     expect(availableSkills(s)).toContain('timber');

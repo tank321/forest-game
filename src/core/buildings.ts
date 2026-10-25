@@ -68,11 +68,13 @@ export const BUILDINGS = {
     unlock: 'cottonFields',
     cost: (n) => ({ wood: Math.round(5000 * 1.5 ** n), stone: Math.round(500 * 1.5 ** n), gold: Math.round(250 * 1.5 ** n) }),
   }),
+  // Tailor: its upgrades are town-wide, so one is all a town needs.
   tailor: def({
     w: 2,
     h: 2,
     unlock: 'tailoring',
-    cost: (n) => ({ wood: Math.round(800 * 1.5 ** n), cloth: Math.round(60 * 1.5 ** n) }),
+    limit: 1,
+    cost: () => ({ wood: 800, cloth: 60 }),
   }),
   well: def({ w: 1, h: 1, road: false, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
   market: def({
@@ -131,7 +133,7 @@ export const HUB_KINDS: readonly BuildingKind[] = ['townCenter', 'outpost'];
 /** A workplace that works only while a building of the other kind exists. */
 export const NEEDS: Partial<Record<BuildingKind, BuildingKind>> = { tradingPost: 'market' };
 
-/** Whether as many of this kind stand as its `limit` allows (the Outpost). */
+/** Whether as many of this kind stand as its `limit` allows (the Tailor, the Outpost). */
 export const atLimit = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) => {
   const limit: number | undefined = (BUILDINGS[kind] as BuildingDef).limit;
   return limit !== undefined && countOf(s, kind) >= limit;

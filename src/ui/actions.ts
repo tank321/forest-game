@@ -9,7 +9,7 @@ import { jobResource } from '../core/systems/workplace';
 import type { Building, Cost, GameState, HireResource, Job, ResourceKey } from '../core/types';
 import type { World } from '../core/world';
 import { seasonName } from './seasonInfo';
-import { BUILDING_TEXT, fmt, icon } from './text';
+import { BUILDING_TEXT, duration, fmt, icon } from './text';
 
 export interface Action {
   label: string;
@@ -203,13 +203,22 @@ function staffInfo(w: World, b: Building, worker: string): string {
   return `${n} of ${max} ${worker}${max === 1 ? '' : 's'} assigned.${n < max ? ' Waiting for an empty-handed villager.' : ''}`;
 }
 
+/** Growing Families: when the next villager is born, or what it waits for. */
+function birthInfo(s: GameState, st: Stats): string {
+  if (!st.birthRate) return '';
+  if (s.villagers.length >= popCap(s)) return ' · Births wait for room';
+  if (!st.surplus) return ` · Births wait for ${fmt(CONFIG.skills.wellFed.perVillager * s.villagers.length)} food in stock`;
+  return ` · Next birth in ${duration((1 - s.births) / st.birthRate)}`;
+}
+
 /** Live status line for the selected building (falls back to its description). */
 export const INFO: Partial<Record<BuildingKind, Info>> = {
   townCenter: (w) => {
     const n = (job: Job) => w.state.villagers.filter((v) => v.job === job).length;
     const st = getStats(w.state);
     const jobs = `${plural(n('lumber'), 'lumberjack')} · ${plural(n('farm'), 'farmer')} · ${plural(n('orchard'), 'orchardist')} · ${plural(n('mine'), 'miner')} · ${plural(n('herd'), 'herder')} · ${plural(n('cotton'), 'picker')} · ${plural(n('tax'), 'tax collector')}`;
-    return st.eat ? `${jobs} · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : jobs;
+    const upkeep = st.eat ? ` · Upkeep: ${perSec(st.eat, 'food')}, ${perSec(st.winterBurn, 'wood')} in winter` : '';
+    return jobs + upkeep + birthInfo(w.state, st);
   },
   farm: (w, b) => {
     const st = getStats(w.state);

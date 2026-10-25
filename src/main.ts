@@ -200,6 +200,7 @@ addEventListener('contextmenu', (e) => {
 function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
+  const pop = s.villagers.length;
   // Lucky Chest boosts still count for the part of the time away they ran (a speed boost as that much more time), each
   // ending where it ran out; queued speeds take over in turn.
   const now = Date.now();
@@ -220,8 +221,10 @@ function catchUp(seconds: number): void {
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
   };
   const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
+  const born = s.villagers.length - pop;
+  const villagers = born > 0 ? `, +${born} villager${born === 1 ? '' : 's'}` : '';
   const relic = panToRelic();
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${relic ? `. ${relic}` : ''}`, 8000);
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${villagers}${relic ? `. ${relic}` : ''}`, 8000);
   else if (relic) hud.message(relic);
 }
 
@@ -281,6 +284,7 @@ function frame(now: number): void {
     else if (fx.kind === 'fair') hud.message('The Midsummer Fair is open! No market commission and Trading Posts pay more all summer.', 6000);
     else if (fx.kind === 'achievement') toasts.achievement(fx.id!, fx.n);
     else if (fx.kind === 'caravan') hud.message('A merchant caravan has come to the Market. Take one deal before spring.', 6000);
+    else if (fx.kind === 'springBirths') hud.message(`Spring Births! ${fx.n} new villager${fx.n === 1 ? '' : 's'} join the town.`, 6000);
     else renderer.addFx(fx, now);
     if (fx.kind === 'shearing') wool += fx.n;
   }

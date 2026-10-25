@@ -27,25 +27,29 @@ export function lockReason(s: GameState, id: SkillId): string {
 
 /** Total contribution of this skill, before other upgrades and skills. */
 export function skillBonus(id: SkillId, level: number): string {
-  const discount = `${Number(((1 - 0.85 ** level) * 100).toFixed(1))}%`;
   const k = CONFIG.skills;
+  const discount = (per: number) => `${Number(((1 - per ** level) * 100).toFixed(1))}%`;
   switch (id) {
-    case 'sharpAxes': return `+${20 * level}% villager chop speed`;
-    case 'bigBaskets': return `+${2 * level} carry capacity before upgrade multipliers`;
-    case 'swiftFeet': return `+${10 * level}% villager walk speed`;
+    case 'sharpAxes': return `+${Math.round(k.sharpAxes * 100 * level)}% villager chop speed`;
+    case 'bigBaskets': return `+${k.bigBaskets * level} carry capacity before upgrade multipliers`;
+    case 'swiftFeet': return `+${Math.round(k.swiftFeet * 100 * level)}% villager walk speed`;
     case 'powerSwing': return `×${5 ** level} wood per tap`;
     case 'roomyHouses': return `+${level} population per house`;
-    case 'recruiters': return `${discount} lower villager costs`;
+    case 'growingFamilies': {
+      const spring = level >= 2 ? `; as spring begins, 1 per ${k.families.springPerHouses} Houses` : '';
+      return level ? `A villager born every ${k.families.seconds / 60}m, sooner with more Houses${spring}` : 'No births';
+    }
+    case 'recruiters': return `${discount(k.recruiters)} lower villager costs`;
     case 'masterBuilders': return `${level ? 20 : 0}% lower building costs`;
     case 'campCrews': return `×${level ? 1.5 : 1} chop speed within 3 tiles of a Lumber Camp`;
     case 'teamwork': return `${level ? 2 : 1} villager${level ? 's' : ''} per tree`;
     case 'fellingCrews': return `${level ? 3 : 2} villagers per flagged tree`;
-    case 'greenThumbs': return `+${20 * level}% farm harvest speed`;
-    case 'stonecutters': return `+${20 * level}% mining speed`;
-    case 'masons': return `Buildings and upgrades need ${discount} less stone`;
+    case 'greenThumbs': return `+${Math.round(k.greenThumbs * 100 * level)}% farm harvest speed`;
+    case 'stonecutters': return `+${Math.round(k.stonecutters * 100 * level)}% mining speed`;
+    case 'masons': return `Buildings and upgrades need ${discount(k.masons)} less stone`;
     case 'quarryCrews': return `+${level} miner${level === 1 ? '' : 's'} per quarry`;
     case 'fertileHerding': return level ? 'Herders deliver 1 food per cloth' : 'Herders deliver cloth only';
-    case 'taxCollectors': return `+${20 * level}% tax`;
+    case 'taxCollectors': return `+${Math.round(k.taxCollectors * 100 * level)}% tax`;
     case 'deputies': return `${level + 1} collector${level ? 's' : ''} per Tax Office`;
     case 'packMules': return `+${25 * level}% gold per trade trip`;
     case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level }, legacy: newLegacy(), time: 0 }))}% market commission`;
@@ -59,7 +63,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'timber': return level ? `Felled trees topple onto a neighbour for ${CONFIG.skills.timber * 100}% of their wood` : 'Felled trees fall harmlessly';
     case 'cropRotation': return level ? `+${CONFIG.skills.cropRotation.perFarm * 100}% harvest per touching farm` : 'No bonus from touching farms';
     case 'farmhands': return `+${level} farmer${level === 1 ? '' : 's'} per farm`;
-    case 'rootCellars': return `Villagers eat ${discount} less food`;
+    case 'rootCellars': return `Villagers eat ${discount(k.rootCellars)} less food`;
     case 'greenhouses': return `Winter harvest ×${level ? CONFIG.skills.greenhouse : CONFIG.seasons.farm[3]}`;
     case 'harvestFestival': return level ? `${CONFIG.skills.festival.seconds} s of harvest as winter begins; walk ×${CONFIG.skills.festival.winterWalk} in winter` : 'No festival';
     case 'openPastures': return `+${Math.round(k.openPastures.perTile * 100 * level)}% wool per open tile near a Sheep Farm`;

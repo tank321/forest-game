@@ -38,7 +38,10 @@ export interface Stats {
   roadWalk: number; // walk speed multiplier along roads (Cobblestone)
   emptyWalk: number; // walk speed multiplier while carrying nothing (Errand Runners)
   toll: number; // gold per road tile walked (Toll Roads)
+  surplus: boolean; // at least Well Fed's food per villager in stock
   wellFed: boolean; // food surplus: gathering faster (Well Fed)
+  birthRate: number; // Growing Families: births/s while there is room and a surplus (0 without the skill)
+  springBirths: number; // Spring Births: villagers born as spring begins, room allowing (0 without level 2)
   fair: boolean; // summer with Midsummer Fair: no market commission, Trading Posts pay more
   wellHarvest: number; // farm rate multiplier from a Well
   wellCarry: number; // farm carry multiplier from a Well
@@ -86,7 +89,8 @@ export function getStats(s: GameState): Stats {
   const season = seasonOf(s.time);
   const extra = Math.max(0, s.villagers.length - Math.max(u.freeVillagers, startVillagers(s)));
   // Well Fed: a food surplus (per villager) speeds up every gatherer.
-  const wellFed = lvl(s, 'wellFed') > 0 && s.resources.food >= CONFIG.skills.wellFed.perVillager * Math.max(1, s.villagers.length);
+  const surplus = s.resources.food >= CONFIG.skills.wellFed.perVillager * Math.max(1, s.villagers.length);
+  const wellFed = lvl(s, 'wellFed') > 0 && surplus;
   const bountiful = chestMult(s, 'bountiful'); // Lucky Chest: gathering and walking both ×, so every trip takes half as long
   const gather = perkMult(s, 'masterHarvest', L.masterHarvest.gather) * L.legacyX2.gather ** perk(s, 'legacyX2') * (wellFed ? CONFIG.skills.wellFed.gather : 1) * bountiful;
   const guild = guildBonus(s);
@@ -99,25 +103,28 @@ export function getStats(s: GameState): Stats {
   const fed = hungry ? u.hungry : 1;
   const warm = cold ? u.cold : 1;
   const linked = linkedBuildings(s);
+  const houses = s.buildings.reduce((n, b) => n + (b.kind === 'house' && linked.has(b.id) ? 1 : 0), 0);
+  const families = lvl(s, 'growingFamilies');
+  const fam = CONFIG.skills.families;
   const office = s.buildings.some((b) => b.kind === 'taxOffice' && linked.has(b.id));
   const taxedHouses = new Set(office ? s.buildings.filter((b) => b.kind === 'house' && linked.has(b.id)).map((b) => b.id) : []);
-  const taxPerHouse = CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold);
+  const taxPerHouse = CONFIG.tax.perHouse * (1 + CONFIG.skills.taxCollectors * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold);
   const festive = season === WINTER && lvl(s, 'harvestFestival') ? CONFIG.skills.festival.winterWalk : 1;
-  const walk = speed * CONFIG.shoes.speedGrowth ** shoes.t * shoes.x * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive * bountiful;
+  const walk = speed * CONFIG.shoes.speedGrowth ** shoes.t * shoes.x * (1 + CONFIG.skills.swiftFeet * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive * bountiful;
   // Greenhouses: farms and orchards keep part of their harvest in winter.
   const farmSeason = CONFIG.seasons.farm.map((m, i) => (i === WINTER && lvl(s, 'greenhouses') ? CONFIG.skills.greenhouse : m));
-  const farmRate = f.harvestRate * f.speedGrowth ** farm.t * farm.x * (1 + 0.2 * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;
-  const farmLoad = (carry + f.carryPerLevel * farm.t + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
+  const farmRate = f.harvestRate * f.speedGrowth ** farm.t * farm.x * (1 + CONFIG.skills.greenThumbs * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;
+  const farmLoad = (carry + f.carryPerLevel * farm.t + CONFIG.skills.bigBaskets * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
   const k = CONFIG.skills;
   const weave = 1 + k.weavers * lvl(s, 'weavers') * (up.shoes + up.backpack + up.coats);
   const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm.t * farm.x * warm * gather * guild.herd * weave; // Barn upgrades cover herders too
   // Deep Shafts: miners work faster in winter and are never slowed by cold.
   const shafts = lvl(s, 'deepShafts') ? (season === WINTER ? k.deepShafts : 1) : warm;
-  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm.t + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
+  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm.t + CONFIG.skills.bigBaskets * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
   return {
     speed: walk,
-    chopRate: chopRate * a.speedGrowth ** axe.t * axe.x * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed * gather * guild.lumber,
-    carry: (carry + a.carryPerLevel * axe.t + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe.t * axe.x * haul + carryBonus,
+    chopRate: chopRate * a.speedGrowth ** axe.t * axe.x * (1 + CONFIG.skills.sharpAxes * lvl(s, 'sharpAxes')) * fed * gather * guild.lumber,
+    carry: (carry + a.carryPerLevel * axe.t + CONFIG.skills.bigBaskets * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe.t * axe.x * haul + carryBonus,
     carryBonus,
     manualChop: CONFIG.manualChop * 5 ** lvl(s, 'powerSwing'),
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
@@ -129,8 +136,8 @@ export function getStats(s: GameState): Stats {
     orchardSpeed: walk * CONFIG.orchard.speedMult,
     orchardRate: farmRate * CONFIG.orchard.rateMult,
     orchardCarry: farmLoad * CONFIG.orchard.carryMult + carryBonus,
-    mineRate: p.mineRate * p.speedGrowth ** pick.t * pick.x * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * shafts * gather * guild.mine,
-    mineCarry: (carry + p.carryPerLevel * pick.t + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick.t * pick.x * haul + carryBonus,
+    mineRate: p.mineRate * p.speedGrowth ** pick.t * pick.x * (1 + CONFIG.skills.stonecutters * lvl(s, 'stonecutters')) * fed * shafts * gather * guild.mine,
+    mineCarry: (carry + p.carryPerLevel * pick.t + CONFIG.skills.bigBaskets * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick.t * pick.x * haul + carryBonus,
     herdRate,
     herdCarry: herdLoad + carryBonus,
     herdFood: lvl(s, 'fertileHerding'),
@@ -145,7 +152,10 @@ export function getStats(s: GameState): Stats {
     roadWalk: 1 + k.cobblestone * lvl(s, 'cobblestone'),
     emptyWalk: 1 + k.errandRunners * lvl(s, 'errandRunners'),
     toll: k.toll * lvl(s, 'tollRoads'),
+    surplus,
     wellFed,
+    birthRate: families ? (1 + fam.perHouse * houses) / fam.seconds : 0,
+    springBirths: families >= 2 ? Math.max(1, Math.floor(houses / fam.springPerHouses)) : 0,
     fair: isFair(s),
     wellHarvest: CONFIG.well.harvestMult,
     wellCarry: CONFIG.well.carryMult,

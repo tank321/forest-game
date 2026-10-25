@@ -207,7 +207,7 @@ export class Panel {
       title: 'Build',
       sub: 'Tap a building to select it.',
       foldable: true,
-      // Kinds still locked behind a skill, or at their limit (the Outpost), stay out of the menu.
+      // Kinds still locked behind a skill, or at their limit (the Tailor, the Outpost), stay out of the menu.
       actions: [
         { label: `Road (${Math.max(0, roadStock(s) - roadsBuilt(s))} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const },
         ...BUILDABLE.filter((k) => isUnlocked(s, k) && !atLimit(s, k)).map((k) => {

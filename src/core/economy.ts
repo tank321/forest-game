@@ -22,12 +22,12 @@ export function baseVillagerCost(owned: number): number {
 /** Next villager paid in `res`; each resource has its own price track. */
 export function villagerCost(s: GameState, res: HireResource = 'wood'): Cost {
   const n = s.hires[res] + hireOffset[res];
-  return scale({ [res]: baseVillagerCost(n) }, 0.85 ** lvl(s, 'recruiters') * perkMult(s, 'urbanCore', L.urbanCore.hire));
+  return scale({ [res]: baseVillagerCost(n) }, CONFIG.skills.recruiters ** lvl(s, 'recruiters') * perkMult(s, 'urbanCore', L.urbanCore.hire));
 }
 
 /** Masons: the stone part of any cost is discounted. */
 const masonry = (s: Pick<GameState, 'skills'>, c: Cost): Cost =>
-  c.stone ? { ...c, ...scale({ stone: c.stone }, 0.85 ** lvl(s, 'masons')) } : c;
+  c.stone ? { ...c, ...scale({ stone: c.stone }, CONFIG.skills.masons ** lvl(s, 'masons')) } : c;
 
 export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings' | 'legacy'>, kind: BuildingKind, owned = countOf(s, kind)): Cost =>
   masonry(s, scale(BUILDINGS[kind].cost(owned), (lvl(s, 'masterBuilders') ? 0.8 : 1) * perkMult(s, 'prosperousCity', L.prosperousCity.build)));

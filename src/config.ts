@@ -122,10 +122,13 @@ export const CONFIG = {
   // Extra pack mules bought at a Trading Post: at most `max` per post (its first included); the k-th bought in the town
   // (counting every post's) costs `cost` × growth^k, a little less than each pays back as it grows
   mules: { max: 5, cost: { wood: 400, food: 150, gold: 100 }, growth: 1.6 },
-  // Prestige: rebuild once base + step × runs skill levels are learned (capped at every skill maxed)
+  // Prestige: rebuild once base skill levels are learned, `step` more for each of the first `steady` rebuilds and
+  // `later` more for each one after (capped at every skill maxed)
   legacy: {
     base: 15,
     step: 5,
+    steady: 2,
+    later: 10,
     roadsPerRun: 10, // starting roads every rebuild adds
     cards: { base: 3, perRun: 1, max: 5 }, // skills a relic offers: base, +perRun every rebuild, up to max (Relic Hunters adds more)
     perks: {
@@ -141,14 +144,23 @@ export const CONFIG = {
   },
   skills: {
     masteryLevels: 8, // levels learned in a track before its Mastery is offered
-    gates: { orchards: 4, cottonFields: 5, greenhouses: 4, teamwork: 4, taxOffices: 3, guildContracts: 5 }, // levels learned in its track before this skill is offered
+    gates: { orchards: 4, cottonFields: 5, greenhouses: 4, teamwork: 4, taxOffices: 3, guildContracts: 5, growingFamilies: 4 }, // levels learned in its track before this skill is offered
+    // Per-level bonuses of the stat skills: few levels, each a big step
+    sharpAxes: 0.5, // villager chop speed bonus per level
+    bigBaskets: 5, // villager carry per level, before upgrade multipliers
+    swiftFeet: 0.25, // walk speed bonus per level
+    recruiters: 0.75, // villager price × this per level
+    greenThumbs: 0.5, // farm harvest bonus per level
+    stonecutters: 0.5, // mining speed bonus per level
+    masons: 0.75, // stone costs × this per level
+    taxCollectors: 0.5, // tax bonus per level
     sweep: 0.5, // Sweeping Strike: share of a tap dealt to each choppable neighbour
     combo: { window: 1, step: 0.1, capPerLevel: 0.5 }, // Momentum: s between chained taps, bonus per chained tap, max bonus per level
     keenEyes: { vision: 1, relicGap: 0.1 }, // per level: extra rings of forest in sight, trees between relics −10%
     heartwood: { chance: 0.1, bonus: 0.5 }, // per level chance a felled tree pays bonus × its full wood
     timber: 0.5, // share of a felled tree's full wood dealt to a neighbouring tree
     cropRotation: { perFarm: 0.25, max: 4 }, // harvest bonus per touching farm, up to max farms
-    rootCellars: 0.85, // food upkeep × this per level
+    rootCellars: 0.75, // food upkeep × this per level
     greenhouse: 0.5, // winter farm and orchard harvest multiplier
     festival: { seconds: 60, winterWalk: 1.25 }, // seconds of farm and orchard harvest paid as winter starts; walk speed all winter
     openPastures: { radius: 2, perTile: 0.01 }, // wool bonus per level per open grass tile this close to a Sheep Farm
@@ -163,6 +175,9 @@ export const CONFIG = {
     dynamite: { stoneSeconds: 30, radius: 2, taps: 100, cooldown: 90 }, // stone burst, tree reach, damage in taps, s between blasts
     errandRunners: 0.25, // empty-handed walk speed bonus per level
     wellFed: { perVillager: 10, gather: 1.2 }, // food in stock per villager needed; gather multiplier while fed
+    // Growing Families: with room and a food surplus (Well Fed's), a villager is born every `seconds` / (1 + perHouse ×
+    // linked Houses); level 2 adds Spring Births, 1 villager per `springPerHouses` linked Houses (at least 1) as spring begins
+    families: { seconds: 900, perHouse: 0.05, springPerHouses: 5 },
     surveyors: 2, // extra roads per house per level
     outpost: { wood: 20_000, stone: 2_000, gold: 500 },
     toll: 0.1, // gold per road tile walked, per level

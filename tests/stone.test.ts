@@ -105,11 +105,11 @@ describe('quarries', () => {
     const s = smallWorld().state;
     const base = getStats(s).mineRate;
     s.skills = { stonecutters: 2 };
-    expect(getStats(s).mineRate).toBeCloseTo(base * 1.4);
+    expect(getStats(s).mineRate).toBeCloseTo(base * 2);
     s.skills = { stonecutters: 1, masons: 2 };
-    expect(upgradeCost(s, 'axe', 6)).toEqual({ wood: 2000, food: 800, stone: 72 }); // 100 × 0.85²
+    expect(upgradeCost(s, 'axe', 6)).toEqual({ wood: 2000, food: 800, stone: 56 }); // 100 × 0.75²
     expect(upgradeCost(s, 'axe', 0)).toEqual({ wood: 100 });
-    expect(buildingCost(s, 'well')).toEqual({ wood: 150, stone: 29 }); // 40 × 0.85²
+    expect(buildingCost(s, 'well')).toEqual({ wood: 150, stone: 23 }); // 40 × 0.75²
   });
 
   it('Quarry Crews is offered after Stonecutters, Masons after Quarrying', () => {
