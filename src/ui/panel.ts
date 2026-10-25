@@ -53,7 +53,7 @@ export class Panel {
     this.key = key;
     this.el.classList.toggle('folded', folded);
     // The fold button only shows on narrow screens (style.css).
-    const fold = foldable ? `<button class="fold" aria-expanded="${!folded}">${folded ? 'Show' : 'Hide'}</button>` : '';
+    const fold = foldable ? `<button class="fold" aria-expanded="${!folded}" aria-label="${folded ? 'Show' : 'Hide'} the build menu"><i class="fold-arrow"></i></button>` : '';
     const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}${fold}</h2>` : `<h2>${title}${fold}</h2>`;
     this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}<div class="actions"></div><div class="building-controls"></div>`;
     const foldBtn = this.el.querySelector<HTMLButtonElement>('.fold');

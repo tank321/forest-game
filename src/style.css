@@ -540,7 +540,10 @@ button.danger { color: #ffb6a3; }
   #tutorial { margin: 6px 8px 0; font-size: 13px; }
   #panel { grid-template-columns: minmax(0, 1fr); gap: 6px; max-height: 38dvh; padding: 6px 8px; }
   #panel h2 { display: flex; align-items: center; gap: 10px; font-size: 20px; line-height: 28px; }
-  #panel .fold { display: inline-flex; margin-left: auto; font-size: 14px; line-height: 20px; text-shadow: var(--outline); }
+  #panel .fold { display: inline-flex; justify-content: center; min-width: 52px; min-height: 36px; margin-left: auto; }
+  /* A chevron: down tucks the menu away, up brings it back. */
+  .fold-arrow { width: 12px; height: 12px; border: solid var(--cream); border-width: 0 4px 4px 0; filter: drop-shadow(0 1px 1px #1b100b); transform: translateY(-3px) rotate(45deg); }
+  #panel.folded .fold-arrow { transform: translateY(3px) rotate(-135deg); }
   #panel.folded > :not(h2) { display: none; }
   #panel.folded:has(.tutorial-glow) > .actions { display: grid; } /* the tutorial's target stays in reach */
   #panel:has(.build-grid) > .sub { display: none; }

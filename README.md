@@ -34,8 +34,8 @@ While placing a building, **Cancel**, Escape or a right-click anywhere stops pla
 On a touch screen, placing or moving a building or road is aimed first: its footprint starts in view (on the
 building being moved, or in the middle of the map), dragging a finger moves it, and tapping elsewhere puts it there.
 Tap the footprint itself to place it. Pinch or two fingers pan and zoom meanwhile.
-On a phone the menu is a row of icons, the build menu is one row of cards you swipe sideways, and **Hide** folds it
-down to its heading (remembered in this browser) so the map gets the screen; **Show** brings it back.
+On a phone the menu is a row of icons, the build menu is one row of cards you swipe sideways, and the arrow on its
+heading folds it down to the heading (remembered in this browser) so the map gets the screen; tap it again to bring it back.
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
@@ -168,6 +168,10 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v34** – Build menu arrow.
+- On a phone the build menu folds away and back with an arrow on its heading (down to tuck it away, up to bring it back)
+  instead of the Hide and Show text. No save change.
+
 **v33** – Workers who can reach their workplace.
 - A workplace now takes the nearest empty-handed lumberjack by walking route, not in a straight line. Before, it could
   pick one that buildings or forest cut off from it (a Town Center and its neighbors can split a village in two), who then
