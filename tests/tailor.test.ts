@@ -38,17 +38,24 @@ describe('tailor', () => {
     expect(upgraded.farmCarry - getStats(w.state).farmCarry).toBeCloseTo(add);
   });
 
-  it('costs cloth from the first level, and stops at max level', () => {
+  it('costs cloth from the first level, and goes on past its table: Shoes ×1.05 walk, Backpack ×1.15 bonus', () => {
     const w = smallWorld();
     const s = w.state;
     expect(upgradeCost(s, 'shoes', 0)).toEqual({ wood: 100, cloth: 10 });
     expect(upgradeCost(s, 'backpack', 2)).toEqual({ wood: 325, food: 65, cloth: 35 });
     expect(upgradeCost(s, 'shoes', 9)).toEqual({ wood: 5850, food: 1950, stone: 780, cloth: 650, gold: 260 });
     s.resources = { wood: 1e9, food: 1e9, stone: 1e9, cloth: 1e9, gold: 1e9 };
-    for (let k = 0; k < maxLevel('backpack'); k++) expect(upgrade(w, 'backpack')).toBe(true);
-    expect(upgrade(w, 'backpack')).toBe(false);
-    expect(s.upgrades.backpack).toBe(10);
-    expect(upgradeCost(s, 'backpack')).toBeNull();
+    for (let k = 0; k < 10; k++) expect(upgrade(w, 'backpack')).toBe(true);
+    const bonus = getStats(s).carryBonus;
+    expect(bonus).toBe(20);
+    expect(upgradeCost(s, 'backpack')).toEqual({ wood: 7898, food: 2633, stone: 1053, cloth: 878, gold: 351 });
+    expect(upgrade(w, 'backpack')).toBe(true);
+    expect(getStats(s).carryBonus).toBeCloseTo(bonus * 1.15);
+    expect(maxLevel('shoes')).toBe(Infinity);
+    for (let k = 0; k < 10; k++) expect(upgrade(w, 'shoes')).toBe(true);
+    const walk = getStats(s).speed;
+    expect(upgrade(w, 'shoes')).toBe(true);
+    expect(getStats(s).speed).toBeCloseTo(walk * 1.05);
   });
 
   it('migrates a v15 wheelbarrow into shoes and a backpack at its level', () => {

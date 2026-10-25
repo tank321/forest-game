@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../src/config';
 import { prestige } from '../src/core/commands';
 import { buildingCost, popCap, villagerCost } from '../src/core/economy';
-import { availablePerks, canPrestige, legacyRequirement } from '../src/core/legacy';
+import { availablePerks, canPrestige, cardsPerPick, legacyRequirement } from '../src/core/legacy';
 import { roadStock } from '../src/core/roads';
 import { createInitialState } from '../src/core/state';
 import { getStats } from '../src/core/stats';
@@ -58,5 +58,10 @@ describe('legacy', () => {
     expect(villagerCost(s).wood).toBe(Math.round(villagerCost(plain).wood! * L.urbanCore.hire));
     expect(buildingCost(s, 'house').wood).toBe(Math.round(buildingCost(plain, 'house').wood! * L.prosperousCity.build));
     expect(getStats(s).eat).toBe(0);
+  });
+
+  it('every rebuild offers one more skill per relic, up to 5, and Relic Hunters one more on top', () => {
+    expect([0, 1, 2, 3, 9].map((runs) => cardsPerPick({ legacy: { runs, perks: {} } }))).toEqual([3, 4, 5, 5, 5]);
+    expect(cardsPerPick({ legacy: { runs: 4, perks: { relicHunters: 1 } } })).toBe(6);
   });
 });

@@ -50,11 +50,13 @@ Each one plays a bell chime; the speaker button in the menu turns sound off or o
 **Music** plays in the background and follows the season: each has its own chords, tempo and instruments, crossfading as the
 season turns. The note button in the menu turns it off or on. Audio starts after your first tap or key press, and the music pauses while the tab is hidden.
 They give no rewards and are kept across rebuilds; most count over all your runs.
-The **Lucky Chest** in the map's top-right corner opens once every 10 minutes of real time (the timer keeps running
-while the game is closed). Tap it when it glows: the chest drops in, rattles and bursts open with a timed boost
-(the whole game at ×2, ×3 or ×5 speed, ×10 hand chops, or villagers gathering and walking ×2) or a Windfall of
-15 minutes' income. The running boost and its time left show under the chest.
-**Forest creatures** (rabbits, birds, squirrels, foxes and more, changing with the season) wander the forest edge for atmosphere. They can't be tapped and change nothing in the game.
+The **Lucky Chest** in the map's top-right corner stores one opening every 10 minutes of real time, up to 3 (the timer
+keeps running while the game is closed, and stops while it is full). Tap it when it glows: every stored chest opens at
+once, dropping in, rattling and bursting open with a timed boost each (the whole game at ×2, ×3 or ×5 speed, ×10 hand
+chops, or villagers gathering and walking ×2) or a Windfall of 15 minutes' income. Different boosts run side by side;
+the same boost twice runs twice as long; speed boosts never run together but queue, fastest first (a slower one
+already running pauses and resumes after). Every boost shows under the chest with its time left, queued speeds dimmed; hover over one for what it does.
+**Forest creatures** (rabbits, birds, squirrels, foxes and more, changing with the season) wander the forest edge for atmosphere: a few around the first clearing, more as more land comes into sight (one per 48 tiles in sight on screen, up to 12, fewer in winter). They can't be tapped and change nothing in the game.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
 Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
@@ -98,6 +100,12 @@ cloth-priced villagers, the last two axe/farm/pick levels, Tailor upgrades, and 
 its upgrades are paid straight from the stockpile. **Shoes** make every villager walk ×1.05 faster per level,
 **Backpacks** give every gatherer +2 carry per level on top of its own, and **Coats** cut winter firewood by 25% per level.
 
+**Upgrades past level 10:** the Axe, Farm (Barn), Pick, Shoes and Backpack tracks never end. Their first 10 levels
+are as listed above; every level after that multiplies the track's effects again (Axe, Farm and Pick: ×1.15 speed
+and ×1.15 carry; Shoes: ×1.05 walking; Backpack: ×1.15 extra carry) and costs ×1.35 the level before, in the same
+resources as level 10. Trees grow about ×1.2 bigger each ring out, so this keeps each ring only a little slower to
+clear than the last. Coats and the Satchel keep their 3 levels.
+
 **Seasons & upkeep:** a year is four 3-minute seasons, shown on the stats plaque; hover over the
 season (or tap it, or press Enter on it) to see what this season and the next one do. Farms and orchards harvest
 ×1.5 in autumn and nothing in winter. The first 5 villagers live for free; every villager beyond
@@ -121,7 +129,9 @@ back at the office. It visits one house per round; the **Satchel** upgrade at th
 2, 3 and 5. A **Trading Post** (2×2, anywhere) comes with its own pack mule (no villager
 needed), which loads gold for 5 s and carries it along the roads to the nearest Market and back. Gold per trip grows faster than the
 straight-line gap between the two buildings (10 gold at 10 tiles, 28 at 20), so put trading posts far
-from the Market. Without a Market the post stands idle. Gold pays for houses from the 13th. Skills:
+from the Market. Without a Market the post stands idle. Select the post and **Buy a pack mule** for up to 5 on its
+route (wood, food and gold): the first extra costs 400 wood, 150 food and 100 gold, and each one bought anywhere in the
+town costs ×1.6 the last (a removed post's mules are not refunded). Gold pays for houses from the 13th. Skills:
 **Tax Collectors** (+20% tax per level), **Deputies** (a second collector per Tax Office), **Pack Mules** (+25% gold per trip per level) and
 **Shrewd Traders** (Market commission 5 points lower per level).
 With **Guild Contracts**, the Market panel also lists three contracts (gather a resource, fell trees or
@@ -132,10 +142,11 @@ The **Frontier Outpost** (3×3, the Settlement Mastery) is a second hub you can 
 land, once. It takes every resource, hires villagers like the Town Center, and roads touching it count as
 connected, so a new town can grow at the forest's edge.
 
-Every few felled trees a **relic** appears in the forest (a rune stone; it glows once your land touches it) and the map pans over to it; the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
+Every few felled trees a **relic** appears in the forest (a rune stone with a soft golden glow, so it is easy to spot in the forest; it glows brightly once your land touches it) and the map pans over to it, and again when your land first reaches it; the land counter on the stats plaque counts down the trees left until the next one. Chop until your land
 touches it, then tap it to open the **Choose a skill** tab (the game keeps running). Inspect one
-of the offered cards and press **Choose** to upgrade it. Close with × or Escape to pick later
-with **Pick skill** in the sidebar. Skills come in six tracks, one per economy (Forestry, Settlement, Farming,
+of the offered cards and press **Choose** to upgrade it; the relic is then taken and its tile becomes land. Close with ×
+or Escape to pick later: the relic stays on the map, glowing, and tapping it again offers the same skills. Once per relic,
+**Reshuffle** under the cards deals other skills instead (the ones shown come back only if too few others are left). Skills come in six tracks, one per economy (Forestry, Settlement, Farming,
 Herding, Mining, Trade). Each track is a tree: a skill is offered once its parent has a level, and one parent can
 unlock several skills. A relic offers skills from different tracks while it can. **Skills** opens the skill tree,
 which fills the window: drag (or swipe) to pan, scroll (or pinch) to zoom, or use the +, − and ⤢ (show everything)
@@ -144,7 +155,8 @@ buttons in the corner and the + and − keys. A link turns solid once its parent
 glow, and clicking one (tapping it a second time on phones) learns it right there. Keyboard users can tab through
 skills (the view and the popup follow focus) and learn an offered one with Enter or Space. **Legacy** opens the Legacy perk tree;
 it turns gold once you have learned enough skill levels to rebuild. Pick an available perk and click **Rebuild** twice
-to start over on a new map with that perk kept forever. **Export/Import** move
+to start over on a new map with that perk kept forever. A relic offers 3 skills to choose from, one more after each rebuild
+up to 5 (6 with Relic Hunters). **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
 **Speed** runs the game ×1/×2/×5/×10, and **Reset** (click twice) wipes the save and starts over.
 
@@ -171,6 +183,63 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v49** – Upgrades without end.
+- The Axe, Farm, Pick, Shoes and Backpack upgrades go on past level 10: each further level multiplies the track's
+  effects (×1.15 speed and carry; Shoes ×1.05 walking; Backpack ×1.15 extra carry) and costs ×1.35 the level before.
+  Levels 1–10 are unchanged. Upgrade cards show "Level 14" with no maximum, and big rates use short numbers.
+- Why: tree wood grows about ×1.2 per ring without limit, while every bonus had a cap, so a run slowed to a crawl
+  around ring 30 (a ring-30 tree took a lumberjack about 1½ hours, mostly walking with a capped load). In a model of
+  a greedy first run, clearing the whole map went from well over 300 hours to about 24.
+- Well Equipped (total upgrade levels) gains tiers at 60 and 100: 102 achievement tiers in all. No save change.
+
+**v48** – Reshuffle.
+- Under a relic's skill cards, **Reshuffle** deals other skills to choose from, once per relic. Closing and opening
+  the relic again keeps the reshuffled offer. In a simulation of first runs, it brought the skill a player was after
+  about a third sooner (Wells after about 6 relics instead of 10, Teamwork after about 14 instead of 22).
+- Save v25: an offer already dealt hasn't been reshuffled.
+
+**v47** – Hovering over a Lucky Chest boost under the chest says what it does ("Villagers gather and walk twice as
+fast."); a queued speed also says which one it waits for. No save change.
+
+**v46** – Relics wait on the map.
+- Closing the skill choice without picking now leaves the relic on the map, glowing, instead of putting a **Pick skill**
+  button in the sidebar (which is gone). Tap the relic again for the same skills; it is taken, and counts as collected,
+  once you pick one.
+- Save v24: skill picks still owed from an older save come back as relics at the edge of your land, offering the
+  same skills.
+
+**v45** – More pack mules.
+- A Trading Post's panel now has **Buy a pack mule**: up to 5 mules per post, each working the route on its own. The
+  first extra costs 400 wood, 150 food and 100 gold, and every one bought in the town costs ×1.6 the last. At 10
+  tiles from the Market a mule brings in about 26 gold a minute (more with Pack Mules), so the first pays back in a
+  few minutes and later ones take longer, unless the route is long. A post's mules walk a little apart, as a pack train.
+- Save v23: every Trading Post keeps the one mule it had.
+
+**v44** – Relics glow.
+- Every relic in sight now has a faint golden halo and a slow pulse of light around the stone, so it stands out among
+  the trees. One your land touches still glows brightly and quickly. No save change.
+
+**v43** – More skill choices after each rebuild.
+- A relic offers 3 skills to choose from on the first run, 4 after the first rebuild and 5 from the second on.
+  Relic Hunters now adds one more on top (6) instead of setting 4. No save change.
+
+**v42** – More creatures as the forest opens up.
+- How many forest creatures are about now follows how much of the screen is in sight (your land and the forest at its
+  edge), not the size of the screen: about 3 around the starting clearing, growing to 12 once the land fills about half
+  a desktop screen. Zoomed in close there is still at least one. No save change.
+
+**v41** – The Lucky Chest stores up to three.
+- The chest keeps filling while it is unopened, while you are idle and while the game is closed: one opening every
+  10 minutes, up to 3. One tap opens them all at once, in one show with every reward on the card.
+- Boosts never clash: different kinds run together, the same kind adds its time, and speed boosts queue fastest first.
+  Offline catch-up follows the queue exactly. Each boost has its own badge under the chest.
+- Save v22: a ready chest becomes one stored (one whose cooldown passed long ago fills up from then), and a running
+  boost or an unclaimed reward carries over.
+
+**v40** – The map pans to an uncovered relic.
+- When your land first reaches a relic, the map glides over to it, as when it appears, with "Relic uncovered! Tap it to
+  choose a skill." Reached while you were away, it pans there on your return. No save change.
+
 **v39** – The tutorial teaches roads, the Barn, skills and Legacy.
 - New steps: **Lay a road** (after the Farm: drag a road from the Town Center out toward the trees; skipped if one is
   already joined), **Better farms** (after the axe: build a Barn near your farms and buy the first farm upgrade) and
@@ -345,7 +414,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - Each rebuild takes one perk from the Legacy tree and adds 10 starting roads. The tree starts with Master Harvest (villagers gather ×3) and Swift & Strong (walk ×3, carry ×3), then forks:
   - City: Urban Core (base population 20, villagers −50%, 10×10 starting clearing), then Prosperous City (buildings −50%, start with 10 villagers who need no food or firewood).
   - Commerce: Trade Guilds (lumberjacks chop ×2, and each profession speeds up with its headcount, toward +300%), then Royal Bank (tax and trade gold ×3, half the market commission).
-- Both branches lead to Relic Hunters (relics twice as often, 4 skills per pick). After that, Legacy ×2 (every gather rate ×2) can be taken at every rebuild.
+- Both branches lead to Relic Hunters (relics twice as often, one more skill per pick). After that, Legacy ×2 (every gather rate ×2) can be taken at every rebuild.
 - A **Legacy** button next to Skills opens the perk tree and turns gold when a rebuild is ready. Rebuilding takes two clicks.
 - Saves migrate from v14 with an empty Legacy. DEV Reset wipes the Legacy too.
 

@@ -35,6 +35,12 @@ export const availablePerks = (s: GameState): PerkId[] =>
   PERK_IDS.filter((id) => (LEGACY[id].repeat || !perk(s, id)) && LEGACY[id].requires.every((r) => perk(s, r)));
 
 /** Skill levels learned this run. */
+/** Skills a relic offers to choose from: more every rebuild, up to a cap, and Relic Hunters adds more on top. */
+export function cardsPerPick(s: Pick<GameState, 'legacy'>): number {
+  const { base, perRun, max } = CONFIG.legacy.cards;
+  return Math.min(max, base + perRun * s.legacy.runs) + perk(s, 'relicHunters') * CONFIG.legacy.perks.relicHunters.cards;
+}
+
 export const skillLevels = (s: GameState) => SKILL_IDS.reduce((n, id) => n + lvl(s, id), 0);
 
 /** Skill levels needed to rebuild: rises every run, never past every skill maxed. */

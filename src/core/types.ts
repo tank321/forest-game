@@ -51,6 +51,7 @@ export interface Building {
   paidCost: Cost; // original materials paid; moving and later discounts do not change this
   tally: Cost; // lifetime amounts its workers produced (workplaces) or it collected (drop-offs, Tax Office)
   due?: number; // house: gold owed, waiting for a tax collector
+  mules?: number; // Trading Post: pack mules it keeps, its first included (see systems/mules.ts)
 }
 
 export interface Rect {
@@ -76,7 +77,7 @@ export interface GameState {
   marked: number[]; // priority trees (player-marked)
   buildings: Building[];
   villagers: Villager[];
-  mules: Mule[]; // one per Trading Post (see systems/mules.ts)
+  mules: Mule[]; // each Trading Post's (see systems/mules.ts)
   resources: Resources;
   upgrades: { axe: number; farm: number; pick: number; coats: number; shoes: number; backpack: number; satchel: number };
   hires: Record<HireResource, number>; // villagers bought with each resource (separate price tracks)
@@ -89,7 +90,7 @@ export interface GameState {
   relicsSpawned: number;
   nextRelicAt: number; // treesChopped value that spawns the next relic
   cards: SkillId[]; // skill choices on offer (empty = none)
-  picksPending: number; // relics collected whose skill hasn't been picked yet
+  reshuffled: boolean; // the offer has been dealt again (once per relic)
   nextId: number;
   time: number; // simulated seconds
   legacy: { runs: number; perks: Partial<Record<PerkId, number>> }; // kept across rebuilds (prestige)

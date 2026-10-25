@@ -100,13 +100,13 @@ export class Panel {
         if (narrow) {
           // One row: the title, level and stat changes beside an Upgrade button that carries its cost.
           card.classList.add('compact');
-          card.innerHTML = `<div class="upgrade-info"><h3>${u.title} <small>${u.level}/${u.max}</small></h3>${u.rows.map((row) => `<p>${row.label} ${change(row.current, row.next)}</p>`).join('')}</div>`;
+          card.innerHTML = `<div class="upgrade-info"><h3>${u.title} <small>${isFinite(u.max) ? `${u.level}/${u.max}` : `Lv ${u.level}`}</small></h3>${u.rows.map((row) => `<p>${row.label} ${change(row.current, row.next)}</p>`).join('')}</div>`;
           b.innerHTML = a.cost ? `<span>Upgrade</span><span class="cost">${costHtml(a.cost, have)}</span>` : 'Max level';
           card.append(b);
           box.append(card);
           return;
         }
-        card.innerHTML = `<div class="upgrade-heading"><h3>${u.title}</h3><span class="upgrade-level">Level ${u.level} of ${u.max}</span></div><table><caption>${u.scope}</caption><thead><tr><th scope="col">Stat</th><th scope="col">Current</th><th scope="col">Next</th></tr></thead><tbody>${u.rows.map((row) => `<tr><th scope="row">${row.label}</th><td>${row.current}</td><td class="upgrade-next">${row.next ?? '—'}</td></tr>`).join('')}</tbody></table>${a.cost ? `<div class="upgrade-cost"><span>Cost</span><span class="cost">${costHtml(a.cost, have)}</span></div>` : '<p class="upgrade-complete">All levels unlocked.</p>'}`;
+        card.innerHTML = `<div class="upgrade-heading"><h3>${u.title}</h3><span class="upgrade-level">Level ${u.level}${isFinite(u.max) ? ` of ${u.max}` : ''}</span></div><table><caption>${u.scope}</caption><thead><tr><th scope="col">Stat</th><th scope="col">Current</th><th scope="col">Next</th></tr></thead><tbody>${u.rows.map((row) => `<tr><th scope="row">${row.label}</th><td>${row.current}</td><td class="upgrade-next">${row.next ?? '—'}</td></tr>`).join('')}</tbody></table>${a.cost ? `<div class="upgrade-cost"><span>Cost</span><span class="cost">${costHtml(a.cost, have)}</span></div>` : '<p class="upgrade-complete">All levels unlocked.</p>'}`;
         card.append(b);
         box.append(card);
       } else if (a.hint) {

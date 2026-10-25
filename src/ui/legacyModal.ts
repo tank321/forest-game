@@ -146,7 +146,7 @@ export class LegacyModal {
     } else {
       hint.textContent = 'Owned. Active in every run.';
     }
-    hint.textContent += `${hint.textContent ? ' ' : ''}Rebuilding starts a new map: buildings, villagers, resources and skills are lost. Legacy perks are kept, and every rebuild adds ${CONFIG.legacy.roadsPerRun} starting roads.`;
+    hint.textContent += `${hint.textContent ? ' ' : ''}Rebuilding starts a new map: buildings, villagers, resources and skills are lost. Legacy perks are kept, and every rebuild adds ${CONFIG.legacy.roadsPerRun} starting roads and one more skill to choose from at each relic (up to ${CONFIG.legacy.cards.max}).`;
     detail.append(hint);
     return detail;
   }

@@ -2,9 +2,11 @@ import { expect, it } from 'vitest';
 import { toggleMark } from '../src/core/commands';
 import { addBuilding } from '../src/core/buildings';
 import { buildingRefund } from '../src/core/economy';
+import { isCollectable } from '../src/core/grid';
 import { linkedBuildings } from '../src/core/roads';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
+import { Tile } from '../src/core/types';
 import { createWorld } from '../src/core/world';
 import { smallWorld } from './helpers';
 
@@ -101,9 +103,28 @@ it('migrates a v2 save to v3', () => {
   const a = smallWorld(30, 1);
   simulate(a, 60, 1);
   const v3 = JSON.parse(serialize(a.state, 7));
-  const { skills: _1, totals: _2, treesChopped: _3, relics: _4, relicsSpawned: _5, nextRelicAt: _6, cards: _7, picksPending: _8, ...v2state } = v3.state;
+  const { skills: _1, totals: _2, treesChopped: _3, relics: _4, relicsSpawned: _5, nextRelicAt: _6, cards: _7, ...v2state } = v3.state;
   const { state } = deserialize(JSON.stringify({ version: 2, savedAt: 7, state: v2state }));
   expect(state.treesChopped).toBe(a.state.treesChopped);
   expect(state.relics).toEqual([]);
   expect(state.totals.wood).toBe(a.state.resources.wood);
+});
+
+it('migrates a v23 save: each skill pick still owed becomes a relic at the edge of the land again', () => {
+  const w = smallWorld(30, 1);
+  w.state.counts.relics = 3;
+  w.state.cards = ['sharpAxes', 'greenThumbs', 'stonecutters'];
+  const old = JSON.parse(serialize(w.state, 7));
+  old.version = 23;
+  old.state.picksPending = 2;
+  const { state } = deserialize(JSON.stringify(old));
+  expect('picksPending' in state).toBe(false);
+  expect(state.relics).toHaveLength(2);
+  for (const r of state.relics) {
+    expect(state.tiles[r]).toBe(Tile.Relic);
+    expect(isCollectable(state, r)).toBe(true);
+  }
+  expect(state.cards).toEqual(w.state.cards); // the offer dealt stays
+  expect(state.counts.relics).toBe(1); // counted again when picked
+  expect(state.treesLeft).toBe(w.state.treesLeft - 2);
 });

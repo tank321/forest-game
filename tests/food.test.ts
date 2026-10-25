@@ -108,7 +108,7 @@ describe('food economy', () => {
     expect(upgradeCost(s, 'axe', 4)).toEqual({ wood: 850, food: 300 });
     expect(upgradeCost(s, 'farm', 0)).toEqual({ wood: 200 });
     expect(upgradeCost(s, 'farm', 9)).toEqual({ wood: 13000, food: 5000, stone: 1200, cloth: 200 });
-    expect(upgradeCost(s, 'farm', 10)).toBeNull();
+    expect(upgradeCost(s, 'farm', 10)).toEqual({ wood: 17550, food: 6750, stone: 1620, cloth: 270 }); // past the table: ×1.35
     expect(buildingCost(s, 'house')).toEqual({ wood: 100 });
     for (let k = 0; k < 3; k++) s.buildings.push({ id: 900 + k, kind: 'house', x: 0, y: k, paidCost: {}, tally: {} });
     expect(buildingCost(s, 'house')).toEqual({ wood: 338, food: 50 });
@@ -120,11 +120,15 @@ describe('food economy', () => {
     const base = getStats(s);
     s.resources = { wood: 1e9, food: 1e9, stone: 1e9, cloth: 1e9, gold: 0 };
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'farm')).toBe(true);
-    expect(upgrade(w, 'farm')).toBe(false);
     s.skills = { greenThumbs: 1, bigBaskets: 1 };
     const st = getStats(s);
     expect(st.farmRate).toBeCloseTo(base.farmRate * 1.05 ** 10 * 1.2);
     expect(st.farmCarry).toBeCloseTo((5 + 20 + 2) * 1.02 ** 10);
+    expect(upgrade(w, 'farm')).toBe(true); // past the table: ×1.15 harvest, carry and herding
+    const past = getStats(s);
+    expect(past.farmRate).toBeCloseTo(st.farmRate * 1.15);
+    expect(past.farmCarry).toBeCloseTo(st.farmCarry * 1.15);
+    expect(past.herdRate).toBeCloseTo(st.herdRate * 1.15);
   });
 
   it('migrates a v3 save to v4', () => {

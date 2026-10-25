@@ -12,7 +12,7 @@ import { visionRadius, type Fx, type World } from '../core/world';
 import { placementAt } from '../ui/placement';
 import type { UiState } from '../ui/state';
 import { fmt } from '../ui/text';
-import { bake } from './bake';
+import { bake, halo } from './bake';
 import type { Camera } from './camera';
 import { CRITTER_MIN_ZOOM, critterFrame, Critters, hopLift, TRACK_LIFE, type Critter } from './critters';
 import {
@@ -105,6 +105,10 @@ const SMOKE_PUFFS = 4; // puffs rising from a chimney at once
 const SMOKE_MS = 3200; // ms a puff takes to rise and fade
 const SMOKE_RISE = 14; // art px a puff rises
 const SMOKE_DRIFT = 6; // art px the wind carries it sideways
+const MULE_SPREAD = [[0, 0], [-0.3, 0.15], [0.3, 0.15], [-0.15, -0.2], [0.15, -0.2]] as const; // tiles each of a post's mules is drawn off its spot
+// Every relic in sight glows faintly, so it stands out in the forest: a soft halo and a slow pulse of its outline glow.
+// One your land touches glows at full strength, quickly, to say it can be collected.
+const RELIC_HALO = { radius: 1.2, alpha: [0.22, 0.38], outline: [0.15, 0.35], ms: 1400 }; // radius in tiles; alpha low–high
 const BUILDING_COLOR: Record<BuildingKind, string> = {
   townCenter: '#8b5a2b',
   outpost: '#9a6a34',
@@ -170,12 +174,13 @@ export class Renderer {
   });
   /** Baked Christmas lights for winter houses, one per twinkle frame. */
   private lights = HOUSE_LIGHTS.map((g) => bake(g, LIGHTS_PALETTE, 1));
-  /** Baked relic stone: [season][fog]; and its glow (only drawn in territory, so never fogged). */
+  /** Baked relic stone: [season][fog]; its outline glow and the halo behind it (lights, so never fogged). */
   private relics = SEASONS.map((season) => {
     const palette = { ...RELIC_PALETTE, ...RELIC_TINTS[season] };
     return FOG_LIGHT.map((light) => bake(season === 'winter' ? WINTER_RELIC : RELIC, palette, light));
   });
   private relicGlow = bake(RELIC_GLOW, RELIC_PALETTE, 1);
+  private relicHalo = halo(RELIC_PALETTE.Y);
   /** Baked resource icons for carry tags. */
   private resourceIcons = Object.fromEntries(RESOURCES.map((r) => [r, bake(UI_ICONS[r], UI_PALETTE, 1)])) as Record<ResourceKey, HTMLCanvasElement>;
   /** Baked mark flags: red where villagers can reach the tree, yellow until then. */
@@ -429,6 +434,10 @@ export class Renderer {
     const { x0, x1, y0, y1 } = this.visibleTiles(s);
     const marked = new Set(s.marked);
     const glow = 0.6 + 0.4 * Math.sin(now / 250);
+    const faint = 0.5 + 0.5 * Math.sin(now / RELIC_HALO.ms);
+    const [hLo, hHi] = RELIC_HALO.alpha;
+    const [oLo, oHi] = RELIC_HALO.outline;
+    const r = RELIC_HALO.radius * k;
     let p = 0;
     for (let y = y0; y <= y1; y++) {
       while (p < props.length && props[p].depth < y + 1) props[p++].draw(); // trees in row y meet the ground at y + 1
@@ -441,11 +450,9 @@ export class Renderer {
         const h = k * (1 + OVERHANG);
         if (tile === Tile.Relic) {
           ctx.drawImage(this.relics[this.seasonAt(s.time, i)][world.fog[i]], sx, sy, w, h);
-          if (isCollectable(s, i)) {
-            ctx.globalAlpha = glow;
-            ctx.drawImage(this.relicGlow, sx, sy, w, h);
-            ctx.globalAlpha = 1;
-          }
+          ctx.globalAlpha = isCollectable(s, i) ? glow : oLo + (oHi - oLo) * faint;
+          ctx.drawImage(this.relicGlow, sx, sy, w, h);
+          ctx.globalAlpha = 1;
           continue;
         }
         const f = s.wood[i] / world.maxWood[i];
@@ -457,6 +464,16 @@ export class Renderer {
       }
     }
     while (p < props.length) props[p++].draw();
+    // Relic halos go over the whole scene, like light, so trees on every side are lit alike.
+    for (const i of s.relics) {
+      const x = i % s.w;
+      const y = (i / s.w) | 0;
+      if (x < x0 || x > x1 || y < y0 || y > y1 || world.fog[i] > vision) continue;
+      const [cx, cy] = cam.toScreen(x + 0.5, y + 0.45);
+      ctx.globalAlpha = isCollectable(s, i) ? hHi : hLo + (hHi - hLo) * faint;
+      ctx.drawImage(this.relicHalo, cx - r, cy - r, 2 * r, 2 * r);
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Tile range on screen, including the row whose sprites overhang into the bottom edge. */
@@ -728,7 +745,9 @@ export class Renderer {
     const walking = (m.state === 'toMarket' || m.state === 'toPost') && m.pathI < m.path.length;
     const frame: MuleFrame = !walking ? 'stand' : Math.floor(now / WALK_MS + m.id * 0.37) % 2 === 1 ? 'walk2' : 'walk1';
     const sprite = this.mules[frame][m.carry > 0 ? 1 : 0][this.faceLeft(world, m) ? 1 : 0];
-    const [sx, sy] = cam.toScreen(m.x - MULE_FEET.x / SPRITE_W, m.y - MULE_FEET.y / SPRITE_W);
+    // A post's mules can walk in step (they set off together after a pause), so each after its first keeps a spot of its own.
+    const [dx, dy] = MULE_SPREAD[world.state.mules.filter((o) => o.post === m.post).indexOf(m) % MULE_SPREAD.length];
+    const [sx, sy] = cam.toScreen(m.x + dx - MULE_FEET.x / SPRITE_W, m.y + dy - MULE_FEET.y / SPRITE_W);
     ctx.drawImage(sprite, sx, sy, (MULE_W / SPRITE_W) * k, (MULE_H / SPRITE_W) * k);
   }
 }

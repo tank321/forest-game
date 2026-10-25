@@ -1,14 +1,14 @@
 import { CONFIG } from '../config';
 import { count, nextCareer, record } from './achievements';
-import { chestMult, isBoost, rollChest, windfall, type ChestReward } from './chest';
-import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, type BuildingKind } from './buildings';
+import { addBoost, chestMult, isBoost, refillChest, rollChest, windfall, type ChestReward } from './chest';
+import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, mulesOf, type BuildingKind } from './buildings';
 import {
-  buildingCost, buildingRefund, gain, marketQuote, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
+  buildingCost, buildingRefund, gain, marketQuote, muleCost, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
 } from './economy';
 import { inBounds, isChoppable, isCollectable, neighbors4, neighbors8 } from './grid';
 import { rushToMark } from './flags';
 import { contractDone, newContract } from './guild';
-import { availablePerks, canPrestige, perk, type PerkId } from './legacy';
+import { availablePerks, canPrestige, cardsPerPick, perk, type PerkId } from './legacy';
 import { rand } from './rng';
 import { linkedBuildings, roadsBuilt, roadStock } from './roads';
 import { dealCards, lvl, SKILLS, type SkillId } from './skills';
@@ -166,6 +166,17 @@ export function hasMarket(s: GameState): boolean {
 
 const canTrade = (s: GameState, n: number) => Number.isInteger(n) && n > 0 && hasMarket(s);
 
+/** Buys another pack mule for a Trading Post; it starts at the post on the next tick. */
+export function buyMule(w: World, id: number): boolean {
+  const s = w.state;
+  const post = buildingById(s, id);
+  if (post?.kind !== 'tradingPost') return false;
+  const cost = muleCost(s, post);
+  if (!cost || !pay(s, cost)) return false;
+  post.mules = mulesOf(post) + 1;
+  return true;
+}
+
 /** Pause/resume a workplace; its workers return to lumberjacking while paused. */
 export function togglePause(w: World, id: number): boolean {
   const s = w.state;
@@ -301,31 +312,47 @@ function refreshRoadRoutes(w: World): void {
   for (const v of w.state.villagers) if (v.state === 'toHome') homeward(w, v);
 }
 
-/** Picks up a relic touching territory; its tile becomes territory and a skill pick is owed. */
-export function collectRelic(w: World, i: number): boolean {
+/**
+ * Opens a relic touching territory: deals the skills it offers, the same ones however often it is closed and opened
+ * again, until one is picked. The relic stays on the map until then; with no skill left to offer, it is taken at once.
+ */
+export function openRelic(w: World, i: number): boolean {
   const s = w.state;
   if (!isCollectable(s, i)) return false;
+  if (!s.cards.length) dealCards(s, cardsPerPick(s));
+  if (!s.cards.length) takeRelic(w, i); // every skill maxed
+  return true;
+}
+
+/** The relic's tile becomes territory. */
+function takeRelic(w: World, i: number): void {
+  const s = w.state;
   s.relics = s.relics.filter((r) => r !== i);
   claimTile(w, i);
   count(s, 'relics');
-  s.picksPending++;
-  if (!s.cards.length) dealCards(s, cardsPerPick(s));
-  if (!s.cards.length) s.picksPending = 0; // every skill maxed
-  return true;
 }
 
-export function pickSkill(w: World, id: SkillId): boolean {
+/** Learns an offered skill, taking `relic` (the one opened; any reachable one if it isn't). */
+export function pickSkill(w: World, id: SkillId, relic = -1): boolean {
   const s = w.state;
   if (!s.cards.includes(id) || lvl(s, id) >= SKILLS[id].max) return false;
+  const at = isCollectable(s, relic) ? relic : s.relics.find((r) => isCollectable(s, r));
+  if (at === undefined) return false;
   s.skills[id] = lvl(s, id) + 1;
-  s.picksPending--;
-  if (s.picksPending > 0) dealCards(s, cardsPerPick(s));
-  else s.cards = [];
-  if (!s.cards.length) s.picksPending = 0;
+  s.cards = [];
+  s.reshuffled = false;
+  takeRelic(w, at);
   return true;
 }
 
-const cardsPerPick = (s: GameState) => (perk(s, 'relicHunters') ? CONFIG.legacy.perks.relicHunters.cards : 3);
+/** Deals the relic's offer again, once per relic, with other skills where there are any. */
+export function reshuffleCards(w: World): boolean {
+  const s = w.state;
+  if (!s.cards.length || s.reshuffled) return false;
+  dealCards(s, cardsPerPick(s), s.cards);
+  s.reshuffled = true;
+  return true;
+}
 
 /**
  * Rebuild (prestige): a fresh run on a new map, keeping the Legacy plus one more level of `id`, and the career (achievements).
@@ -339,45 +366,43 @@ export function prestige(w: World, id: PerkId): GameState | null {
     runs: s.legacy.runs + 1,
     perks: { ...s.legacy.perks, [id]: perk(s, id) + 1 },
   }, nextCareer(s));
-  next.chest = { ...s.chest }; // a rebuild doesn't recharge the Lucky Chest or end its boost
+  next.chest = structuredClone(s.chest); // a rebuild doesn't recharge the Lucky Chest or end its boosts
   return next;
 }
 
 /**
- * Opens the Lucky Chest if it is ready at `now` (wall-clock ms): rolls a reward and starts the next cooldown.
- * The reward waits in `pending` until `claimChest`. A chest opened but never claimed (the game closed
- * during the show) opens again to the same reward. Returns the reward, or null if the chest isn't ready.
+ * Opens every stored Lucky Chest at once at `now` (wall-clock ms): rolls a reward for each, and the timer starts again
+ * if the chest was full. The rewards wait in `pending` until `claimChest`. Chests opened but never claimed (the game
+ * closed during the show) open again to the same rewards. Returns the rewards, or null if none is stored.
  */
-export function openChest(w: World, now: number): ChestReward | null {
+export function openChest(w: World, now: number): ChestReward[] | null {
   const c = w.state.chest;
-  if (c.pending) return c.pending;
-  if (now < c.readyAt) return null;
-  c.pending = rollChest(w.state);
-  c.readyAt = now + CONFIG.chest.cooldownMs;
+  if (c.pending.length) return c.pending;
+  refillChest(c, now);
+  if (!c.stored) return null;
+  if (c.stored >= CONFIG.chest.store) c.readyAt = now + CONFIG.chest.cooldownMs;
+  c.pending = Array.from({ length: c.stored }, () => rollChest(w.state));
+  c.stored = 0;
   return c.pending;
 }
 
 /**
- * Applies the opened chest's reward at `now` (wall-clock ms): starts its boost, or pays the Windfall
- * (`income` is the current rate per minute of each resource). Returns the reward and anything paid, or null if none is pending.
+ * Applies the opened chests' rewards at `now` (wall-clock ms): starts or queues their boosts, and pays their Windfalls
+ * (`income` is the current rate per minute of each resource). Returns the rewards and anything paid, or null if none is pending.
  */
-export function claimChest(w: World, now: number, income: Partial<Resources>): { reward: ChestReward; paid: Cost } | null {
+export function claimChest(w: World, now: number, income: Partial<Resources>): { rewards: ChestReward[]; paid: Cost } | null {
   const s = w.state;
-  const reward = s.chest.pending;
-  if (!reward) return null;
-  s.chest.pending = null;
-  let paid: Cost = {};
-  if (isBoost(reward)) s.chest.boost = { kind: reward, until: now + CONFIG.chest.boosts[reward].seconds * 1000 };
-  else {
-    paid = windfall(s, income);
-    for (const r of RESOURCES) if (paid[r]) gain(s, r, paid[r]);
+  const rewards = s.chest.pending;
+  if (!rewards.length) return null;
+  s.chest.pending = [];
+  const paid: Cost = {};
+  for (const reward of rewards) {
+    if (isBoost(reward)) addBoost(s.chest, reward, now);
+    else {
+      const got = windfall(s, income);
+      for (const r of RESOURCES) if (got[r]) paid[r] = (paid[r] ?? 0) + got[r];
+    }
   }
-  return { reward, paid };
-}
-
-/** Ends the Lucky Chest boost once its time is up at `now` (wall-clock ms). Returns whether one ended. */
-export function expireChest(s: GameState, now: number): boolean {
-  if (!s.chest.boost || now < s.chest.boost.until) return false;
-  s.chest.boost = null;
-  return true;
+  for (const r of RESOURCES) if (paid[r]) gain(s, r, paid[r]);
+  return { rewards, paid };
 }

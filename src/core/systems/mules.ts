@@ -1,5 +1,5 @@
 import { CONFIG } from '../../config';
-import { BUILDINGS, buildingAt, buildingById, footprint, isActive, tallyTo } from '../buildings';
+import { BUILDINGS, buildingAt, buildingById, footprint, isActive, mulesOf, tallyTo } from '../buildings';
 import { gain } from '../economy';
 import { tileAt } from '../grid';
 import { pathToAny, roadRoutes } from '../pathing';
@@ -100,10 +100,13 @@ function updateMule(w: World, m: Mule, dt: number, st: Stats): void {
   }
 }
 
-/** Gives every Trading Post its mule, walks them, and retires a removed post's mule once it has delivered. */
+/** Gives every Trading Post its mules, walks them, and retires a removed post's mules once they have delivered. */
 export function muleSystem(w: World, dt: number): void {
   const s = w.state;
-  for (const b of s.buildings) if (b.kind === 'tradingPost' && !s.mules.some((m) => m.post === b.id)) s.mules.push(spawn(s, b));
+  for (const b of s.buildings) {
+    if (b.kind !== 'tradingPost') continue;
+    for (let n = s.mules.filter((m) => m.post === b.id).length; n < mulesOf(b); n++) s.mules.push(spawn(s, b));
+  }
   const st = getStats(s);
   for (const m of s.mules) updateMule(w, m, dt, st);
   s.mules = s.mules.filter((m) => m.carry > 0 || buildingById(s, m.post));

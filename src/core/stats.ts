@@ -57,16 +57,30 @@ export interface Stats {
   tradeLoads: ReadonlyMap<number, number>; // Trading Post id -> gold per trip (none without a Market)
 }
 
+/**
+ * An upgrade level split at the end of its cost table: `t` levels there (their effects as listed in CONFIG), and `x`
+ * = the multiplier from the levels past it (`beyond.mult` each).
+ */
+function split(track: { costs: { wood: readonly number[] }; beyond: { mult: number } }, level: number): { t: number; x: number } {
+  const t = Math.min(level, track.costs.wood.length);
+  return { t, x: track.beyond.mult ** (level - t) };
+}
+
 /** Effective gameplay values: base config × upgrades × skills × legacy perks × season and upkeep. */
 export function getStats(s: GameState): Stats {
-  const { axe, farm, pick, shoes, backpack } = s.upgrades;
+  const up = s.upgrades;
+  const axe = split(CONFIG.axe, up.axe);
+  const farm = split(CONFIG.farm, up.farm);
+  const pick = split(CONFIG.pick, up.pick);
+  const shoes = split(CONFIG.shoes, up.shoes);
+  const backpack = split(CONFIG.backpack, up.backpack);
   const f = CONFIG.farm;
   const p = CONFIG.pick;
   const wellRadius = wellReach(s);
   const { speed, chopRate, carry } = CONFIG.villager;
   const L = CONFIG.legacy.perks;
   const haul = perkMult(s, 'swiftAndStrong', L.swiftAndStrong.carry);
-  const carryBonus = CONFIG.backpack.carryPerLevel * backpack * haul; // added after every job's own multipliers, so it is the same for all
+  const carryBonus = CONFIG.backpack.carryPerLevel * backpack.t * backpack.x * haul; // added after every job's own multipliers, so it is the same for all
   const a = CONFIG.axe;
   const u = CONFIG.upkeep;
   const season = seasonOf(s.time);
@@ -89,21 +103,21 @@ export function getStats(s: GameState): Stats {
   const taxedHouses = new Set(office ? s.buildings.filter((b) => b.kind === 'house' && linked.has(b.id)).map((b) => b.id) : []);
   const taxPerHouse = CONFIG.tax.perHouse * (1 + 0.2 * lvl(s, 'taxCollectors')) * perkMult(s, 'royalBank', L.royalBank.gold);
   const festive = season === WINTER && lvl(s, 'harvestFestival') ? CONFIG.skills.festival.winterWalk : 1;
-  const walk = speed * CONFIG.shoes.speedGrowth ** shoes * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive * bountiful;
+  const walk = speed * CONFIG.shoes.speedGrowth ** shoes.t * shoes.x * (1 + 0.1 * lvl(s, 'swiftFeet')) * perkMult(s, 'swiftAndStrong', L.swiftAndStrong.speed) * festive * bountiful;
   // Greenhouses: farms and orchards keep part of their harvest in winter.
   const farmSeason = CONFIG.seasons.farm.map((m, i) => (i === WINTER && lvl(s, 'greenhouses') ? CONFIG.skills.greenhouse : m));
-  const farmRate = f.harvestRate * f.speedGrowth ** farm * (1 + 0.2 * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;
-  const farmLoad = (carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
+  const farmRate = f.harvestRate * f.speedGrowth ** farm.t * farm.x * (1 + 0.2 * lvl(s, 'greenThumbs')) * farmSeason[season] * warm * gather * guild.farm;
+  const farmLoad = (carry + f.carryPerLevel * farm.t + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
   const k = CONFIG.skills;
-  const weave = 1 + k.weavers * lvl(s, 'weavers') * (shoes + backpack + s.upgrades.coats);
-  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm * warm * gather * guild.herd * weave; // Barn upgrades cover herders too
+  const weave = 1 + k.weavers * lvl(s, 'weavers') * (up.shoes + up.backpack + up.coats);
+  const herdRate = CONFIG.herd.rate * f.speedGrowth ** farm.t * farm.x * warm * gather * guild.herd * weave; // Barn upgrades cover herders too
   // Deep Shafts: miners work faster in winter and are never slowed by cold.
   const shafts = lvl(s, 'deepShafts') ? (season === WINTER ? k.deepShafts : 1) : warm;
-  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm * haul;
+  const herdLoad = (CONFIG.herd.carry + f.carryPerLevel * farm.t + 2 * lvl(s, 'bigBaskets')) * f.carryGrowth ** farm.t * farm.x * haul;
   return {
     speed: walk,
-    chopRate: chopRate * a.speedGrowth ** axe * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed * gather * guild.lumber,
-    carry: (carry + a.carryPerLevel * axe + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe * haul + carryBonus,
+    chopRate: chopRate * a.speedGrowth ** axe.t * axe.x * (1 + 0.2 * lvl(s, 'sharpAxes')) * fed * gather * guild.lumber,
+    carry: (carry + a.carryPerLevel * axe.t + 2 * lvl(s, 'bigBaskets')) * a.carryGrowth ** axe.t * axe.x * haul + carryBonus,
     carryBonus,
     manualChop: CONFIG.manualChop * 5 ** lvl(s, 'powerSwing'),
     campBonus: lvl(s, 'campCrews') ? 1.5 : 1,
@@ -115,8 +129,8 @@ export function getStats(s: GameState): Stats {
     orchardSpeed: walk * CONFIG.orchard.speedMult,
     orchardRate: farmRate * CONFIG.orchard.rateMult,
     orchardCarry: farmLoad * CONFIG.orchard.carryMult + carryBonus,
-    mineRate: p.mineRate * p.speedGrowth ** pick * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * shafts * gather * guild.mine,
-    mineCarry: (carry + p.carryPerLevel * pick + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick * haul + carryBonus,
+    mineRate: p.mineRate * p.speedGrowth ** pick.t * pick.x * (1 + 0.2 * lvl(s, 'stonecutters')) * fed * shafts * gather * guild.mine,
+    mineCarry: (carry + p.carryPerLevel * pick.t + 2 * lvl(s, 'bigBaskets')) * p.carryGrowth ** pick.t * pick.x * haul + carryBonus,
     herdRate,
     herdCarry: herdLoad + carryBonus,
     herdFood: lvl(s, 'fertileHerding'),

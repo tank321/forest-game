@@ -19,3 +19,18 @@ export function bake(grid: readonly string[], palette: Record<string, Rgba>, lig
   g.putImageData(img, 0, 0);
   return c;
 }
+
+/** A soft round glow of `color`, fading out from the middle. */
+export function halo(color: Rgba, size = 64): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  const rgb = color.slice(0, 3).join(',');
+  grad.addColorStop(0, `rgba(${rgb},.8)`);
+  grad.addColorStop(0.45, `rgba(${rgb},.45)`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return c;
+}

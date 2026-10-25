@@ -63,14 +63,16 @@ describe('quarries', () => {
     const s = w.state;
     expect(upgradeCost(s, 'pick', 0)).toEqual({ wood: 300 });
     expect(upgradeCost(s, 'pick', 1)).toEqual({ wood: 500, stone: 50 });
-    expect(upgradeCost(s, 'pick', 10)).toBeNull();
+    expect(upgradeCost(s, 'pick', 10)).toEqual({ wood: 17550, stone: 4050, cloth: 270 }); // past the table: ×1.35
     const base = getStats(s);
     s.resources = { wood: 1e9, food: 0, stone: 1e9, cloth: 1e9, gold: 0 };
     for (let k = 0; k < 10; k++) expect(upgrade(w, 'pick')).toBe(true);
-    expect(upgrade(w, 'pick')).toBe(false);
     const st = getStats(s);
     expect(st.mineRate).toBeCloseTo(base.mineRate * 1.05 ** 10);
     expect(st.mineCarry).toBeCloseTo((5 + 20) * 1.02 ** 10);
+    expect(upgrade(w, 'pick')).toBe(true); // past the table
+    expect(getStats(s).mineRate).toBeCloseTo(st.mineRate * 1.15);
+    expect(getStats(s).mineCarry).toBeCloseTo(st.mineCarry * 1.15);
   });
 
   it('late axe and farm levels and houses from the 7th cost stone', () => {

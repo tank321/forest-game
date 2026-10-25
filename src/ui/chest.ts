@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
-import { chestSpeed, isBoost, type ChestReward } from '../core/chest';
-import { claimChest, expireChest, openChest } from '../core/commands';
+import { expireBoosts, isBoost, isSpeed, refillChest, runningBoosts, type BoostKind, type ChestReward } from '../core/chest';
+import { claimChest, openChest } from '../core/commands';
 import { RESOURCES, type Resources } from '../core/types';
 import type { World } from '../core/world';
 import type { Sound } from './sound';
@@ -28,6 +28,15 @@ const clock = (ms: number) => {
   const sec = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 };
+
+/** A reward's line on the card: what it does, and for how long. */
+function rewardDesc(reward: ChestReward): string {
+  const text = CHEST_TEXT[reward];
+  return isBoost(reward) ? `${text.desc} for ${CONFIG.chest.boosts[reward].seconds / 60} minutes` : text.desc;
+}
+
+/** The card's heading when several chests open at once. */
+const MANY = ['', '', 'Double chest!', 'Triple chest!'];
 
 /** Each letter in its own span, so they can drop in one after another. */
 const letters = (text: string) => [...text].map((ch, k) => `<span style="--k:${k}">${ch}</span>`).join('');
@@ -59,25 +68,30 @@ function sparks(n: number, delay = 0): string {
   return out;
 }
 
+/** One boost's badge under the chest. */
+interface Badge {
+  el: HTMLElement;
+  time: HTMLElement;
+  bar: HTMLElement;
+}
+
 /**
- * The Lucky Chest: a button in the map's top-right corner that can be opened once every
- * `CONFIG.chest.cooldownMs`, the running boost under it, and the show when it opens. The chest drops
- * onto the map, rattles while its seam flickers through the tier colors, bursts open with a flash,
- * rays, coins and a fanfare, and the reward rises out. A tap (or a few seconds) collects it into the corner.
+ * The Lucky Chest: a button in the map's top-right corner that stores an opening every `CONFIG.chest.cooldownMs`
+ * (up to `CONFIG.chest.store`), the boosts under it, and the show when it opens. One tap opens every stored chest
+ * together: the chest drops onto the map, rattles while its seam flickers through the tier colors, bursts open with
+ * a flash, rays, coins and a fanfare, and the rewards rise out. A tap (or a few seconds) collects them into the corner.
  */
 export class LuckyChest {
   private phase: Phase = 'idle';
   private stage: HTMLElement | null = null;
-  private reward: ChestReward | null = null; // the reward being shown
+  private rewards: ChestReward[] = []; // the rewards being shown
   private timers: number[] = [];
   private openedAt = 0; // performance.now() of the burst
-  private wasReady: boolean;
+  private wasStored: number;
   private cache = new Map<HTMLElement, string>();
   private time: HTMLElement;
-  private badgeIcon: HTMLElement;
-  private badgeName: HTMLElement;
-  private badgeTime: HTMLElement;
-  private badgeBar: HTMLElement;
+  private badges = new Map<BoostKind, Badge>();
+  private badgeOrder = '';
 
   constructor(
     private map: HTMLElement,
@@ -90,11 +104,7 @@ export class LuckyChest {
     private message: (text: string, ms?: number) => void,
   ) {
     this.time = btn.querySelector('.chest-time')!;
-    this.badgeIcon = badge.querySelector('.ico')!;
-    this.badgeName = badge.querySelector('b')!;
-    this.badgeTime = badge.querySelector('small')!;
-    this.badgeBar = badge.querySelector('.chest-boost-bar > i')!;
-    this.wasReady = this.isReady(Date.now());
+    this.wasStored = this.ready(Date.now());
     btn.onclick = () => this.open();
     addEventListener('keydown', (e) => {
       if (!this.stage || !['Enter', ' ', 'Escape'].includes(e.key)) return;
@@ -103,61 +113,108 @@ export class LuckyChest {
     });
   }
 
-  /** Called every frame: ends a boost whose time is up, and shows the countdown, the ready state and the running boost. */
+  /** Called every frame: stores chests that are due, ends boosts whose time is up, and shows the countdown, the chests waiting and the boosts. */
   update(): void {
     const s = this.world().state;
     const now = Date.now();
-    if (expireChest(s, now)) this.message('Your Lucky Chest boost has worn off.');
-    const left = s.chest.readyAt - now;
-    const ready = this.isReady(now);
-    if (ready && !this.wasReady) {
-      this.sound.chime(2);
-      this.message('A Lucky Chest is ready! Open it in the top right corner.', 6000);
+    const ended = expireBoosts(s.chest, now);
+    if (ended.length) {
+      const next = ended.some((b) => isSpeed(b.kind)) ? s.chest.boosts.find((b) => isSpeed(b.kind)) : undefined;
+      this.message(`${ended.map((b) => CHEST_TEXT[b.kind].name).join(' and ')} ${ended.length > 1 ? 'have' : 'has'} worn off.${next ? ` ${CHEST_TEXT[next.kind].name} starts now.` : ''}`);
     }
-    this.wasReady = ready;
+    const n = this.ready(now);
+    if (n > this.wasStored) {
+      this.sound.chime(2);
+      this.message(n > 1 ? `${n} Lucky Chests are waiting! Open them in the top right corner.` : 'A Lucky Chest is ready! Open it in the top right corner.', 6000);
+    }
+    this.wasStored = n;
+    const full = s.chest.stored >= CONFIG.chest.store;
+    const left = s.chest.readyAt - now;
     const busy = this.phase !== 'idle';
-    this.corner.classList.toggle('ready', ready && !busy);
-    this.btn.classList.toggle('ready', ready && !busy);
-    this.set(this.time, ready ? 'Open!' : clock(left));
-    this.prop(this.btn, '--p', ready ? '1' : (1 - left / CONFIG.chest.cooldownMs).toFixed(3));
-    this.attr(this.btn, 'aria-label', ready ? 'Lucky Chest: ready to open' : `Lucky Chest: opens in ${clock(left)}`);
-    this.attr(this.btn, 'title', ready ? 'Open the Lucky Chest' : `The Lucky Chest opens again in ${clock(left)}`);
-
-    const b = s.chest.boost;
-    const shown = b !== null && this.phase !== 'reveal' && this.phase !== 'collect';
-    this.badge.hidden = !shown;
-    this.map.classList.toggle('boosted', b !== null);
-    this.map.classList.toggle('boost-speed', chestSpeed(s) > 1);
-    if (!b) return;
-    const text = CHEST_TEXT[b.kind];
-    this.prop(this.map, '--boost', TIER_COLOR[text.tier]);
-    this.attr(this.badgeIcon, 'class', `ico ico-${text.icon}`);
-    this.set(this.badgeName, text.name);
-    this.set(this.badgeTime, clock(b.until - now));
-    this.prop(this.badgeBar, 'width', `${(100 * Math.max(0, b.until - now) / (CONFIG.chest.boosts[b.kind].seconds * 1000)).toFixed(2)}%`);
+    this.corner.classList.toggle('ready', n > 0 && !busy);
+    this.btn.classList.toggle('ready', n > 0 && !busy);
+    this.set(this.time, n > 1 ? `Open ×${n}` : n ? 'Open!' : clock(left));
+    this.prop(this.btn, '--p', n ? '1' : (1 - left / CONFIG.chest.cooldownMs).toFixed(3));
+    const more = full ? ', full' : `, another in ${clock(left)}`;
+    this.attr(this.btn, 'aria-label', n ? `Lucky Chest: ${n} ready to open${more}` : `Lucky Chest: opens in ${clock(left)}`);
+    this.attr(this.btn, 'title', n ? `Open ${n > 1 ? `all ${n} Lucky Chests` : 'the Lucky Chest'}${full ? ' (full: open it to start the next one)' : `; another in ${clock(left)}`}` : `The Lucky Chest opens again in ${clock(left)}`);
+    this.updateBadges(now);
   }
 
-  /** Ready to open: the cooldown is over, or a chest opened before was never claimed (the game closed during the show). */
-  private isReady(now: number): boolean {
+  /** A badge per boost under the chest, in queue order; a queued speed waits dimmed with its whole time. */
+  private updateBadges(now: number): void {
     const c = this.world().state.chest;
-    return Boolean(c.pending) || now >= c.readyAt;
+    const running = runningBoosts(c);
+    this.badge.hidden = !c.boosts.length || this.phase === 'reveal' || this.phase === 'collect';
+    this.map.classList.toggle('boosted', running.length > 0);
+    this.map.classList.toggle('boost-speed', running.some((b) => isSpeed(b.kind)));
+    if (running.length) this.prop(this.map, '--boost', TIER_COLOR[Math.max(...running.map((b) => CHEST_TEXT[b.kind].tier))]);
+    const order = c.boosts.map((b) => b.kind).join();
+    if (order !== this.badgeOrder) {
+      this.badgeOrder = order;
+      for (const [kind, badge] of this.badges) {
+        if (c.boosts.some((b) => b.kind === kind)) continue;
+        badge.el.remove();
+        this.badges.delete(kind);
+      }
+      for (const b of c.boosts) {
+        const badge = this.badges.get(b.kind) ?? this.makeBadge(b.kind);
+        this.badges.set(b.kind, badge);
+        this.badge.append(badge.el); // in queue order
+      }
+    }
+    const speeds = c.boosts.filter((b) => isSpeed(b.kind));
+    for (const b of c.boosts) {
+      const badge = this.badges.get(b.kind)!;
+      const on = running.includes(b);
+      badge.el.classList.toggle('queued', !on);
+      // Hovering tells what it does; a queued speed also says what it waits for.
+      const before = speeds[speeds.indexOf(b) - 1];
+      this.attr(badge.el, 'title', `${CHEST_TEXT[b.kind].desc}${on ? '' : `, once ${CHEST_TEXT[before.kind].name} ends`}.`);
+      this.set(badge.time, on ? clock(b.until - now) : `next · ${clock(b.ms)}`);
+      this.prop(badge.bar, 'width', `${on ? (100 * Math.max(0, b.until - now) / b.ms).toFixed(2) : 100}%`);
+    }
+  }
+
+  private makeBadge(kind: BoostKind): Badge {
+    const text = CHEST_TEXT[kind];
+    const el = document.createElement('div');
+    el.className = 'chest-boost frame parchment';
+    el.style.setProperty('--boost', TIER_COLOR[text.tier]);
+    el.innerHTML = `<i class="ico ico-${text.icon}"></i><b>${text.name}</b><small></small><span class="chest-boost-bar"><i></i></span>`;
+    return { el, time: el.querySelector('small')!, bar: el.querySelector('.chest-boost-bar > i')! };
+  }
+
+  /**
+   * Chests ready to open at `now`, after storing any that are due: those stored, or those opened before but never
+   * claimed (the game closed during the show).
+   */
+  private ready(now: number): number {
+    const c = this.world().state.chest;
+    refillChest(c, now);
+    return c.pending.length || c.stored;
   }
 
   private open(): void {
     if (this.phase !== 'idle') return;
     const s = this.world().state;
-    const reward = openChest(this.world(), Date.now());
-    if (!reward) return this.message(`The Lucky Chest opens again in ${clock(s.chest.readyAt - Date.now())}.`);
-    this.show(reward);
+    const rewards = openChest(this.world(), Date.now());
+    if (!rewards) return this.message(`The Lucky Chest opens again in ${clock(s.chest.readyAt - Date.now())}.`);
+    this.show(rewards);
   }
 
-  /** Builds the stage and runs the show: drop, shake, burst. The reward is only claimed at the burst, so nothing gives it away sooner. */
-  private show(reward: ChestReward): void {
-    this.reward = reward;
-    const text = CHEST_TEXT[reward];
-    const tier = text.tier;
-    const seconds = isBoost(reward) ? CONFIG.chest.boosts[reward].seconds : 0;
-    const desc = seconds ? `${text.desc} for ${seconds / 60} minutes` : text.desc;
+  /**
+   * Builds the stage and runs the show: drop, shake, burst, as big as the best reward. Several chests open as one,
+   * with every reward on the card. The rewards are only claimed at the burst, so nothing gives them away sooner.
+   */
+  private show(rewards: ChestReward[]): void {
+    this.rewards = rewards;
+    const tier = this.tier();
+    const one = rewards.length === 1;
+    const name = one ? CHEST_TEXT[rewards[0]].name : MANY[rewards.length] ?? `${rewards.length} chests!`;
+    const desc = one
+      ? `<span class="chest-desc">${rewardDesc(rewards[0])}</span>`
+      : rewards.map((r) => `<span class="chest-desc chest-line">${icon(CHEST_TEXT[r].icon)}<b>${CHEST_TEXT[r].name}</b> ${rewardDesc(r)}</span>`).join('');
     const st = document.createElement('div');
     st.className = `chest-stage tier-${tier}`;
     st.style.setProperty('--glow', TIER_COLOR[tier]);
@@ -170,12 +227,12 @@ export class LuckyChest {
         <div class="chest-shadow"></div>
         <div class="chest-box"><i class="chest-base"></i><i class="chest-seam"></i><i class="chest-lid"></i></div>
         <div class="chest-burst"></div>
-        <div class="chest-prize">${icon(text.icon)}</div>
+        <div class="chest-prize" style="--n:${rewards.length}">${rewards.map((r) => icon(CHEST_TEXT[r].icon)).join('')}</div>
       </div>
       <div class="chest-card" aria-live="polite">
         <small class="chest-tier">${letters(CHEST_TIERS[tier])}</small>
-        <b class="chest-name">${text.name}</b>
-        <span class="chest-desc">${desc}</span>
+        <b class="chest-name">${name}</b>
+        ${desc}
         <em class="chest-hint">Tap to collect</em>
       </div>
       <div class="chest-flash"></div>`;
@@ -205,15 +262,21 @@ export class LuckyChest {
     this.later(end, () => st.style.setProperty('--seam', TIER_COLOR[tier]));
   }
 
-  /** The lid flies off: the reward is claimed, with a flash, rays, loot, the fanfare, and the reward rising out. */
+  /** The show's tier: the best reward's. */
+  private tier(): 1 | 2 | 3 | 4 {
+    return Math.max(...this.rewards.map((r) => CHEST_TEXT[r].tier)) as 1 | 2 | 3 | 4;
+  }
+
+  /** The lid flies off: the rewards are claimed, with a flash, rays, loot, the fanfare, and the rewards rising out. */
   private burst(): void {
     this.clearTimers();
     const st = this.stage!;
-    const tier = CHEST_TEXT[this.reward!].tier;
+    const tier = this.tier();
+    const extra = 8 * (this.rewards.length - 1); // more loot for more chests
     st.style.setProperty('--seam', TIER_COLOR[tier]);
     const paid = claimChest(this.world(), Date.now(), this.income())?.paid ?? {};
     const amounts = RESOURCES.filter((r) => paid[r]).map((r) => `<li>${icon(r)}<b data-n="${paid[r]}">+0</b></li>`).join('');
-    if (amounts) st.querySelector('.chest-desc')!.insertAdjacentHTML('afterend', `<ul class="chest-amounts">${amounts}</ul>`);
+    if (amounts) [...st.querySelectorAll('.chest-desc')].at(-1)!.insertAdjacentHTML('afterend', `<ul class="chest-amounts">${amounts}</ul>`);
     this.phase = 'reveal';
     this.openedAt = performance.now();
     st.classList.remove('is-drop', 'is-shake');
@@ -222,7 +285,7 @@ export class LuckyChest {
     this.sound.chest(tier);
     if (!calm.matches) {
       const gem = TIER_COLOR[tier];
-      st.querySelector('.chest-burst')!.innerHTML = loot(16 + 8 * tier, gem) + sparks(8 + 4 * tier) + (tier >= 3 ? loot(10 + 6 * tier, gem, 320) : '');
+      st.querySelector('.chest-burst')!.innerHTML = loot(16 + 8 * tier + extra, gem) + sparks(8 + 4 * tier) + (tier >= 3 ? loot(10 + 6 * tier, gem, 320) : '');
       this.map.classList.add('chest-quake');
       window.setTimeout(() => this.map.classList.remove('chest-quake'), QUAKE_MS);
     }
@@ -267,9 +330,9 @@ export class LuckyChest {
     this.later(calm.matches ? 0 : COLLECT_MS, () => {
       st.remove();
       this.stage = null;
-      this.reward = null;
+      this.rewards = [];
       this.phase = 'idle';
-      for (const el of [this.btn, this.badge]) {
+      for (const el of [this.btn, ...[...this.badges.values()].map((b) => b.el)]) {
         el.classList.add('got');
         window.setTimeout(() => el.classList.remove('got'), GOT_MS);
       }

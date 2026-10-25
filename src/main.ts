@@ -1,9 +1,9 @@
 import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
 import { BUILDINGS, buildingAt } from './core/buildings';
-import { chestSpeed } from './core/chest';
-import { chopTree, collectRelic, expireChest, moveBuilding, moveRoad, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
-import { inBounds, tileAt } from './core/grid';
+import { chestSpeed, chestTimeline, expireBoosts } from './core/chest';
+import { chopTree, moveBuilding, moveRoad, openRelic, placeBuilding, placeRoad, removeRoad, toggleMark } from './core/commands';
+import { inBounds, isCollectable, tileAt } from './core/grid';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
 import { SEASONS, seasonOf } from './core/seasons';
@@ -45,7 +45,6 @@ const hud = new Hud(() => world);
 const panel = new Panel(document.getElementById('panel')!, () => world, ui);
 const skillModal = new SkillModal(
   document.getElementById('skillModal') as HTMLDialogElement,
-  document.getElementById('pickSkillBtn') as HTMLButtonElement,
   () => world,
   (message) => hud.message(message),
 );
@@ -172,7 +171,9 @@ attachInput(canvas, cam, {
     ui.selected = s.tiles[i] === Tile.Building ? (buildingAt(s, i) ?? null) : null;
     ui.road = s.tiles[i] === Tile.Road ? i : null;
     if (s.tiles[i] === Tile.Relic) {
-      if (!collectRelic(world, i)) hud.message('Clear a path to the relic first');
+      if (!openRelic(world, i)) hud.message('Clear a path to the relic first');
+      else if (s.cards.length) skillModal.open('choose', i);
+      else hud.message('Every skill is maxed: the relic is yours, with no skill to learn');
       return;
     }
     if (s.tiles[i] !== Tile.Tree) return;
@@ -199,13 +200,18 @@ addEventListener('contextmenu', (e) => {
 function catchUp(seconds: number): void {
   const t = Math.min(seconds, maxOfflineSeconds);
   const before = { ...s.resources };
-  // A Lucky Chest boost still counts for the part of the time away it ran (a speed boost as that much more time), then ends.
+  // Lucky Chest boosts still count for the part of the time away they ran (a speed boost as that much more time), each
+  // ending where it ran out; queued speeds take over in turn.
   const now = Date.now();
-  const until = s.chest.boost?.until ?? 0;
-  const boosted = Math.max(0, Math.min(t, (until - (now - seconds * 1000)) / 1000));
-  simulate(world, boosted * chestSpeed(s), catchUpDt);
-  expireChest(s, now);
-  simulate(world, t - boosted, catchUpDt);
+  let at = now - seconds * 1000;
+  let left = t;
+  for (const { end, speed } of chestTimeline(s.chest, at, now)) {
+    const span = Math.min(left, (end - at) / 1000);
+    simulate(world, span * speed, catchUpDt);
+    left -= span;
+    at = end;
+    expireBoosts(s.chest, end);
+  }
   const earned = world.fx.filter((fx) => fx.kind === 'achievement').length;
   world.fx.length = 0; // effects from time away are summed up below, not replayed
   if (earned) toasts.summary(`${earned} earned while you were away`);
@@ -214,9 +220,9 @@ function catchUp(seconds: number): void {
     return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
   };
   const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
-  const found = panToNewRelic();
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${found ? `. ${NEW_RELIC}` : ''}`, 8000);
-  else if (found) hud.message(NEW_RELIC);
+  const relic = panToRelic();
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${relic ? `. ${relic}` : ''}`, 8000);
+  else if (relic) hud.message(relic);
 }
 
 // A finger doesn't hover, so on touch a placement starts with its footprint in sight: over the building or road being
@@ -236,15 +242,20 @@ function startAim(): void {
 }
 
 const NEW_RELIC = 'New relic discovered!';
+const RELIC_UNCOVERED = 'Relic uncovered! Tap it to choose a skill.';
 let relicsSeen = s.relicsSpawned; // the camera glides to each relic spawned after this
-/** Glide to the newest relic if one has spawned since the last check; returns whether one had. */
-function panToNewRelic(): boolean {
-  if (s.relicsSpawned === relicsSeen) return false;
+let uncovered = s.relics.filter((r) => isCollectable(s, r)); // and to each one your land reaches after this
+/** Glide to a relic that has spawned, or that your land has reached, since the last check; returns its news, if any. */
+function panToRelic(): string | null {
+  const reached = s.relics.filter((r) => isCollectable(s, r));
+  const fresh = reached.find((r) => !uncovered.includes(r));
+  uncovered = reached;
+  const spawned = s.relicsSpawned !== relicsSeen;
   relicsSeen = s.relicsSpawned;
-  const r = s.relics.at(-1);
-  if (r === undefined) return false;
+  const r = fresh ?? (spawned ? s.relics.at(-1) : undefined);
+  if (r === undefined) return null;
   cam.glideTo((r % s.w) + 0.5, ((r / s.w) | 0) + 0.5);
-  return true;
+  return fresh === undefined ? NEW_RELIC : RELIC_UNCOVERED;
 }
 if (loaded) catchUp((Date.now() - loaded.savedAt) / 1000);
 
@@ -262,7 +273,8 @@ function frame(now: number): void {
       acc -= dt;
     }
   }
-  if (panToNewRelic()) hud.message(NEW_RELIC);
+  const relic = panToRelic();
+  if (relic) hud.message(relic);
   let wool = 0;
   for (const fx of world.fx.splice(0)) {
     if (fx.kind === 'festival') hud.message(`Harvest Festival! Farms and orchards bring in ${fmt(fx.n)} food.`, 6000);

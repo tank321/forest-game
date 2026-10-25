@@ -51,8 +51,8 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
     spot (`pathToWork` in `movement.ts`), spread over the interior by their index among the staff.
   - `NEEDS` (`buildings.ts`) names a building a workplace requires (Trading Post → Market). `isActive`
     checks it, so an unmet need unstaffs the workplace like a pause.
-  - **Pack mules** (`systems/mules.ts`, `GameState.mules`) are not villagers: `muleSystem` gives each Trading Post one,
-    which loads its gap-based `tradeLoads` gold, walks `roadRoutes` to the nearest Market and back, and is retired
+  - **Pack mules** (`systems/mules.ts`, `GameState.mules`) are not villagers: `muleSystem` gives each Trading Post its `mulesOf` (one, plus any bought with `buyMule`, priced by `muleCost`),
+    each of which loads its gap-based `tradeLoads` gold, walks `roadRoutes` to the nearest Market and back, and is retired
     once its removed post's gold is delivered. Deliveries count under the `trade` source. `walk`/`arrived` take any `Walker`.
   - `tax` uses `collector.ts`. Houses accrue `due` gold in `upkeepSystem` (capped at `taxHold`); a collector's round starts
     at its Tax Office, visits up to `taxStops` houses (`round` holds those visited) along `roadRoutes` (roads, hubs, its office),
@@ -66,7 +66,8 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   also computed there on demand, so there is no cache to invalidate.
 - **Costs.** All costs are in `economy.ts`. Upgrade tracks (`axe`, `farm`, `pick`, `coats`, `shoes`, `backpack`) read per-resource
   rows from `CONFIG[kind].costs`, where 0 means not charged. Use `upgradeCost(s, kind, level?)` and
-  `maxLevel(kind)`. Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
+  `maxLevel(kind)`. A track with a `beyond` entry (Axe, Farm, Pick, Shoes, Backpack) has no max: past its table each
+  level costs the last price × `costGrowth` and multiplies its effects by `mult` (`split` in `stats.ts`). Skill discounts (Master Builders, Recruiters, Masons) are applied there too.
 - **Pathing** (`pathing.ts`). 8-directional Dijkstra over walkable tiles, meaning territory (grass or
   building), with integer costs (`STEP` 10, `DIAG` 14 per tile). A walk steps onto a building's tiles
   only within the building it starts in or the one it is heading to (the `enter` set; drop-offs for a
@@ -76,9 +77,11 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   so villagers cross open ground in straight lines. Each resource has a multi-source distance field
   from its drop-off buildings.
 - **Lucky Chest** (`chest.ts`, `GameState.chest`) is the one part of the state on wall-clock time: `readyAt` and a boost's
-  `until` are epoch ms, and core never reads the clock (`openChest`/`claimChest`/`expireChest` take `now`). `openChest` rolls
-  into `pending`; `claimChest` applies it at the show's burst, so the UI never shows the reward early. Speed boosts scale the
-  live loop and the overlapping part of offline catch-up in `main.ts` (`chestSpeed`); Bountiful and Mighty Taps apply in `stats.ts`/`chopTree`.
+  `until` are epoch ms, and core never reads the clock (`refillChest`/`openChest`/`claimChest`/`expireBoosts` take `now`). It stores
+  up to `CONFIG.chest.store` openings; `openChest` opens all of them, rolling into `pending`, and `claimChest` applies them at the
+  show's burst, so the UI never shows a reward early. `addBoost` keeps `boosts` free of clashes: one of each kind (the same kind adds
+  its time), speeds queued back to back fastest first (only the first runs; `runningBoosts`). Speed scales the live loop, and offline
+  catch-up in `main.ts` steps through `chestTimeline`; Bountiful and Mighty Taps apply in `stats.ts`/`chopTree`.
 - **Saves.** `save.ts` keeps a `VERSION` and a chain of `migrations[v]` (v → v+1). Any change to
   the `GameState` shape needs a version bump, a migration, and a migration test.
 
@@ -104,7 +107,7 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
 - **Draw order.** `drawScene` draws everything on the ground back to front by where it meets the
   ground: trees and relics by tile row, buildings by bottom edge, villagers by feet. A villager
   standing on a building's tiles is drawn over that building. Flags and the relic glow are drawn
-  right after their tree or stone.
+  right after their tree or stone; relic halos go over the whole scene afterwards, like light.
 - **Render-only state.** Animation runs on wall-clock time, and facing is kept in the renderer.
   Visual variety comes from tile-index hashes. None of it touches `GameState` or `rand`, which
   keeps the simulation deterministic.

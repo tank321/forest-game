@@ -53,5 +53,5 @@ it('migrates a v17 save to v18 with an empty career and the relics collected so 
 
 it('has the achievements and tiers the changelog lists', () => {
   expect(ACHIEVEMENT_IDS).toHaveLength(42);
-  expect(TOTAL_TIERS).toBe(100);
+  expect(TOTAL_TIERS).toBe(102);
 });

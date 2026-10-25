@@ -172,9 +172,11 @@ export const availableSkills = (s: GameState): SkillId[] =>
  * Offer up to `n` distinct available skills (seeded, so reloads see the same cards).
  * Each comes from a different track while untouched tracks remain. A track is picked first, evenly, then a skill
  * in it, so a track with one skill on offer (a building unlock) is dealt as often as one with many.
+ * Skills in `avoid` (a reshuffled offer's) are dealt only when nothing else is left.
  */
-export function dealCards(s: GameState, n = 3): void {
-  const pool = availableSkills(s);
+export function dealCards(s: GameState, n = 3, avoid: readonly SkillId[] = []): void {
+  const all = availableSkills(s);
+  const pool = all.filter((id) => !avoid.includes(id));
   s.cards = [];
   while (s.cards.length < n && pool.length) {
     const tracks = [...new Set(pool.map(trackOf))].filter((t) => !s.cards.some((c) => trackOf(c) === t));
@@ -184,4 +186,5 @@ export function dealCards(s: GameState, n = 3): void {
     s.cards.push(id);
     pool.splice(pool.indexOf(id), 1);
   }
+  for (const id of all) if (s.cards.length < n && avoid.includes(id)) s.cards.push(id);
 }

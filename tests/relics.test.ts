@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { chopTree, collectRelic, hireVillager, pickSkill, placeBuilding } from '../src/core/commands';
+import { chopTree, hireVillager, openRelic, pickSkill, placeBuilding, reshuffleCards } from '../src/core/commands';
+import { deserialize, serialize } from '../src/core/save';
 import { buildingCost, popCap, villagerCost } from '../src/core/economy';
 import { isCollectable, neighbors4 } from '../src/core/grid';
 import { relicGap, spawnRelic } from '../src/core/relics';
@@ -52,22 +53,108 @@ describe('relics', () => {
     expect(s.nextRelicAt).toBe(18 + 19);
   });
 
-  it('must be reached before collecting; collecting offers 3 cards and claims the tile', () => {
+  it('a relic in a later run offers more cards', () => {
+    const w = smallWorld(30);
+    w.dev.manualMult = 1e6;
+    const s = w.state;
+    s.legacy.runs = 2;
+    const r = spawnRelic(s, w.fog.map((f) => (f === 0 ? 0 : 2)));
+    clearPathTo(w, r);
+    expect(openRelic(w, r)).toBe(true);
+    expect(s.cards).toHaveLength(5);
+    expect(new Set(s.cards).size).toBe(5);
+  });
+
+  it('must be reached before opening; it offers 3 cards and stays on the map until one is picked', () => {
     const w = smallWorld(30);
     w.dev.manualMult = 1e6;
     const s = w.state;
     const r = spawnRelic(s, w.fog.map((f) => (f === 0 ? 0 : 2)));
-    expect(collectRelic(w, r)).toBe(false);
+    expect(openRelic(w, r)).toBe(false);
     clearPathTo(w, r);
-    expect(collectRelic(w, r)).toBe(true);
-    expect(s.tiles[r]).toBe(Tile.Grass);
+    expect(openRelic(w, r)).toBe(true);
+    expect(s.tiles[r]).toBe(Tile.Relic);
     expect(s.cards).toHaveLength(3);
     expect(new Set(s.cards).size).toBe(3);
-    expect(pickSkill(w, 'teamwork')).toBe(false); // last in Forestry, never offered first
+    const offer = [...s.cards];
+    expect(openRelic(w, r)).toBe(true); // opened again (closed without picking): the same offer
+    expect(s.cards).toEqual(offer);
+    expect(s.counts.relics).toBe(0);
+    expect(pickSkill(w, 'teamwork', r)).toBe(false); // last in Forestry, never offered first
     const id = s.cards[0];
-    expect(pickSkill(w, id)).toBe(true);
+    expect(pickSkill(w, id, r)).toBe(true);
     expect(s.skills[id]).toBe(1);
     expect(s.cards).toEqual([]);
+    expect(s.tiles[r]).toBe(Tile.Grass);
+    expect(s.relics).toEqual([]);
+    expect(s.counts.relics).toBe(1);
+    expect(pickSkill(w, offer[1])).toBe(false); // no offer left
+  });
+
+  it('a pick takes the relic opened, or any reachable one; none reachable, no pick', () => {
+    const w = smallWorld(30);
+    w.dev.manualMult = 1e6;
+    const s = w.state;
+    const a = spawnRelic(s, w.fog.map((f) => (f === 0 ? 0 : 2)));
+    clearPathTo(w, a);
+    const far = 0; // the map's corner, deep in the forest
+    s.tiles[far] = Tile.Relic;
+    s.relics.push(far);
+    s.cards = ['sharpAxes'];
+    expect(pickSkill(w, 'sharpAxes', far)).toBe(true); // out of reach: the reachable one is taken instead
+    expect(s.relics).toEqual([far]);
+    s.cards = ['greenThumbs'];
+    expect(pickSkill(w, 'greenThumbs')).toBe(false); // nothing in reach
+  });
+
+  it('reshuffles a relic offer once, dealing other skills where there are any', () => {
+    const w = smallWorld(30);
+    w.dev.manualMult = 1e6;
+    const s = w.state;
+    s.skills = { sharpAxes: 1, greenThumbs: 1, quarrying: 1, markets: 1, swiftFeet: 1, sheepFarms: 1 }; // plenty on offer
+    const r = spawnRelic(s, w.fog.map((f) => (f === 0 ? 0 : 2)));
+    clearPathTo(w, r);
+    expect(reshuffleCards(w)).toBe(false); // nothing on offer yet
+    openRelic(w, r);
+    const first = [...s.cards];
+    expect(reshuffleCards(w)).toBe(true);
+    expect(s.cards).toHaveLength(first.length);
+    expect(s.cards.some((id) => first.includes(id))).toBe(false);
+    expect(reshuffleCards(w)).toBe(false); // once
+    const second = [...s.cards];
+    openRelic(w, r); // closed and opened again: still the reshuffled offer, still used up
+    expect(s.cards).toEqual(second);
+    expect(reshuffleCards(w)).toBe(false);
+    expect(pickSkill(w, second[0], r)).toBe(true);
+    expect(s.reshuffled).toBe(false); // the next relic may reshuffle again
+  });
+
+  it('a reshuffle tops up with the skills it was dealing away when too few others are left', () => {
+    const s = smallWorld().state;
+    const all = availableSkills(s);
+    dealCards(s, all.length - 1, all.slice(0, 3));
+    expect(s.cards).toHaveLength(all.length - 1);
+    expect(new Set(s.cards).size).toBe(s.cards.length);
+  });
+
+  it('a v24 save migrates with its offer not yet reshuffled', () => {
+    const w = smallWorld(30);
+    const old = JSON.parse(serialize(w.state, 1));
+    old.version = 24;
+    delete old.state.reshuffled;
+    expect(deserialize(JSON.stringify(old)).state.reshuffled).toBe(false);
+  });
+
+  it('with every skill maxed, a relic is taken at once', () => {
+    const w = smallWorld(30);
+    w.dev.manualMult = 1e6;
+    const s = w.state;
+    for (const id of SKILL_IDS) s.skills[id] = SKILLS[id].max;
+    const r = spawnRelic(s, w.fog.map((f) => (f === 0 ? 0 : 2)));
+    clearPathTo(w, r);
+    expect(openRelic(w, r)).toBe(true);
+    expect(s.cards).toEqual([]);
+    expect(s.tiles[r]).toBe(Tile.Grass);
   });
 
   it('respects prerequisites and max levels', () => {

@@ -98,8 +98,10 @@ const CLIMB = 2; // tiles/s a flyer rises
 const MARGIN = 3; // tiles off the side of the view where creatures are dropped
 const FADE = 3; // alpha per s
 const SPAWN_GAP = [1.2, 3] as const; // s between spawn attempts
-const TILES_EACH = 35; // visible tiles per creature
-const POPULATION = [4, 8] as const;
+// One creature per this many tiles of the view in sight (land and the forest at its edge, not the dark beyond): 3 around
+// the starting clearing (144 tiles in sight), up to the cap once the land fills about half a desktop screen.
+const TILES_EACH = 48;
+const POPULATION = [1, 12] as const;
 const WINTER_POPULATION = 0.6; // fewer creatures about in winter
 const GROUP_SHARE = 0.3; // a duckling, goose or firefly counts as this much of a creature
 const FOLLOW_GAP = 0.45; // tiles between ducklings in the line
@@ -112,6 +114,17 @@ const tileOf = (s: GameState, x: number, y: number) =>
 function inSight(world: World, x: number, y: number): boolean {
   const i = tileOf(world.state, x, y);
   return i >= 0 && world.fog[i] <= visionRadius(world.state);
+}
+
+/** How many creatures to keep about in `view`: by how much of it is in sight, fewer in winter. */
+export function critterTarget(world: World, view: View, winter: boolean): number {
+  const s = world.state;
+  const r = visionRadius(s);
+  let seen = 0;
+  for (let y = Math.max(0, view.y0); y <= Math.min(s.h - 1, view.y1); y++) {
+    for (let x = Math.max(0, view.x0); x <= Math.min(s.w - 1, view.x1); x++) if (world.fog[y * s.w + x] <= r) seen++;
+  }
+  return Math.min(POPULATION[1], Math.max(POPULATION[0], seen / TILES_EACH)) * (winter ? WINTER_POPULATION : 1);
 }
 
 /** The creatures about, and their footprints in the snow. `random` is UI-only randomness, swappable in tests. */
@@ -141,8 +154,7 @@ export class Critters {
     this.spawnIn -= dt;
     if (this.spawnIn > 0) return;
     this.spawnIn = this.between(SPAWN_GAP);
-    const area = (view.x1 - view.x0 + 1) * (view.y1 - view.y0 + 1);
-    const target = Math.min(POPULATION[1], Math.max(POPULATION[0], area / TILES_EACH)) * (this.winter ? WINTER_POPULATION : 1);
+    const target = critterTarget(world, view, this.winter);
     const about = this.list.reduce((n, c) => n + (c.mode === 'gone' ? 0 : c.lead || c.kind === 'geese' || c.kind === 'fireflies' ? GROUP_SHARE : 1), 0);
     if (about < target) this.spawn(world, season);
   }

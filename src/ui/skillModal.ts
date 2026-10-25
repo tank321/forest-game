@@ -1,5 +1,5 @@
 import { unlocks } from '../core/buildings';
-import { pickSkill } from '../core/commands';
+import { pickSkill, reshuffleCards } from '../core/commands';
 import { availableSkills, isMastery, lvl, prerequisite, SKILL_IDS, SKILLS, TRACK_IDS, trackOf, TRACKS, unlockedBy, type SkillId } from '../core/skills';
 import type { World } from '../core/world';
 import { PanZoom } from './panZoom';
@@ -17,10 +17,13 @@ const SVG = 'http://www.w3.org/2000/svg';
 const pips = (id: SkillId, level: number) =>
   `<span class="skill-pips" aria-hidden="true">${Array.from({ length: SKILLS[id].max }, (_, i) => `<i class="${i < level ? 'filled' : ''}"></i>`).join('')}</span>`;
 
-/** Skill tree and relic rewards. Browsing never spends a pick; the simulation keeps running. */
+/**
+ * Skill tree and relic rewards. Browsing never spends a pick; the simulation keeps running. Closing without picking
+ * leaves the relic on the map, offering the same skills when it is opened again.
+ */
 export class SkillModal {
   private key = '';
-  private pending = 0;
+  private relic = -1; // the relic opened, taken when a skill is picked
   private view: SkillView = 'all';
   private selected: SkillId | null = null;
   private gallery: HTMLElement;
@@ -37,7 +40,6 @@ export class SkillModal {
 
   constructor(
     private dlg: HTMLDialogElement,
-    private reopen: HTMLButtonElement,
     private world: () => World,
     private notify: (message: string) => void,
   ) {
@@ -88,7 +90,6 @@ export class SkillModal {
       const id = cardOf(event);
       if (id && (event.target as HTMLElement).matches(':focus-visible') && (this.view === 'all' || !this.mobile.matches)) this.inspect(id);
     });
-    reopen.onclick = () => this.open('choose');
   }
 
   private inspect(id: SkillId | null): void {
@@ -161,7 +162,7 @@ export class SkillModal {
   /** Learns an offered skill. Returns to the game, or shows the next choice while picks remain. */
   private choose(id: SkillId): void {
     const w = this.world();
-    if (!pickSkill(w, id)) return;
+    if (!pickSkill(w, id, this.relic)) return;
     const s = w.state;
     const kind = unlocks(id);
     const message = kind ? `${BUILDING_TEXT[kind].name} unlocked! Find it in the build menu.` : `${SKILL_TEXT[id].name} upgraded to level ${lvl(s, id)}!`;
@@ -177,7 +178,9 @@ export class SkillModal {
     this.render();
   }
 
-  open(view: SkillView = 'all'): void {
+  /** Opens on `view`; opening a relic passes its tile, so picking a skill takes that relic. */
+  open(view: SkillView = 'all', relic = this.relic): void {
+    this.relic = relic;
     const fresh = view !== this.view || !this.dlg.open;
     if (view !== this.view) this.selected = null;
     this.view = view;
@@ -195,16 +198,9 @@ export class SkillModal {
   }
 
   update(): void {
-    const s = this.world().state;
-    const newPick = s.picksPending > this.pending;
-    this.pending = s.picksPending;
-    if (newPick && s.cards.length) this.open('choose');
-    this.reopen.hidden = !s.cards.length || this.dlg.open;
-    const label = this.reopen.querySelector('span')!;
-    const text = `Pick skill (${s.picksPending})`;
-    if (label.textContent !== text) label.textContent = text;
     if (!this.dlg.open) return;
-    const key = JSON.stringify([s.skills, s.cards, s.picksPending, s.relicsSpawned - s.relics.length]);
+    const s = this.world().state;
+    const key = JSON.stringify([s.skills, s.cards, s.relicsSpawned - s.relics.length]);
     if (key !== this.key) {
       this.key = key;
       this.render();
@@ -222,13 +218,13 @@ export class SkillModal {
       tab.classList.toggle('active', choice === choosing);
       tab.setAttribute('aria-pressed', String(choice === choosing));
       if (choice) {
-        tab.textContent = `Choose a skill (${s.picksPending})`;
+        tab.textContent = 'Choose a skill';
         tab.disabled = !s.cards.length;
       }
     }
     const learned = SKILL_IDS.filter((id) => lvl(s, id) > 0).length;
     this.summary.textContent = choosing
-      ? `${s.picksPending} pick${s.picksPending === 1 ? '' : 's'} waiting. Pick a skill to learn it.`
+      ? 'Pick a skill to learn it. Close this to leave the relic for later.'
       : `${learned} of ${SKILL_IDS.length} skills learned · ${s.relicsSpawned - s.relics.length} relics collected`;
     const ids = choosing ? s.cards : TREE_ORDER;
     // The tree selects nothing until a skill is hovered, focused or tapped.
@@ -243,7 +239,7 @@ export class SkillModal {
         entry.className = 'skill-entry';
         entry.append(this.card(id));
         return entry;
-      }));
+      }), this.reshuffleButton());
       // Every offered skill's details are stacked so hovering never resizes the dialog.
       if (!this.mobile.matches && ids.length) {
         this.detailSlot.append(...ids.map((id) => this.details(id)));
@@ -257,6 +253,23 @@ export class SkillModal {
       const target = [...this.dlg.querySelectorAll<HTMLElement>('[data-focus]')].find((el) => el.dataset.focus === focused && !el.closest('[inert]'));
       (target ?? this.gallery.querySelector<HTMLButtonElement>('[aria-pressed="true"]'))?.focus({ preventScroll: true });
     }
+  }
+
+  /** Deals the offer again with other skills, once per relic. */
+  private reshuffleButton(): HTMLButtonElement {
+    const done = this.world().state.reshuffled;
+    const b = document.createElement('button');
+    b.className = 'skill-reshuffle';
+    b.dataset.focus = 'reshuffle';
+    b.disabled = done;
+    b.textContent = done ? 'Reshuffled (once per relic)' : 'Reshuffle: other skills instead';
+    b.title = done ? 'Each relic can be reshuffled once.' : 'Deal different skills to choose from. Each relic can be reshuffled once.';
+    b.onclick = () => {
+      if (!reshuffleCards(this.world())) return;
+      this.selected = null;
+      this.render();
+    };
+    return b;
   }
 
   /** A relic choice: the skill's track and next level, so it can be picked without opening the details. */

@@ -1,3 +1,10 @@
+/**
+ * Upgrade levels past a track's cost table: each multiplies the track's effects by `mult` and costs `costGrowth` × the
+ * one before, every resource of the table's last price. Income then grows about as (spent)^(ln mult / ln costGrowth)
+ * ≈ its square root, so with trees ~1.2× bigger each ring, each ring takes ~1.1× longer than the last instead of ~1.25×.
+ */
+const BEYOND = { mult: 1.15, costGrowth: 1.35 };
+
 /** All gameplay tunables. Gameplay code reads villager values via getStats(), not directly. */
 export const CONFIG = {
   map: { size: 100, start: 6 }, // square map; side of the initial clearing
@@ -27,6 +34,7 @@ export const CONFIG = {
     speedGrowth: 1.05, // chop rate ×1.05^lvl
     carryPerLevel: 2, // carry (base + 2·lvl)·1.02^lvl
     carryGrowth: 1.02,
+    beyond: BEYOND,
   },
   farm: {
     harvestRate: 1, // food/s per farmer
@@ -39,6 +47,7 @@ export const CONFIG = {
     speedGrowth: 1.05,
     carryPerLevel: 2,
     carryGrowth: 1.02,
+    beyond: BEYOND,
   },
   pick: {
     mineRate: 0.5, // stone/s per miner
@@ -50,6 +59,7 @@ export const CONFIG = {
     speedGrowth: 1.05,
     carryPerLevel: 2,
     carryGrowth: 1.02,
+    beyond: BEYOND,
   },
   herd: { rate: 0.5, carry: 10 }, // herder cloth/s and base carry
   // orchardists: a farmer's walk speed, harvest (Barn upgrades and seasons included) and carry × these
@@ -69,6 +79,7 @@ export const CONFIG = {
       gold: [0, 0, 0, 0, 0, 0, 0, 0, 100, 260],
     },
     speedGrowth: 1.05, // walk speed ×1.05^lvl
+    beyond: { mult: 1.05, costGrowth: 1.35 }, // walking is most of a trip, so a gentler step
   },
   backpack: {
     costs: {
@@ -79,6 +90,7 @@ export const CONFIG = {
       gold: [0, 0, 0, 0, 0, 0, 0, 0, 100, 260],
     },
     carryPerLevel: 2, // flat carry added after each job's own multipliers
+    beyond: BEYOND, // past the table the bonus grows ×mult per level instead of +carryPerLevel
   },
   coats: {
     costs: {
@@ -107,11 +119,15 @@ export const CONFIG = {
   },
   // gold per trip = goldAtRef × (gap / refGap)^exponent, gap = tiles between Trading Post and Market
   trade: { goldAtRef: 10, refGap: 10, exponent: 1.5, loadTime: 5 }, // loadTime: s to load a trip
+  // Extra pack mules bought at a Trading Post: at most `max` per post (its first included); the k-th bought in the town
+  // (counting every post's) costs `cost` × growth^k, a little less than each pays back as it grows
+  mules: { max: 5, cost: { wood: 400, food: 150, gold: 100 }, growth: 1.6 },
   // Prestige: rebuild once base + step × runs skill levels are learned (capped at every skill maxed)
   legacy: {
     base: 15,
     step: 5,
     roadsPerRun: 10, // starting roads every rebuild adds
+    cards: { base: 3, perRun: 1, max: 5 }, // skills a relic offers: base, +perRun every rebuild, up to max (Relic Hunters adds more)
     perks: {
       masterHarvest: { gather: 3 }, // chop, farm, mine and herd rate ×
       swiftAndStrong: { speed: 3, carry: 3 },
@@ -119,7 +135,7 @@ export const CONFIG = {
       prosperousCity: { build: 0.5, villagers: 10 }, // build: building price ×; villagers start free of upkeep
       tradeGuilds: { chop: 2, cap: 3, taper: 0.85 }, // each profession's rate × 1 + cap·(1 − taper^workers)
       royalBank: { gold: 3, commission: 0.5 }, // tax and trade gold ×, market commission ×
-      relicHunters: { gap: 0.5, cards: 4 }, // trees between relics ×, skill cards per pick
+      relicHunters: { gap: 0.5, cards: 1 }, // trees between relics ×, skill cards added to each pick (past the rebuild cap)
       legacyX2: { gather: 2 }, // every gather rate × per level
     },
   },
@@ -156,9 +172,10 @@ export const CONFIG = {
     // Merchant Caravans: deal size in seconds of the lifetime average rate; buy at buyMult × value, sell at sellMult × value
     caravan: { deals: 3, seconds: 600, min: 100, buyMult: 0.5, sellMult: 2 },
   },
-  // Lucky Chest: opens once every cooldownMs of real time. `odds` are relative weights; boosts run for `seconds` of real time.
+  // Lucky Chest: stores one opening every cooldownMs of real time, up to `store`. `odds` are relative weights; boosts run for `seconds` of real time.
   chest: {
     cooldownMs: 10 * 60_000,
+    store: 3,
     odds: { speed2: 25, speed3: 18, speed5: 10, taps: 15, bountiful: 17, windfall: 15 },
     boosts: {
       speed2: { mult: 2, seconds: 300 }, // the whole game runs ×mult

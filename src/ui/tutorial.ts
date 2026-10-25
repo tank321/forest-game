@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, type BuildingKind } from '../core/buildings';
 import { canAfford, villagerCost } from '../core/economy';
+import { isCollectable } from '../core/grid';
 import { legacyRequirement } from '../core/legacy';
 import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
 import type { World } from '../core/world';
@@ -122,15 +123,13 @@ export const STEPS: Step[] = [
     title: 'Find a relic',
     text: (w) => {
       const s = w.state;
-      if (s.picksPending) return 'Tap Pick skill and choose one of the cards to learn it.';
+      if (s.relics.some((r) => isCollectable(s, r))) return 'Your land reaches the relic. Tap the glowing stone and choose one of the skills it offers.';
       if (s.relics.length) return 'A relic has appeared in the forest! Clear a path to it, then tap it.';
       return 'Keep clearing land. A relic appears in the forest when the countdown next to your land runs out.';
     },
     done: (w) => Object.values(w.state.skills).some((n) => n > 0),
     target: (w) => {
-      const s = w.state;
-      if (s.picksPending) return document.getElementById('pickSkillBtn');
-      return s.relics.length ? null : document.getElementById('relicCountdown');
+      return w.state.relics.length ? null : document.getElementById('relicCountdown');
     },
   },
   {

@@ -5,7 +5,7 @@ import { rand } from '../src/core/rng';
 import { serialize } from '../src/core/save';
 import { Tile } from '../src/core/types';
 import { onBuildingsChanged, visionRadius, type World } from '../src/core/world';
-import { critterFrame, Critters, hopLift, KINDS, type Critter, type CritterKind, type View } from '../src/render/critters';
+import { critterFrame, critterTarget, Critters, hopLift, KINDS, type Critter, type CritterKind, type View } from '../src/render/critters';
 import { clearArea, smallWorld } from './helpers';
 
 const SEASON = CONFIG.seasons.length;
@@ -226,6 +226,42 @@ describe('forest creatures', () => {
       expect(h.lift).toBe(0);
       expect(['sit', 'twitch']).toContain(h.frame);
     }
+  });
+
+  it('keeps more creatures about as more of the view comes into sight, up to a cap', () => {
+    const w = smallWorld(60, 0, 3); // the starting 6×6 clearing: 12×12 tiles in sight
+    const view = { x0: 0, y0: 0, x1: 59, y1: 59 };
+    const start = critterTarget(w, view, false);
+    expect(start).toBeCloseTo(3);
+    clearArea(w, 24, 24, 35, 35); // land 12×12 around the start: 18×18 in sight
+    expect(critterTarget(w, view, false)).toBeCloseTo((18 * 18) / 48);
+    w.fog.fill(0); // everything in sight
+    expect(critterTarget(w, view, false)).toBe(12);
+    expect(critterTarget(w, view, true)).toBeCloseTo(12 * 0.6);
+    expect(critterTarget(w, { x0: 30, y0: 30, x1: 35, y1: 35 }, false)).toBe(1); // zoomed in close: a few tiles, still one
+  });
+
+  it('brings only a few creatures to the starting clearing, and many more once much more is in sight', () => {
+    const view = { x0: 0, y0: 0, x1: 39, y1: 39 };
+    /** Creatures about on average over two minutes, counted as the spawner counts them (a duckling, goose or firefly is a share). */
+    const average = (w: World) => {
+      const c = new Critters(seeded(4));
+      run(c, w, view, 30); // settle in
+      let sum = 0;
+      let n = 0;
+      for (let t = 0; t < 120; t += DT, n++) {
+        c.step(w, view, DT);
+        sum += c.list.reduce((m, k) => m + (k.mode === 'gone' ? 0 : k.lead || k.kind === 'geese' || k.kind === 'fireflies' ? 0.3 : 1), 0);
+      }
+      return sum / n;
+    };
+    const start = average(smallWorld(40, 0, 3));
+    const wide = smallWorld(40, 0, 3);
+    clearArea(wide, 4, 4, 35, 35);
+    const full = average(wide);
+    expect(start).toBeGreaterThan(1);
+    expect(start).toBeLessThan(4);
+    expect(full).toBeGreaterThan(3 * start);
   });
 
   it('never touches the game state', () => {

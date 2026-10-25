@@ -1,13 +1,14 @@
 import { CONFIG } from '../config';
 import { newCareer, newCounts } from './achievements';
-import { newChest } from './chest';
+import type { BoostKind, ChestReward, ChestState } from './chest';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
+import { isChoppable } from './grid';
 import { newLegacy } from './legacy';
 import { relicGap } from './relics';
-import type { GameState, Resources } from './types';
+import { Tile, type GameState, type Resources } from './types';
 
-const VERSION = 21;
+const VERSION = 25;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -163,8 +164,58 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
     };
   },
   // v21 adds the Lucky Chest, ready to open.
-  20: (f) => ({ ...f, version: 21, state: { ...f.state, chest: newChest() } }),
+  20: (f) => ({ ...f, version: 21, state: { ...f.state, chest: { readyAt: 0, boost: null, pending: null } satisfies V21Chest as unknown as ChestState } }),
+  // v22 stores up to three chests and keeps a list of boosts: a ready chest is one stored, and one whose cooldown has
+  // passed fills up from then. The running boost and an unclaimed reward carry over.
+  21: (f) => {
+    const old = f.state.chest as unknown as V21Chest;
+    const chest: ChestState = {
+      stored: old.readyAt ? 0 : 1,
+      readyAt: old.readyAt,
+      boosts: old.boost ? [{ ...old.boost, ms: CONFIG.chest.boosts[old.boost.kind].seconds * 1000 }] : [],
+      pending: old.pending ? [old.pending] : [],
+    };
+    return { ...f, version: 22, state: { ...f.state, chest } };
+  },
+  // v23 lets Trading Posts keep more than one pack mule: every post has the one it had.
+  22: (f) => ({
+    ...f,
+    version: 23,
+    state: { ...f.state, buildings: f.state.buildings.map((b) => (b.kind === 'tradingPost' ? { ...b, mules: 1 } : b)) },
+  }),
+  // v24 keeps a relic on the map until its skill is picked: each pick still owed becomes a relic again, on a tree at the
+  // edge of the land (so it can be opened at once), and counts as collected only when picked.
+  23: (f) => {
+    const { picksPending = 0, ...s } = f.state as Serialized & { picksPending?: number };
+    const tiles = [...s.tiles];
+    const wood = [...s.wood];
+    const relics = [...s.relics];
+    const edge = { ...s, tiles } as unknown as GameState;
+    let owed = picksPending;
+    for (let i = 0; i < tiles.length && owed > 0; i++) {
+      if (!isChoppable(edge, i)) continue;
+      tiles[i] = Tile.Relic;
+      wood[i] = 0;
+      relics.push(i);
+      owed--;
+    }
+    const placed = picksPending - owed;
+    return {
+      ...f,
+      version: 24,
+      state: { ...s, tiles, wood, relics, treesLeft: s.treesLeft - placed, counts: { ...s.counts, relics: s.counts.relics - placed } },
+    };
+  },
+  // v25 lets a relic's offer be reshuffled once: an offer already dealt hasn't been.
+  24: (f) => ({ ...f, version: 25, state: { ...f.state, reshuffled: false } }),
 };
+
+/** The Lucky Chest in v21: one chest, one boost and one unclaimed reward. */
+interface V21Chest {
+  readyAt: number;
+  boost: { kind: BoostKind; until: number } | null;
+  pending: ChestReward | null;
+}
 
 /** The skill that unlocked each building kind when v13 introduced unlocks. */
 const V13_UNLOCKS: Partial<Record<string, string>> = {

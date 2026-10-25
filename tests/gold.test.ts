@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { addBuilding, footprint } from '../src/core/buildings';
-import { buyResource, removeBuilding, sellResource } from '../src/core/commands';
-import { buildingCost, marketQuote } from '../src/core/economy';
+import { CONFIG } from '../src/config';
+import { addBuilding, footprint, mulesOf } from '../src/core/buildings';
+import { buyMule, buyResource, removeBuilding, sellResource } from '../src/core/commands';
+import { buildingCost, marketQuote, muleCost } from '../src/core/economy';
 import { tileAt } from '../src/core/grid';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
@@ -209,6 +210,49 @@ describe('trade', () => {
     simulate(w, 60, 1 / 30);
     expect(s.mules).toHaveLength(0);
     expect(s.resources.gold).toBeCloseTo(total, 6);
+  });
+
+  it('buys more pack mules, each costing more across the town, up to the most a post keeps', () => {
+    const { w, postId } = withMarket(0, true);
+    const s = w.state;
+    const post = s.buildings.find((b) => b.id === postId)!;
+    const { cost, growth, max } = CONFIG.mules;
+    expect(muleCost(s, post)).toEqual(cost);
+    expect(buyMule(w, postId)).toBe(false); // can't afford it
+    s.resources = { ...s.resources, wood: 1e9, food: 1e9, gold: 1e9 };
+    expect(buyMule(w, postId)).toBe(true);
+    expect(mulesOf(post)).toBe(2);
+    simulate(w, 1 / 30, 1 / 30);
+    expect(s.mules.filter((m) => m.post === postId)).toHaveLength(2);
+    // A second post's first mule is free, and its next is priced as the town's second bought.
+    const other = addBuilding(s, 'tradingPost', 2, 16);
+    expect(muleCost(s, other)).toEqual({ wood: Math.round(cost.wood * growth), food: Math.round(cost.food * growth), gold: Math.round(cost.gold * growth) });
+    while (mulesOf(post) < max) expect(buyMule(w, postId)).toBe(true);
+    expect(muleCost(s, post)).toBeNull();
+    expect(buyMule(w, postId)).toBe(false);
+    expect(buyMule(w, s.buildings[0].id)).toBe(false); // the Town Center keeps no mules
+  });
+
+  it('two mules on a route bring in about twice the gold', () => {
+    const gold = (mules: number) => {
+      const { w, postId } = withMarket(0, true);
+      w.state.buildings.find((b) => b.id === postId)!.mules = mules;
+      simulate(w, 600, 1 / 30);
+      return w.state.resources.gold;
+    };
+    const one = gold(1);
+    expect(one).toBeGreaterThan(0);
+    expect(gold(2) / one).toBeGreaterThan(1.8);
+  });
+
+  it('migrates a v22 save: every Trading Post keeps the one mule it had', () => {
+    const { w, postId } = withMarket(0, true);
+    const old = JSON.parse(serialize(w.state, 1));
+    old.version = 22;
+    delete old.state.buildings.find((b: { id: number }) => b.id === postId).mules;
+    const { state } = deserialize(JSON.stringify(old));
+    expect(state.buildings.find((b) => b.id === postId)!.mules).toBe(1);
+    expect(state.buildings.find((b) => b.kind === 'market')!.mules).toBeUndefined();
   });
 
   it('migrates a v19 save: traders go back to lumberjacking and their gold is banked', () => {

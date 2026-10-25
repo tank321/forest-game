@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canPlace, chopTree, hireVillager, placeBuilding, placeRoad, toggleMark, upgradeAxe } from '../src/core/commands';
-import { baseVillagerCost, maxLevel, popCap } from '../src/core/economy';
+import { baseVillagerCost, maxLevel, popCap, upgradeCost } from '../src/core/economy';
+import { getStats } from '../src/core/stats';
 import { isChoppable } from '../src/core/grid';
 import { createInitialState } from '../src/core/state';
 import { ringOf, ringWood } from '../src/core/trees';
@@ -69,12 +70,30 @@ describe('commands', () => {
     expect(s.resources.wood).toBe(1e6 - 100 - 150);
   });
 
-  it('axe upgrade raises chop rate and carry, stops at max level', () => {
+  it('axe upgrades go on past the cost table, each past it ×1.15 chop rate and carry', () => {
     const w = smallWorld();
-    w.state.resources = { wood: 1e9, food: 1e9, stone: 1e9, cloth: 1e9, gold: 0 };
+    w.state.resources = { wood: 1e12, food: 1e12, stone: 1e12, cloth: 1e12, gold: 0 };
+    expect(maxLevel('axe')).toBe(Infinity);
     for (let k = 0; k < 10; k++) expect(upgradeAxe(w)).toBe(true);
-    expect(upgradeAxe(w)).toBe(false);
-    expect(w.state.upgrades.axe).toBe(maxLevel('axe'));
+    const ten = getStats(w.state);
+    expect(ten.chopRate).toBeCloseTo(1.05 ** 10);
+    expect(ten.carry).toBeCloseTo((5 + 20) * 1.02 ** 10);
+    for (let k = 0; k < 5; k++) expect(upgradeAxe(w)).toBe(true);
+    const fifteen = getStats(w.state);
+    expect(fifteen.chopRate).toBeCloseTo(ten.chopRate * 1.15 ** 5);
+    expect(fifteen.carry).toBeCloseTo(ten.carry * 1.15 ** 5);
+  });
+
+  it('a level past the table costs its last price ×1.35 per level beyond it', () => {
+    const s = smallWorld().state;
+    const last = { wood: 6500, food: 2500, stone: 800, cloth: 150 };
+    expect(upgradeCost(s, 'axe', 9)).toEqual(last);
+    expect(upgradeCost(s, 'axe', 10)).toEqual({ wood: 8775, food: 3375, stone: 1080, cloth: 203 });
+    expect(upgradeCost(s, 'axe', 19)).toEqual(Object.fromEntries(Object.entries(last).map(([r, n]) => [r, Math.round(n * 1.35 ** 10)])));
+    for (const kind of ['coats', 'satchel'] as const) {
+      expect(maxLevel(kind)).toBe(3);
+      expect(upgradeCost(s, kind, 3)).toBeNull();
+    }
   });
 
   it('marks only visible trees', () => {

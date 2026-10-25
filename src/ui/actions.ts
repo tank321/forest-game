@@ -1,7 +1,8 @@
-import { BUILDINGS, buildingGap, countOf, isActive, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
+import { CONFIG } from '../config';
+import { BUILDINGS, buildingGap, countOf, isActive, mulesOf, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
 import { linkedBuildings } from '../core/roads';
-import { blast, blastWait, hireVillager, togglePause, upgrade } from '../core/commands';
-import { canAfford, commission, maxLevel, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
+import { blast, blastWait, buyMule, hireVillager, togglePause, upgrade } from '../core/commands';
+import { canAfford, commission, maxLevel, muleCost, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
 import { lvl } from '../core/skills';
 import { getStats, type Stats } from '../core/stats';
 import { jobResource } from '../core/systems/workplace';
@@ -78,20 +79,38 @@ const SCOPE: Record<UpgradeKind, string> = {
   satchel: 'Every tax collector',
 };
 
-const perSec = (n: number, unit: string) => `${n.toFixed(2)} ${unit}/s`;
+const perSec = (n: number, unit: string) => `${n < 100 ? n.toFixed(2) : fmt(n)} ${unit}/s`;
 
 function pauseAction(w: World, b: Building): Action {
   const active = !w.state.paused.includes(b.id);
   const mule = b.kind === 'tradingPost';
+  const one = mulesOf(b) === 1;
   return {
     label: active ? 'Pause production' : 'Resume production',
     compact: active ? 'Pause' : 'Resume',
     hint: mule
-      ? (active ? 'The mule finishes its delivery, then waits at the post.' : 'The mule will start loading again.')
+      ? (active
+        ? (one ? 'The mule finishes its delivery, then waits at the post.' : 'The mules finish their deliveries, then wait at the post.')
+        : (one ? 'The mule will start loading again.' : 'The mules will start loading again.'))
       : (active ? 'Workers finish deliveries, then return to chopping.' : 'Available villagers will return to this workplace.'),
     cost: null,
     enabled: true,
     run: () => togglePause(w, b.id),
+  };
+}
+
+/** Another pack mule for this Trading Post, up to the most a post keeps. */
+function muleAction(w: World, b: Building): Action {
+  const s = w.state;
+  const cost = muleCost(s, b);
+  const n = mulesOf(b);
+  const { max } = CONFIG.mules;
+  return {
+    label: cost ? `Buy a pack mule (${n} of ${max})` : `Pack mules: ${n} of ${max}`,
+    hint: cost ? 'Another mule on this route. The longer the route, the more each one brings in.' : 'This post keeps as many mules as it can.',
+    cost,
+    enabled: cost !== null && canAfford(s, cost),
+    run: () => buyMule(w, b.id),
   };
 }
 
@@ -117,19 +136,19 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   ],
   tailor: (w) => [
     upgradeAction(w, 'shoes', 'Shoes', (st) => [{ label: 'Walking', value: `${st.speed.toFixed(2)} tiles/s` }]),
-    upgradeAction(w, 'backpack', 'Backpack', (st) => [{ label: 'Extra carry', value: `+${st.carryBonus}` }]),
+    upgradeAction(w, 'backpack', 'Backpack', (st) => [{ label: 'Extra carry', value: `+${fmt(Math.round(st.carryBonus))}` }]),
     upgradeAction(w, 'coats', 'Coats', (st) => [{ label: 'Winter firewood', value: perSec(st.winterBurn, 'wood') }]),
   ],
   lumberCamp: (w) => [
     upgradeAction(w, 'axe', 'Axe upgrades', (st) => [
       { label: 'Speed', value: perSec(st.chopRate, 'wood') },
-      { label: 'Carry', value: `${Math.round(st.carry)} wood` },
+      { label: 'Carry', value: `${fmt(Math.round(st.carry))} wood` },
     ]),
   ],
   barn: (w) => [
     upgradeAction(w, 'farm', 'Farm upgrades', (st) => [
       { label: 'Speed', value: perSec(st.farmRate, 'food') },
-      { label: 'Carry', value: `${Math.round(st.farmCarry)} food` },
+      { label: 'Carry', value: `${fmt(Math.round(st.farmCarry))} food` },
     ]),
   ],
   outpost: (w, b) => [
@@ -142,14 +161,14 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   quarry: (w, b) => [
     upgradeAction(w, 'pick', 'Pick upgrades', (st) => [
       { label: 'Speed', value: perSec(st.mineRate, 'stone') },
-      { label: 'Carry', value: `${Math.round(st.mineCarry)} stone` },
+      { label: 'Carry', value: `${fmt(Math.round(st.mineCarry))} stone` },
     ]),
     ...(lvl(w.state, 'dynamite') ? [blastAction(w, b)] : []),
     pauseAction(w, b),
   ],
   sheepFarm: (w, b) => [pauseAction(w, b)],
   cottonPlantation: (w, b) => [pauseAction(w, b)],
-  tradingPost: (w, b) => [pauseAction(w, b)],
+  tradingPost: (w, b) => [muleAction(w, b), pauseAction(w, b)],
   taxOffice: (w, b) => [
     upgradeAction(w, 'satchel', 'Satchel', (st) => [{ label: 'Houses per round', value: `${st.taxStops}` }]),
     pauseAction(w, b),
@@ -237,14 +256,21 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   tradingPost: (w, b) => {
     const s = w.state;
     const st = getStats(s);
-    if (s.paused.includes(b.id)) return 'Production paused. The mule waits at the post.';
-    if (!st.linked.has(b.id)) return 'Connect the post by road for its mule to work.';
+    const one = mulesOf(b) === 1;
+    if (s.paused.includes(b.id)) return `Production paused. ${one ? 'The mule waits' : 'The mules wait'} at the post.`;
+    if (!st.linked.has(b.id)) return `Connect the post by road for ${one ? 'its mule' : 'its mules'} to work.`;
     const load = st.tradeLoads.get(b.id);
     if (load === undefined) return `Needs a ${BUILDING_TEXT.market.name} connected by road to work.`;
     const gap = Math.min(...s.buildings.filter((m) => m.kind === 'market' && st.linked.has(m.id)).map((m) => buildingGap(b, m)));
-    const mule = s.mules.find((m) => m.post === b.id);
-    const doing = !mule ? '' : mule.state === 'load' ? 'The mule is loading' : mule.state === 'toMarket' ? 'The mule is on its way to the Market' :
-      mule.state === 'toPost' ? 'The mule is heading back' : 'The mule is waiting';
+    const mine = s.mules.filter((m) => m.post === b.id);
+    const DOING = { load: 'loading', toMarket: 'on the way to the Market', toPost: 'heading back', idle: 'waiting' } as const;
+    const doing = mine.length === 1
+      ? `The mule is ${DOING[mine[0].state]}`
+      : mine.length
+        ? `${mine.length} mules: ${(Object.keys(DOING) as (keyof typeof DOING)[])
+          .map((k) => [mine.filter((m) => m.state === k).length, DOING[k]] as const)
+          .filter(([n]) => n).map(([n, what]) => `${n} ${what}`).join(', ')}`
+        : '';
     return `${doing ? `${doing} · ` : ''}${plural(gap, 'tile')} to the nearest Market · ${load.toFixed(1)} gold per trip`;
   },
 };

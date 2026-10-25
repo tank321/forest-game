@@ -42,7 +42,7 @@ export function createInitialState(
     relicsSpawned: 0,
     nextRelicAt: relicSpacing({ legacy, skills: {} }, 0),
     cards: [],
-    picksPending: 0,
+    reshuffled: false,
     nextId: 1,
     time: 0,
     legacy,

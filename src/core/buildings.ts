@@ -137,6 +137,9 @@ export const atLimit = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) => 
   return limit !== undefined && countOf(s, kind) >= limit;
 };
 
+/** Pack mules a Trading Post keeps: its first and any bought. */
+export const mulesOf = (b: Building) => b.mules ?? 1;
+
 export const countOf = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) =>
   s.buildings.reduce((n, b) => n + (b.kind === kind ? 1 : 0), 0);
 

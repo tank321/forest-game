@@ -39,7 +39,7 @@ export const BUILDING_TEXT: Record<BuildingKind, { name: string; desc: string }>
   },
   tradingPost: {
     name: 'Trading Post',
-    desc: 'Its pack mule loads gold and carries it along the roads to the nearest Market. The farther apart they are, the more gold per trip.',
+    desc: 'Its pack mule loads gold and carries it along the roads to the nearest Market. The farther apart they are, the more gold per trip. Buy more mules for the route, up to 5.',
   },
 };
 
@@ -151,7 +151,7 @@ export const LEGACY_TEXT: Record<PerkId, { name: string; desc: string; icon: UiI
   },
   relicHunters: {
     name: 'Relic Hunters',
-    desc: `Relics appear ×${1 / P.relicHunters.gap} as often and offer ${P.relicHunters.cards} skills to choose from`,
+    desc: `Relics appear ×${1 / P.relicHunters.gap} as often and offer ${P.relicHunters.cards} more skill to choose from`,
     icon: 'relic',
   },
   legacyX2: { name: 'Legacy ×2', desc: `Every gather rate ×${P.legacyX2.gather}. Can be taken again at every rebuild`, icon: 'bolt' },

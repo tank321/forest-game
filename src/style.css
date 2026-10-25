@@ -260,6 +260,7 @@ button.danger { color: #ffb6a3; }
 .skill-requirement { width: 100%; font-size: 13px; text-align: left; }
 .skill-unlocks, .skill-hint { font-size: 13px; color: #654222; }
 .skill-choose { width: 100%; justify-content: center; min-height: 48px; font-weight: 700; text-align: center; }
+.skill-reshuffle { width: 100%; justify-content: center; min-height: 40px; font-weight: 700; text-align: center; }
 .skill-feedback { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; width: max-content; max-width: calc(100% - 32px); padding: 10px 16px; border: 1px solid #8b9b54; background: #23301b; box-shadow: 0 4px 16px #0008; color: #d7edac; font-size: 14px; font-weight: 600; text-align: center; pointer-events: none; z-index: 3; }
 .skill-feedback:empty { display: none; }
 #skillModal :focus-visible, #legacyModal :focus-visible, #guideModal :focus-visible, #achievementsModal :focus-visible { outline: 3px solid #fff0b4; outline-offset: 2px; }
@@ -375,12 +376,15 @@ button.danger { color: #ffb6a3; }
 .chest-corner.ready::before { top: 4px; left: 2px; }
 .chest-corner.ready::after { top: 58px; right: -4px; animation-delay: .8s; }
 .chest-btn.got, .chest-boost.got { animation: chest-got .65s cubic-bezier(.3, 1.8, .5, 1); }
+.chest-boosts { display: grid; justify-items: end; gap: 6px; }
 .chest-boost { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 6px; min-width: 132px; padding: 2px 8px 4px 4px; box-shadow: 0 0 14px 2px var(--boost, #f2d77a); }
 .chest-boost .ico { grid-row: span 2; width: 28px; height: 28px; background-size: 28px; animation: boost-icon 1s ease-in-out infinite alternate; }
 .chest-boost b { font-size: 14px; line-height: 18px; white-space: nowrap; }
 .chest-boost small { font-size: 13px; line-height: 16px; font-weight: 800; font-variant-numeric: tabular-nums; color: #654222; }
 .chest-boost-bar { grid-column: 1 / -1; height: 6px; margin-top: 3px; border: 1px solid #937b52; background: #c6b58e; }
 .chest-boost-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--boost, #f2d77a), #fff6c8); }
+.chest-boost.queued { opacity: .7; box-shadow: none; }
+.chest-boost.queued .ico { animation: none; }
 /* While a boost runs, the map's edges glow in its tier color; a speed boost pulses faster. */
 #map.boosted::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 48px 8px color-mix(in srgb, var(--boost) 60%, transparent); animation: boost-pulse 1.6s ease-in-out infinite alternate; }
 #map.boost-speed::after { animation-duration: .5s; }
@@ -401,7 +405,7 @@ button.danger { color: #ffb6a3; }
 .chest-rays i { position: absolute; inset: 0; border-radius: 50%; mask: radial-gradient(closest-side, #000 8%, transparent 75%); }
 .chest-rays i:first-child { background: repeating-conic-gradient(color-mix(in srgb, var(--glow) 70%, #fff) 0 7deg, transparent 7deg 20deg); animation: rays 10s linear infinite; }
 .chest-rays i:last-child { background: repeating-conic-gradient(from 10deg, color-mix(in srgb, var(--glow) 50%, transparent) 0 4deg, transparent 4deg 30deg); animation: rays 16s linear infinite reverse; }
-.chest-prize { position: absolute; left: 50%; top: 14px; width: 84px; height: 84px; margin-left: -42px; opacity: 0; }
+.chest-prize { position: absolute; left: 50%; top: 14px; display: flex; width: calc(84px * var(--n, 1)); height: 84px; margin-left: calc(-42px * var(--n, 1)); opacity: 0; }
 .chest-prize .ico { width: 84px; height: 84px; background-size: 84px; filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px var(--glow)); }
 .chest-burst { position: absolute; left: 50%; top: 40px; width: 0; height: 0; z-index: 1; pointer-events: none; }
 .chest-burst .coin, .chest-burst .gem { position: absolute; width: 10px; height: 10px; margin: -5px; background: var(--c); opacity: 0; animation: loot var(--t) cubic-bezier(.2, .7, .4, 1) both; }
@@ -414,6 +418,8 @@ button.danger { color: #ffb6a3; }
 .chest-tier span { display: inline-block; }
 .chest-name { font-size: 34px; line-height: 1.15; color: #fff; }
 .chest-desc { font-size: 15px; }
+.chest-line { display: flex; align-items: center; gap: 6px; }
+.chest-line .ico { width: 24px; height: 24px; background-size: 24px; }
 .chest-amounts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 6px; padding: 0; list-style: none; font-size: 22px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
 .chest-amounts li { display: flex; align-items: center; gap: 4px; }
 .chest-amounts .ico { width: 28px; height: 28px; background-size: 28px; }
@@ -570,7 +576,7 @@ button.danger { color: #ffb6a3; }
   .gold .chip.short { color: #b3261e; }
   .action-with-hint button { min-height: 38px; }
   #side:has(#panel.detail) #nextUpBtn { display: none; }
-  #side:has(#panel.detail) #tools:has(#pickSkillBtn[hidden]) { display: none; }
+  #side:has(#panel.detail) #tools { display: none; }
   #panel .actions.build-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #panel .build-grid button { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px auto; justify-items: center; gap: 2px; text-align: center; }
   #panel .build-grid .name { font-size: 14px; }

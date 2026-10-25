@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, countOf, type BuildingKind } from './buildings';
+import { BUILDINGS, countOf, mulesOf, type BuildingKind } from './buildings';
 import { perk, perkMult } from './legacy';
 import { linkedBuildings } from './roads';
 import { lvl } from './skills';
@@ -33,6 +33,14 @@ export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings' | 'legacy
   masonry(s, scale(BUILDINGS[kind].cost(owned), (lvl(s, 'masterBuilders') ? 0.8 : 1) * perkMult(s, 'prosperousCity', L.prosperousCity.build)));
 
 /** Refund original construction materials only, rounded down per resource. */
+/** The next extra pack mule, priced by how many the town has bought (each post's first is free); null at a full post. */
+export function muleCost(s: Pick<GameState, 'buildings'>, post: Building): Cost | null {
+  const { max, cost, growth } = CONFIG.mules;
+  if (mulesOf(post) >= max) return null;
+  const bought = s.buildings.reduce((n, b) => n + (b.kind === 'tradingPost' ? mulesOf(b) - 1 : 0), 0);
+  return Object.fromEntries(Object.entries(cost).map(([r, n]) => [r, Math.round(n * growth ** bought)]));
+}
+
 export const buildingRefund = (b: Building): Cost =>
   b.kind === 'townCenter' ? {} : Object.fromEntries(
     entries(b.paidCost).flatMap(([r, n]) => {
@@ -67,14 +75,21 @@ export function popCap(s: GameState): number {
 
 export type UpgradeKind = keyof GameState['upgrades'];
 
-/** Levels in an upgrade track. */
-export const maxLevel = (k: UpgradeKind) => CONFIG[k].costs.wood.length;
+/** Levels in a track's cost table; a track with `beyond` goes on past it. */
+const tableLevels = (k: UpgradeKind) => CONFIG[k].costs.wood.length;
+const beyond = (k: UpgradeKind) => (CONFIG[k] as { beyond?: { mult: number; costGrowth: number } }).beyond ?? null;
+
+/** Levels in an upgrade track: Infinity for one that goes on past its table. */
+export const maxLevel = (k: UpgradeKind) => (beyond(k) ? Infinity : tableLevels(k));
 
 /** Cost of upgrading from `level` (default: the current one), or null at max level. */
 export function upgradeCost(s: GameState, k: UpgradeKind, level = s.upgrades[k]): Cost | null {
   if (level >= maxLevel(k)) return null;
   const rows = Object.entries(CONFIG[k].costs) as [ResourceKey, readonly number[]][];
-  return masonry(s, scale(Object.fromEntries(rows.map(([r, row]) => [r, row[level]])), 1));
+  const n = tableLevels(k);
+  // Past the table: its last price × costGrowth per level beyond it.
+  const price = (row: readonly number[]) => (level < n ? row[level] : row[n - 1] * beyond(k)!.costGrowth ** (level - n + 1));
+  return masonry(s, scale(Object.fromEntries(rows.map(([r, row]) => [r, price(row)])), 1));
 }
 
 const entries = (c: Cost) => Object.entries(c) as [ResourceKey, number][];

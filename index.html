@@ -25,7 +25,7 @@
         <div id="chest" class="chest-corner">
           <span class="chest-halo" aria-hidden="true"></span>
           <button id="chestBtn" class="chest-btn"><span class="chest-face"><span class="chest-ring"></span><i class="chest-art"></i></span><small class="chest-time"></small></button>
-          <div id="chestBoost" class="chest-boost frame parchment" role="status" hidden><i class="ico"></i><b></b><small></small><span class="chest-boost-bar"><i></i></span></div>
+          <div id="chestBoost" class="chest-boosts" role="status" hidden></div>
         </div>
         <p id="msg" class="frame parchment"></p>
         <div id="toasts" role="status" aria-live="polite"></div>
@@ -37,7 +37,6 @@
           <p aria-live="polite"></p>
         </section>
         <div id="tools">
-          <button id="pickSkillBtn" class="gold" hidden><i class="ico ico-skills"></i><span></span></button>
           <button id="nextUpBtn" class="next-up parchment" aria-haspopup="dialog" aria-controls="achievementsModal" hidden></button>
         </div>
         <section id="panel"></section>
@@ -65,7 +64,7 @@
         <h2 id="skillTitle">Skills</h2>
         <div class="skill-tabs" role="group" aria-label="Skill views">
           <button data-skill-view="all" aria-pressed="true">Skill tree</button>
-          <button data-skill-view="choose" aria-pressed="false" disabled>Choose a skill (0)</button>
+          <button data-skill-view="choose" aria-pressed="false" disabled>Choose a skill</button>
         </div>
         <p class="skill-summary"></p>
         <button class="close" aria-label="Close">×</button>

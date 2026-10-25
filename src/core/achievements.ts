@@ -85,7 +85,7 @@ export const ACHIEVEMENTS = {
   pop: ladder('pop', [5, 10, 25, 50, 100], 'town'),
   land: ladder('land', [100, 500, 2000, 5000], 'town'),
   buildings: ladder('buildings', [5, 10, 25, 50, 100], 'town'),
-  upgrades: ladder('upgrades', [1, 5, 15, 30], 'town'),
+  upgrades: ladder('upgrades', [1, 5, 15, 30, 60, 100], 'town'),
   relics: ladder('relics', [1, 5, 25, 100], 'town'),
   skills: ladder('skills', [3, 10, 25, 50], 'town'),
   winters: ladder('winters', [1, 5, 25, 100], 'town'),
