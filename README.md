@@ -168,6 +168,11 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v35** – Phone building panel.
+- On a phone a selected building's **Move**, **Remove** and **Close** sit right under its name instead of below its
+  upgrades, and the upgrade card, status and tally lines are more compact, so the panel takes less of the screen.
+  Desktop is unchanged. No save change.
+
 **v34** – Build menu arrow.
 - On a phone the build menu folds away and back with an arrow on its heading (down to tuck it away, up to bring it back)
   instead of the Hide and Show text. No save change.

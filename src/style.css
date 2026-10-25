@@ -548,6 +548,20 @@ button.danger { color: #ffb6a3; }
   #panel.folded > :not(h2), #panel.folded > .actions.build-grid { display: none; }
   #panel.folded:has(.tutorial-glow) > .actions.build-grid { display: grid; } /* the tutorial's target stays in reach */
   #panel:has(.build-grid) > .sub { display: none; }
+  /* A selected building: Move, Remove and Close sit right under its name, and the upgrade card is compact. */
+  #panel > h2 { order: -2; }
+  #panel > .building-controls { order: -1; gap: 4px; }
+  .building-controls button { min-height: 36px; padding: 0 8px; font-size: 14px; }
+  .building-controls .refund { font-size: 12px; }
+  #panel .sub, .building-status, .building-tally { font-size: 13px; line-height: 1.4; }
+  .building-status, .building-tally { padding: 4px 8px; }
+  .upgrade-card { gap: 4px; padding: 6px 8px; }
+  .upgrade-heading h3 { font-size: 16px; }
+  .upgrade-card table { font-size: 13px; }
+  .upgrade-card caption { padding-bottom: 2px; }
+  .upgrade-card th, .upgrade-card td { padding: 3px 2px; }
+  .upgrade-cost { padding-top: 4px; font-size: 13px; }
+  .upgrade-card > button, .action-with-hint button { min-height: 38px; }
   #panel .actions.build-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #panel .build-grid button { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px auto; justify-items: center; gap: 2px; text-align: center; }
   #panel .build-grid .name { font-size: 14px; }
