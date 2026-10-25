@@ -544,8 +544,9 @@ button.danger { color: #ffb6a3; }
   /* A chevron: down tucks the menu away, up brings it back. */
   .fold-arrow { width: 12px; height: 12px; border: solid var(--cream); border-width: 0 4px 4px 0; filter: drop-shadow(0 1px 1px #1b100b); transform: translateY(-3px) rotate(45deg); }
   #panel.folded .fold-arrow { transform: translateY(3px) rotate(-135deg); }
-  #panel.folded > :not(h2) { display: none; }
-  #panel.folded:has(.tutorial-glow) > .actions { display: grid; } /* the tutorial's target stays in reach */
+  /* The card row's own `#panel .actions.build-grid { display: grid }` is more specific than a bare child rule. */
+  #panel.folded > :not(h2), #panel.folded > .actions.build-grid { display: none; }
+  #panel.folded:has(.tutorial-glow) > .actions.build-grid { display: grid; } /* the tutorial's target stays in reach */
   #panel:has(.build-grid) > .sub { display: none; }
   #panel .actions.build-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #panel .build-grid button { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px auto; justify-items: center; gap: 2px; text-align: center; }

@@ -171,6 +171,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 **v34** – Build menu arrow.
 - On a phone the build menu folds away and back with an arrow on its heading (down to tuck it away, up to bring it back)
   instead of the Hide and Show text. No save change.
+- Folding now really hides the building cards; before, only the arrow turned.
 
 **v33** – Workers who can reach their workplace.
 - A workplace now takes the nearest empty-handed lumberjack by walking route, not in a straight line. Before, it could
