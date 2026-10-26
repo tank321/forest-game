@@ -65,6 +65,19 @@ describe('decorations', () => {
     expect(decorAt(s, at(w, 6, 14), 'prop')?.kind).toBe('wall');
   });
 
+  it('place the park props, the washing line across two tiles', () => {
+    const w = yard();
+    const s = w.state;
+    expect(placeDecor(w, 'washingLine', 6, 6)).toBe(true);
+    expect(decorAt(s, at(w, 7, 6), 'prop')?.kind).toBe('washingLine');
+    expect(placeDecor(w, 'signpost', 7, 6)).toBe(false); // the line's second tile
+    expect(canPlaceDecor(w, 'washingLine', 17, 8)).toBe(false); // half off the clearing
+    (['topiary', 'birdBath', 'beehives', 'signpost'] as const).forEach((kind, k) => {
+      expect(placeDecor(w, kind, 6 + k, 8)).toBe(true);
+      expect(placeDecor(w, 'paving', 6 + k, 8)).toBe(true); // props: the ground beneath stays free
+    });
+  });
+
   it('keep trophies locked until their achievement tier is earned, and across a rebuild', () => {
     const w = yard();
     const s = w.state;

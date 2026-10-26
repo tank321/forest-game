@@ -30,6 +30,7 @@ export const SKILLS = {
   keenEyes: { max: 2 }, // +1 sight ring, relics sooner / lvl
   heartwood: { max: 3 }, // chance of bonus wood per felled tree
   cropRotation: { max: 1 }, // farms gain from touching farms
+  fieldPaths: { max: 1 }, // farms touching a connected farm work without a road
   farmhands: { max: 2 }, // +1 farmer per farm / lvl
   rootCellars: { max: 2 }, // food upkeep −25% / lvl
   greenhouses: { max: 1 }, // farms harvest in winter
@@ -73,7 +74,7 @@ export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
 export const TRACKS = {
   forestry: ['sharpAxes', 'powerSwing', 'sweepingStrike', 'momentum', 'campCrews', 'teamwork', 'fellingCrews', 'keenEyes', 'heartwood', 'timber'],
   settlement: ['swiftFeet', 'bigBaskets', 'errandRunners', 'wellFed', 'roomyHouses', 'recruiters', 'growingFamilies', 'masterBuilders', 'surveyors', 'frontierOutpost'],
-  farming: ['greenThumbs', 'wells', 'deepWells', 'cropRotation', 'farmhands', 'orchards', 'rootCellars', 'greenhouses', 'harvestFestival'],
+  farming: ['greenThumbs', 'wells', 'deepWells', 'cropRotation', 'fieldPaths', 'farmhands', 'orchards', 'rootCellars', 'greenhouses', 'harvestFestival'],
   herding: ['sheepFarms', 'openPastures', 'shearingDay', 'fertileHerding', 'goldenFleece', 'tailoring', 'weavers', 'cottonFields', 'grazingFlocks'],
   mining: ['quarrying', 'stonecutters', 'quarryCrews', 'deepShafts', 'masons', 'cobblestone', 'masonsYard', 'richVeins', 'geodes', 'dynamite'],
   trade: ['markets', 'tradingPosts', 'packMules', 'tollRoads', 'taxOffices', 'taxCollectors', 'deputies', 'guildContracts', 'shrewdTraders', 'midsummerFair', 'merchantCaravans'],
@@ -105,6 +106,7 @@ const PARENT: Partial<Record<SkillId, SkillId>> = {
   wells: 'greenThumbs',
   deepWells: 'wells',
   cropRotation: 'wells',
+  fieldPaths: 'cropRotation',
   farmhands: 'greenThumbs',
   orchards: 'farmhands',
   rootCellars: 'greenThumbs',

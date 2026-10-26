@@ -4,6 +4,7 @@ import { removeBuilding, removeDecor, removeRoad } from '../core/commands';
 import { DECOR, DECOR_KINDS, isDecorUnlocked } from '../core/decor';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
+import { lvl } from '../core/skills';
 import { Tile, type Cost, type ResourceKey, type Resources } from '../core/types';
 import type { World } from '../core/world';
 import { ACTIONS, INFO, tallyHtml, type Action, type Thumb } from './actions';
@@ -267,7 +268,8 @@ export class Panel {
       }
       actions.push({ label: narrow ? '✕' : 'Close', cost: null, secondary: true, enabled: true, run: () => (ui.selected = null) });
       const isolated = BUILDINGS[k].road && !linkedBuildings(s).has(b.id);
-      const info = isolated ? 'Isolated: not connected to the Town Center, so it does nothing. Lay a road from it to the Town Center.' : INFO[k]?.(w, ui.selected);
+      const fields = k === 'farm' && lvl(s, 'fieldPaths') ? ', or set it beside a connected farm' : '';
+      const info = isolated ? `Isolated: not connected to the Town Center, so it does nothing. Lay a road from it to the Town Center${fields}.` : INFO[k]?.(w, ui.selected);
       const custom = k === 'market' ? this.market : undefined;
       // A phone leaves out the description (the Guide has it) when the building has more to show.
       const busy = narrow && (!!info || !!custom || actions.some((a) => !a.secondary));

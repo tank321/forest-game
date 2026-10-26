@@ -416,6 +416,7 @@ export function pickSkill(w: World, id: SkillId, relic = -1): boolean {
   s.cards = [];
   s.reshuffled = false;
   takeRelic(w, at);
+  if (id === 'fieldPaths') refreshRoadRoutes(w); // more farms work, and fields can be walked across
   return true;
 }
 

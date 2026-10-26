@@ -29,7 +29,8 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   roads, call `onBuildingsChanged` so the fields are rebuilt (villagers walk around buildings).
 - **Roads** (`roads.ts`). `Tile.Road` is territory. `roadNetwork` marks roads joined edge to edge to a
   hub (`HUB_KINDS`: the Town Center and the Frontier Outpost); `linkedBuildings` lists buildings that work
-  (touching that network or a hub, or `road: false` in `BUILDINGS`). Both are derived on demand. Isolated buildings count for nothing:
+  (touching that network or a hub, or `road: false` in `BUILDINGS`; with Field Paths, also farms joined edge to edge, farm by farm, to a linked farm,
+  and `search` lets anyone walk across farms). Both are derived on demand; `wouldLink` previews a spot. Isolated buildings count for nothing:
   `isActive` takes the linked set (also `Stats.linked`), drop-off fields, pop cap, tax and trading skip them.
   Pathing steps between connected road tiles cost `CONFIG.roads.pathCost` × normal, and `smooth` keeps
   villagers on the road. Tests can call `pave(w)` (`tests/helpers.ts`) to connect every building.

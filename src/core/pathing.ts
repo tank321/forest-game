@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { BUILDINGS, footprint, HUB_KINDS } from './buildings';
 import { isWalkable, neighbors4 } from './grid';
 import { linkedBuildings, roadNetwork } from './roads';
+import { lvl } from './skills';
 import type { Building, GameState, ResourceKey } from './types';
 import { Tile } from './types';
 
@@ -30,12 +31,18 @@ function owners(s: GameState): Int32Array {
   return owner;
 }
 
+/** Ids of the buildings anyone may walk across: with Field Paths, every farm. */
+function crossable(s: GameState): Set<number> {
+  return new Set(lvl(s, 'fieldPaths') ? s.buildings.filter((b) => b.kind === 'farm').map((b) => b.id) : []);
+}
+
 /**
  * Dijkstra from `sources`. `visit(u, d)` runs as each tile's distance becomes final and may stop
  * the search by returning true. Ties pop in tile order, so results never depend on timing.
  *
  * A walk steps onto a building's tiles only within the building it is in or into one of `enter`
- * (its destination): villagers walk out of buildings and around the others, not over them.
+ * (its destination): villagers walk out of buildings and around the others, not over them
+ * (with Field Paths, farms are walked across like open ground).
  * `reverse` searches from the destinations back (a drop-off field), so each step is walked v → u.
  * `only`, if given, limits the walk to the tiles marked 1 in it (the sources aside). A `free` walk goes over anything:
  * every tile is walkable, buildings and trees alike (a lumberjack fetching a flagged tree that is otherwise cut off).
@@ -55,9 +62,12 @@ function search(
   const heap: number[] = []; // keys d * n + tile
   const net = roadNetwork(s);
   const owner = owners(s);
+  const cross = crossable(s);
   // Per tile: 0 not walkable, 1 anyone may step onto it, 2 only from within its own building.
   const kind = new Uint8Array(n);
-  for (let i = 0; i < n; i++) kind[i] = free ? 1 : !isWalkable(s, i) || (only && !only[i]) ? 0 : owner[i] === -1 || enter.has(owner[i]) ? 1 : 2;
+  for (let i = 0; i < n; i++) {
+    kind[i] = free ? 1 : !isWalkable(s, i) || (only && !only[i]) ? 0 : owner[i] === -1 || enter.has(owner[i]) || cross.has(owner[i]) ? 1 : 2;
+  }
   // May the walk step between u and v (walked v → u when `reverse`)?
   const onto = (from: number, to: number) => kind[to] === 1 || (kind[to] === 2 && owner[to] === owner[from]);
   const open = reverse ? (u: number, v: number) => kind[v] !== 0 && onto(v, u) : onto;
@@ -261,7 +271,7 @@ export function smooth(s: GameState, path: number[], offRoad?: (i: number) => bo
   if (path.length < 3) return path;
   const net = roadNetwork(s);
   const owner = owners(s);
-  const ends = new Set([owner[path[0]], owner[path[path.length - 1]]]);
+  const ends = new Set([owner[path[0]], owner[path[path.length - 1]], ...crossable(s)]);
   const open = offRoad ?? ((i: number) => owner[i] === -1 || ends.has(owner[i]));
   const onRoad = (k: number) => net[path[k]] === 1 && net[path[k + 1]] === 1; // step k → k + 1
   const out = [path[0]];

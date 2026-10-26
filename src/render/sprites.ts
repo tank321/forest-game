@@ -2580,6 +2580,116 @@ export const DECOR_SPRITES: Record<DecorKind, readonly string[]> = {
     '.dDddDdDDdDdaDDdDmDadDDDDDmDDDadDDdDmDDDDDDDdmd.',
     '..mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm..',
   ],
+  topiary: [
+    '................',
+    '....oo....oo....',
+    '...oJHo..oJHo...',
+    '...oHGo..oHGo...',
+    '...oHGo..oHGo...',
+    '....oHGooHGo....',
+    '...oJHHHHHHGo...',
+    '..oJHHHHHHHGgo..',
+    '..oHHkHHHHkGgo..',
+    '..oHHHHppHHGgo..',
+    '...oGHHHHHGgo...',
+    '..oJHHHHHHHHGo..',
+    '.oJHHHHHHHHHGgo.',
+    '.oHHHHHHHHHHGgo.',
+    '.oGHHHHHHHHGggo.',
+    '..ogGGGGGGGggo..',
+    '...oSSSSSSSSox..',
+    '....oaaaaaasox..',
+    '....oooooooox...',
+    '.....xxxxxxxx...',
+  ],
+  birdBath: [
+    '................',
+    '................',
+    '................',
+    '..........ooo...',
+    '.........oBBkoL.',
+    '......ooooBBBo..',
+    '.....obbBrrrBo..',
+    '......ooorrrBo..',
+    '..oooooooooooo..',
+    '.oSccuuuuuuuuSo.',
+    '.oSuuuuuuUUUUSo.',
+    '..oaaaaaaaaaaox.',
+    '...osssssssox...',
+    '......oSaox.....',
+    '......oSaox.....',
+    '......oSaox.....',
+    '......oSaox.....',
+    '....ooSSaasoo...',
+    '...oSSaaaasssox.',
+    '...oooooooooooxx',
+  ],
+  beehives: [
+    '................',
+    '..........yk....',
+    '..yk............',
+    '.......yk.......',
+    '...ooo....ooo...',
+    '..ottTo..ottTo..',
+    '.otttTTootttTTo.',
+    '.oTTTTvooTTTTvo.',
+    '.otttTTootttTTo.',
+    '.oTTTTvooTTTTvo.',
+    '.otNNtTootNNtTo.',
+    '.otNNTTootNNTTo.',
+    '.oooooooooooooo.',
+    '.ohhhhhhhhhhhhox',
+    '.oBBBBBBBBBBBBox',
+    '.oooooooooooooox',
+    '..obo......oboxx',
+    '..obo......obox.',
+    '..ooo......ooox.',
+    '...xx.......xx..',
+  ],
+  signpost: [
+    '................',
+    '.......oooo.....',
+    '.......ohbo.....',
+    '...ooooooooooo..',
+    '...ohhhhhhhhhho.',
+    '...ohbhbbhbhhhho',
+    '...oBBBBBBBBBBo.',
+    '...ooooooooooo..',
+    '.......ohbox....',
+    '..ooooooooooo...',
+    '.ohhhhhhhhhho...',
+    'ohhhhbhbbhbho...',
+    '.oBBBBBBBBBBox..',
+    '..oooooooooooxx.',
+    '.......ohbox....',
+    '.......ohbox....',
+    '.......ohbox....',
+    '......ohhbbox...',
+    '......oooooox...',
+    '.......xxxxxx...',
+  ],
+  washingLine: [
+    '................................',
+    '.oooo......................oooo.',
+    '.ohbo......................ohbo.',
+    '.ohboT....................Tohbo.',
+    '.ohbo.TkTTkT.........TkTkT.ohbo.',
+    '.ohbo.ooooooTTkTTTkTTooooo.ohbo.',
+    '.ohbo.orrrRo.ooooooo.oiiIo.ohbo.',
+    '.ohbo.orrrRo.owwwwWo.oiiIo.ohbo.',
+    '.ohbo.oorRoo.owwwwWo.oiIIo.ohbo.',
+    '.ohbo..orRo..owwwwWo.oioIo.ohbo.',
+    '.ohbo..orRo..owwwwWo.oioIo.ohbo.',
+    '.ohbo..oooo..owwwwWo.ooooo.ohbo.',
+    '.ohbo........owwwWWo.......ohbo.',
+    '.ohbo........ooooooo.......ohbo.',
+    '.ohbo......................ohbo.',
+    '.ohbo......................ohbo.',
+    '.ohbo......................ohbo.',
+    'ohhbbox...................ohhbbo',
+    'oooooox...................oooooo',
+    '.xxxxxx....................xxxxx',
+  ],
   axeStatue: [
     '................',
     '............oo..',
@@ -3119,9 +3229,37 @@ const WINTER_WOODPILE: readonly string[] = [
   '................',
 ];
 
+/** The washing line in winter: the laundry taken in. */
+const BARE_LINE: readonly string[] = [
+  '................................',
+  '.oooo......................oooo.',
+  '.ohbo......................ohbo.',
+  '.ohboT....................Tohbo.',
+  '.ohbo.TTTTTT.........TTTTT.ohbo.',
+  '.ohbo.......TTTTTTTTT......ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  '.ohbo......................ohbo.',
+  'ohhbbox...................ohhbbo',
+  'oooooox...................oooooo',
+  '.xxxxxx....................xxxxx',
+];
+
 /** `grid` with the chars of its rows through `last` swapped by `snow`: snow lying on a roof or a stack. */
 const snowOn = (grid: readonly string[], last: number, snow: Record<string, string>): string[] =>
   grid.map((r, y) => (y > last ? r : r.replace(/./g, (c) => snow[c] ?? c)));
+/** `grid` with its rows through `last` cleared: a bird flown or bees gone for the season. */
+const gone = (grid: readonly string[], last: number): string[] => grid.map((r, y) => (y > last ? r : '.'.repeat(r.length)));
+/** The signpost with snow on its cap and on top of both arms. */
+const SNOWY_SIGNPOST = DECOR_SPRITES.signpost.map((r, y) => ([2, 4, 10].includes(y) ? r.replace(/h/g, 'w') : r));
 
 const ICE: Rgba = [196, 222, 240, 255];
 const ICE_DEEP: Rgba = [168, 204, 232, 255];
@@ -3142,6 +3280,7 @@ export const DECOR_SEASONS: Record<Season, Partial<Record<DecorKind, { tint?: Re
     hedge: { tint: { H: [92, 170, 66, 255], J: [156, 210, 96, 255] } },
     vegPatch: { grid: SPRING_VEG },
     garden: { tint: TULIPS },
+    topiary: { tint: { H: [92, 170, 66, 255], J: [156, 210, 96, 255] } },
   },
   summer: {},
   autumn: {
@@ -3154,6 +3293,8 @@ export const DECOR_SEASONS: Record<Season, Partial<Record<DecorKind, { tint?: Re
     woodpile: { grid: AUTUMN_WOODPILE },
     haystack: { tint: { t: [240, 214, 110, 255], T: [208, 162, 66, 255] } }, // fresh from the harvest
     garden: { tint: { ...BARE_BEDS, g: AUTUMN_LEAVES.g, G: AUTUMN_LEAVES.G, H: AUTUMN_LEAVES.H } },
+    topiary: { tint: AUTUMN_LEAVES },
+    beehives: { grid: gone(DECOR_SPRITES.beehives, 3) }, // the bees are in for the year
   },
   winter: {
     flowerBed: { tint: { G: SNOW_SHADE, H: SNOW, p: SNOW, P: SNOW, y: SNOW, Y: SNOW, l: SNOW, L: SNOW } }, // buried
@@ -3172,6 +3313,11 @@ export const DECOR_SEASONS: Record<Season, Partial<Record<DecorKind, { tint?: Re
     haystack: { grid: snowOn(DECOR_SPRITES.haystack, 7, { t: 'w', T: 'W', v: 'W' }), tint: { w: SNOW, W: SNOW_SHADE } },
     square: { tint: { '1': SNOW, '2': TRODDEN_SNOW, S: SNOW } },
     garden: { tint: { g: SNOW_SHADE, G: SNOW, H: SNOW, r: SNOW, R: SNOW_SHADE, p: SNOW, P: SNOW, q: SNOW_SHADE, n: SNOW, d: SNOW, D: TRODDEN_SNOW, S: SNOW } }, // buried
+    topiary: { grid: snowOn(DECOR_SPRITES.topiary, 6, { J: 'w', H: 'w' }), tint: { w: SNOW, G: [36, 92, 52, 255] } }, // snow on the ears
+    birdBath: { grid: gone(DECOR_SPRITES.birdBath, 7), tint: FROZEN },
+    beehives: { grid: snowOn(gone(DECOR_SPRITES.beehives, 3), 6, { t: 'w', T: 'W', v: 'W' }), tint: { w: SNOW, W: SNOW_SHADE, h: SNOW } },
+    signpost: { grid: SNOWY_SIGNPOST, tint: { w: SNOW } },
+    washingLine: { grid: snowOn(BARE_LINE, 2, { h: 'w', b: 'W' }), tint: { w: SNOW, W: SNOW_SHADE, T: [214, 226, 236, 255] } }, // frost on the line
   },
 };
 
@@ -4332,7 +4478,7 @@ export const UI_ICON_W = 12;
 export const UI_ICON_NAMES = [
   'wood', 'food', 'stone', 'cloth', 'pop', 'land', 'trees', 'relic', 'skills', 'export', 'import', 'chop', 'mark',
   'basket', 'boot', 'bolt', 'house', 'hammer', 'pick', 'pair', 'drop', 'gold',
-  'sweep', 'combo', 'eye', 'rings', 'fall', 'run', 'bowl', 'map', 'plots', 'fork', 'barrel', 'glass', 'sheaf',
+  'sweep', 'combo', 'eye', 'rings', 'fall', 'run', 'bowl', 'map', 'plots', 'lanes', 'fork', 'barrel', 'glass', 'sheaf',
   'meadow', 'shears', 'fleece', 'yarn', 'sheep', 'vein', 'gem', 'cobble', 'mine', 'tnt', 'toll', 'purse', 'scroll',
   'scales', 'sun', 'wagon', 'heart', 'trophy', 'sound', 'music',
 ] as const;
@@ -4814,6 +4960,20 @@ export const UI_ICONS: Record<UiIcon, readonly string[]> = {
     '.oddddGzGzo.',
     '.ogdgdGzGzo.',
     '.oDDDDDDDDo.',
+    '.oooooooooo.',
+  ],
+  lanes: [
+    '............',
+    '.oooooooooo.',
+    '.oGzmhGzGzo.',
+    '.oGzmhGzGzo.',
+    '.oGzmhGzGzo.',
+    '.oGzGmhzGzo.',
+    '.oGzGmhzGzo.',
+    '.oGzGmhzGzo.',
+    '.oGzGzmhGzo.',
+    '.oGzGzmhGzo.',
+    '.oGzGzmhGzo.',
     '.oooooooooo.',
   ],
   fork: [

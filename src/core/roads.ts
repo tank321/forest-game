@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { BUILDINGS, border, countOf, distToBuilding, HUB_KINDS } from './buildings';
+import { BUILDINGS, border, buildingAt, countOf, distToBuilding, footprint, HUB_KINDS } from './buildings';
 import { neighbors4 } from './grid';
 import { lvl } from './skills';
 import type { Building, GameState } from './types';
@@ -33,12 +33,43 @@ export function touchesNetwork(s: GameState, b: Pick<Building, 'kind' | 'x' | 'y
 
 /**
  * Ids of the buildings that work: those needing no road (hubs, Wells), and every other one
- * touching a connected road or a hub. The rest are isolated and count for nothing.
+ * touching a connected road or a hub. With Field Paths, so does every farm joined edge to edge,
+ * farm by farm, to one of those. The rest are isolated and count for nothing.
  */
 export function linkedBuildings(s: GameState, net = roadNetwork(s)): Set<number> {
   const out = new Set<number>();
   for (const b of s.buildings) if (!BUILDINGS[b.kind].road || touchesNetwork(s, b, net)) out.add(b.id);
+  if (lvl(s, 'fieldPaths')) linkFields(s, out);
   return out;
+}
+
+/** Field Paths: adds to `linked` the farms joined edge to edge, through other farms, to a linked farm. */
+function linkFields(s: GameState, linked: Set<number>): void {
+  const farmAt = new Map<number, Building>();
+  for (const b of s.buildings) if (b.kind === 'farm') for (const i of footprint(s, b)) farmAt.set(i, b);
+  const stack = s.buildings.filter((b) => b.kind === 'farm' && linked.has(b.id));
+  while (stack.length) {
+    for (const i of border(s, stack.pop()!)) {
+      const f = farmAt.get(i);
+      if (f && !linked.has(f.id)) {
+        linked.add(f.id);
+        stack.push(f);
+      }
+    }
+  }
+}
+
+/**
+ * Whether a building at this spot would work: it needs no road, touches the network, or (with Field Paths)
+ * is a farm joined edge to edge to a linked farm other than `self` (the one being moved).
+ */
+export function wouldLink(s: GameState, b: Pick<Building, 'kind' | 'x' | 'y'>, net: Uint8Array, linked: ReadonlySet<number>, self?: number): boolean {
+  if (!BUILDINGS[b.kind].road || touchesNetwork(s, b, net)) return true;
+  if (b.kind !== 'farm' || !lvl(s, 'fieldPaths')) return false;
+  return border(s, b).some((i) => {
+    const o = buildingAt(s, i);
+    return o?.kind === 'farm' && o.id !== self && linked.has(o.id);
+  });
 }
 
 /** Road tiles the town may lay in all; each house, each rebuild and each road bought at the Mason's Yard adds to the stock. */

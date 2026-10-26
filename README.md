@@ -61,7 +61,7 @@ already running pauses and resumes after). Every boost shows under the chest wit
 **Forest creatures** (rabbits, birds, squirrels, foxes and more, changing with the season) wander the forest edge for atmosphere: a few around the first clearing, more as more land comes into sight (one per 48 tiles in sight on screen, up to 12, fewer in winter). They can't be tapped and change nothing in the game.
 
 **Roads:** buildings work only while they touch the Town Center or a road joined, edge to edge, to the
-Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
+Town Center; the Well needs no road, and with **Field Paths** a farm touching a connected farm needs none either. An isolated building is tinted grey and counts for nothing: no
 workers, no deliveries, no population or tax, no trading. Choose **Road** in the build menu, then tap or
 drag over cleared land to lay road; start a drag on a road to lift it. **Done**, Escape or
 a right-click ends road mode. Roads come from a stock of 12 plus 3 per house (and any bought at the Mason's Yard), and lifted roads return to it.
@@ -178,7 +178,7 @@ buttons in the corner and the + and − keys. A link turns solid once its parent
 (or tap it, on phones) for a popup beside it with its current and next-level bonus; skills on offer from a relic
 glow, and clicking one (tapping it a second time on phones) learns it right there. Keyboard users can tab through
 skills (the view and the popup follow focus) and learn an offered one with Enter or Space. **Legacy** opens the Legacy perk tree;
-it turns gold once you have learned enough skill levels to rebuild: 15 on the first run, 5 more after each of the first two rebuilds, then 10 more after each one (15, 20, 25, 35, 45 …), up to every skill learned (93). Pick an available perk and click **Rebuild** twice
+it turns gold once you have learned enough skill levels to rebuild: 15 on the first run, 5 more after each of the first two rebuilds, then 10 more after each one (15, 20, 25, 35, 45 …), up to every skill learned (94). Pick an available perk and click **Rebuild** twice
 to start over on a new map with that perk kept forever. A relic offers 3 skills to choose from, one more after each rebuild
 up to 5 (6 with Relic Hunters). **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
@@ -208,6 +208,14 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v58** – **Field Paths**, a new Farming skill after Crop Rotation: a farm touching a connected farm, edge to edge, works
+without a road of its own, so a whole block of farms needs one road (farms touching only at a corner don't count). Villagers
+also walk across fields, so a farm hemmed in by others still gets its farmers. The placement preview shows such a farm green.
+New skill icon.
+- Five new decorations: a **Topiary** rabbit (snow on its ears in winter), a **Bird Bath** with a robin (frozen and empty in
+  winter), **Beehives** (bees in spring and summer), a **Signpost** and a 2-tile **Washing Line** (laundry taken in for winter).
+- No save change.
+
 **v57** – Farms that touch now draw as one big field: the fence between them comes down and the crop rows run on across
 the seam. Where farms only partly overlap, the fence turns along the edge of the joined field. Looks only: farming,
 Crop Rotation and Wells work as before. No save change.

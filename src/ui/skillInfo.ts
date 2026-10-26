@@ -62,6 +62,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'heartwood': return `${Math.round(CONFIG.skills.heartwood.chance * 100 * level)}% chance per felled tree of +${CONFIG.skills.heartwood.bonus * 100}% wood`;
     case 'timber': return level ? `Felled trees topple onto a neighbour for ${CONFIG.skills.timber * 100}% of their wood` : 'Felled trees fall harmlessly';
     case 'cropRotation': return level ? `+${CONFIG.skills.cropRotation.perFarm * 100}% harvest per touching farm` : 'No bonus from touching farms';
+    case 'fieldPaths': return level ? 'Farms touching a connected farm work without a road' : 'Every farm needs a road';
     case 'farmhands': return `+${level} farmer${level === 1 ? '' : 's'} per farm`;
     case 'rootCellars': return `Villagers eat ${discount(k.rootCellars)} less food`;
     case 'greenhouses': return `Winter harvest ×${level ? CONFIG.skills.greenhouse : CONFIG.seasons.farm[3]}`;

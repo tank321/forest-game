@@ -3,7 +3,7 @@ import { border, BUILDINGS, type BuildingKind, buildingAt, buildingGap } from '.
 import { canMoveBuilding, canMoveDecor, canPlace, canPlaceDecor, canPlaceRoad } from '../core/commands';
 import { DECOR, DECOR_KINDS, decorAt, type DecorKind, type DecorLayer } from '../core/decor';
 import { inBounds, isChoppable, isCollectable, tileAt } from '../core/grid';
-import { linkedBuildings, roadNetwork, touchesNetwork } from '../core/roads';
+import { linkedBuildings, roadNetwork, wouldLink } from '../core/roads';
 import { SEASONS, seasonLeft, seasonOf, WINTER } from '../core/seasons';
 import { getStats, wellFarms, wellReach } from '../core/stats';
 import { carried } from '../core/systems/workplace';
@@ -320,7 +320,8 @@ export class Renderer {
     ctx.drawImage(this.terrain, ox, oy, s.w * k, s.h * k);
     this.drawGroundDecor(s);
     this.drawTracks();
-    this.drawScene(world, linkedBuildings(s, net));
+    const links = linkedBuildings(s, net);
+    this.drawScene(world, links);
     this.drawFlyers(now);
     this.drawWinter(s.time);
     this.drawTreeHealth(world, ui);
@@ -354,14 +355,13 @@ export class Renderer {
       const d = BUILDINGS[placing];
       const valid = ui.moving ? canMoveBuilding(world, ui.moving.id, x, y) : canPlace(world, placing, x, y);
       // Yellow: it can stand there but would be isolated until a road reaches it.
-      const linked = !d.road || touchesNetwork(s, { kind: placing, x, y }, net);
+      const linked = wouldLink(s, { kind: placing, x, y }, net, links, ui.moving?.id);
       ctx.fillStyle = !valid ? 'rgba(230,60,60,.55)' : linked ? 'rgba(80,220,100,.55)' : 'rgba(240,200,60,.55)';
       rect(x, y, d.w, d.h);
       reach(placing, x, y);
       // Outline in water blue the connected farms a Well here would boost.
       if (placing === 'well' && valid) {
         const reach = wellReach(s);
-        const links = linkedBuildings(s, net);
         for (const f of s.buildings) {
           if (f.kind !== 'farm' || !links.has(f.id) || buildingGap(f, { kind: 'well', x, y }) > reach) continue;
           const [sx, sy] = cam.toScreen(f.x, f.y);
