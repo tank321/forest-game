@@ -370,4 +370,11 @@ describe('sprites', () => {
     expect(composeDecor('fence', 0)).toEqual(DECOR_SPRITES.fence);
     expect(composeDecor('hedge', 2 | 8)).not.toEqual(DECOR_SPRITES.hedge);
   });
+
+  it('benches side by side join into one seat; benches above or below stay apart', () => {
+    expect(composeDecor('bench', 1 | 4)).toEqual(DECOR_SPRITES.bench);
+    const [west, east] = [composeDecor('bench', 2), composeDecor('bench', 8)];
+    for (const y of [8, 9, 11, 12, 14, 15]) expect(west[y].slice(-3) + east[y].slice(0, 3), `row ${y}`).toMatch(/^[hBb]{6}$/);
+    for (const y of [7, 10, 13, 16]) expect(west[y].at(-1) + east[y][0], `row ${y}`).toBe('oo');
+  });
 });

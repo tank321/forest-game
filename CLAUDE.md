@@ -37,7 +37,8 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
 - **Simulation.** `sim.ts` runs an ordered system list each `tick`: `jobSystem`, `upkeepSystem`, `villagerSystem`,
   `muleSystem`, `grazingSystem`, then `birthSystem` (Growing Families). `tick` splits its step at season boundaries, where Harvest Festival, Shearing Day and Spring Births pay out (`seasons.ts`; the season is
   derived from `time`, not saved). The browser steps at 1/30 s, while offline catch-up uses 1 s steps
-  (`CONFIG.sim`). Villager updaters must be **dt-independent**: they spend their whole time budget
+  (`CONFIG.sim`). Time away pays only resources (`awayEarnings`, `offline.ts`): a `structuredClone` of the state is simulated
+  for up to `maxOfflineSeconds` and its gains are added, so the town itself (trees, villagers, time) doesn't move on. Villager updaters must be **dt-independent**: they spend their whole time budget
   across state transitions inside one call. Tests assert identical results at both step sizes.
 - **Determinism.** Core randomness goes through the seeded `rand(s)` (`rng.ts`), whose state is
   stored in `GameState`. Never use `Math.random` in core. The save test round-trips a mid-game
@@ -85,7 +86,7 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   up to `CONFIG.chest.store` openings; `openChest` opens all of them, rolling into `pending`, and `claimChest` applies them at the
   show's burst, so the UI never shows a reward early. `addBoost` keeps `boosts` free of clashes: one of each kind (the same kind adds
   its time), speeds queued back to back fastest first (only the first runs; `runningBoosts`). Speed scales the live loop, and offline
-  catch-up in `main.ts` steps through `chestTimeline`; Bountiful and Mighty Taps apply in `stats.ts`/`chopTree`.
+  catch-up (`awayEarnings`) steps through `chestTimeline`; Bountiful and Mighty Taps apply in `stats.ts`/`chopTree`.
 - **Saves.** `save.ts` keeps a `VERSION` and a chain of `migrations[v]` (v → v+1). Any change to
   the `GameState` shape needs a version bump, a migration, and a migration test.
 

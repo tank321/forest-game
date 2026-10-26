@@ -207,7 +207,7 @@ export const CONFIG = {
     },
     windfall: { minutes: 15, minWood: 200 }, // minutes of income per resource (current or lifetime average, whichever is more)
   },
-  sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 8 * 3600 },
+  sim: { dt: 1 / 30, catchUpDt: 1, maxFrameSeconds: 1, maxOfflineSeconds: 2 * 3600 },
   achievements: { checksPerSecond: 4 }, // how often earned tiers are checked, in simulated time
   sound: { volume: 0.6, key: 'forest-game-sound' }, // chime volume (0–1); browser storage key for the on/off setting
   music: { volume: 0.5, key: 'forest-game-music' }, // background music volume (0–1); browser storage key for the on/off setting

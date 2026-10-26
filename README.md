@@ -198,6 +198,7 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
   - `legacy.ts` Legacy (prestige) perk tree, rebuild requirement, perk helpers
   - `achievements.ts` achievement table, lifetime counters (career), tier checks, next-up pick
   - `chest.ts` Lucky Chest rewards, odds, boost multipliers and the Windfall
+  - `offline.ts` time away: what a copy of the town gathers, paid as resources only
   - `economy.ts` costs, Market quotes, population cap, `pay`/`gain` · `guild.ts` Guild Contracts and caravan deals · `commands.ts` validated player actions · `save.ts` versioned saves + migrations
 - `src/render/` – `critters.ts` ambient forest creatures (season roster, wandering, shyness, snow tracks; display only), `camera.ts` pan/zoom, `renderer.ts` ground and tree sprites + colored rectangles, tree health bars and hover label, `sprites.ts` pixel-art grids and palettes (map and UI), `bake.ts` grid → canvas
 - `src/input/input.ts` – pointer/wheel/pinch → tap and hover in world coords
@@ -208,6 +209,12 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v59** – Time away (the app closed or in the background) now pays only resources: the game works out what the town
+would have gathered, up to **2 hours** (was 8), and adds it to your stock. The town itself is left as it was: no trees fall,
+no land is cleared, and villagers, seasons and relics wait for you. Nothing is lost while away, and the away message lists
+every resource gained.
+- Benches side by side (east and west) join into one long bench. No save change.
+
 **v58** – **Field Paths**, a new Farming skill after Crop Rotation: a farm touching a connected farm, edge to edge, works
 without a road of its own, so a whole block of farms needs one road (farms touching only at a corner don't count). Villagers
 also walk across fields, so a farm hemmed in by others still gets its farmers. The placement preview shows such a farm green.

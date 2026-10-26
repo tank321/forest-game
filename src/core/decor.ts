@@ -15,7 +15,7 @@ export interface DecorDef {
   w: number;
   h: number;
   layer: DecorLayer;
-  joins?: true; // joins the same kind of its layer beside it, like a road (fences, hedges, walls, paths; see render/sprites.ts)
+  joins?: true; // joins the same kind of its layer beside it, like a road (fences, hedges, walls, paths, benches; see render/sprites.ts)
   cost: Cost; // flat; removing it, or building over it, returns all of it
   trophy?: { achievement: AchievementId; tier: number }; // locked until that achievement tier is earned (kept across rebuilds)
 }
@@ -28,7 +28,7 @@ export const DECOR = {
   fence: def({ joins: true, cost: { wood: 10 } }),
   hedge: def({ joins: true, cost: { wood: 5, food: 5 } }),
   lamp: def({ cost: { wood: 20, stone: 10 } }),
-  bench: def({ cost: { wood: 30 } }),
+  bench: def({ joins: true, cost: { wood: 30 } }),
   scarecrow: def({ cost: { wood: 20, cloth: 5 } }),
   cherry: def({ cost: { wood: 50, food: 25 } }),
   pond: def({ w: 2, h: 2, layer: 'ground', cost: { stone: 40 } }),

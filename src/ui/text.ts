@@ -15,7 +15,7 @@ export const DECOR_TEXT: Record<DecorKind, { name: string; desc: string }> = {
   fence: { name: 'Picket Fence', desc: 'Joins the fences beside it, so a row of them makes a run with corners.' },
   hedge: { name: 'Hedge', desc: 'A clipped hedge that joins the hedges beside it.' },
   lamp: { name: 'Lamp Post', desc: 'An iron post with a lit lantern.' },
-  bench: { name: 'Bench', desc: 'Somewhere to sit. Nobody ever does.' },
+  bench: { name: 'Bench', desc: 'Somewhere to sit. Benches side by side make one long bench. Nobody ever sits on it.' },
   scarecrow: { name: 'Scarecrow', desc: 'Looks at home beside a Farm. Scares nothing.' },
   cherry: { name: 'Ornamental Cherry', desc: 'Blossoms in spring and summer and turns red in autumn. Nobody will ever chop it.' },
   pond: { name: 'Pond', desc: 'A stone-rimmed pond with lily pads. It freezes over in winter.' },

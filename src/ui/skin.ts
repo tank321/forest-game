@@ -47,9 +47,9 @@ export function applySkin(): void {
     rules.push(`.thumb-${name}{background-image:${url(grid, palette)};background-size:${w * k}px ${h * k}px${smooth}}`);
   };
   for (const [kind, grid] of Object.entries(BUILDING_SPRITES)) thumb(kind, grid, BUILDING_PALETTE);
-  // Decorations in their summer look; a fence or hedge as a short run.
+  // Decorations in their summer look; a fence or hedge as a short run, a bench whole.
   for (const kind of DECOR_KINDS) {
-    const { grid, palette } = seasonalDecor(kind, 'summer', DECOR[kind].joins ? 2 | 8 : 0);
+    const { grid, palette } = seasonalDecor(kind, 'summer', DECOR[kind].joins && kind !== 'bench' ? 2 | 8 : 0);
     thumb(`decor-${kind}`, grid, palette);
   }
   // Road card: a straight east-west road over plain grass.

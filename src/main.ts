@@ -1,19 +1,20 @@
 import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
 import { BUILDINGS, buildingAt, footprint, type BuildingKind } from './core/buildings';
-import { chestSpeed, chestTimeline, expireBoosts } from './core/chest';
+import { chestSpeed } from './core/chest';
 import {
   canPlace, canPlaceDecor, chopTree, moveBuilding, moveDecor, moveRoad, openRelic, placeBuilding, placeDecor, placeRoad, removeDecor, removeRoad, toggleMark,
 } from './core/commands';
 import { DECOR, decorAt, decorUnder, type DecorKind } from './core/decor';
 import { inBounds, isCollectable, tileAt } from './core/grid';
+import { awayEarnings } from './core/offline';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
 import { SEASONS, seasonOf } from './core/seasons';
 import { lvl } from './core/skills';
-import { simulate, tick } from './core/sim';
+import { tick } from './core/sim';
 import { createInitialState } from './core/state';
-import { Tile } from './core/types';
+import { RESOURCES, Tile } from './core/types';
 import { createWorld } from './core/world';
 import { attachInput } from './input/input';
 import { Camera } from './render/camera';
@@ -35,7 +36,7 @@ import { BUILDING_TEXT, DECOR_TEXT, duration, fmt } from './ui/text';
 import { Tutorial } from './ui/tutorial';
 import './style.css';
 
-const { dt, catchUpDt, maxFrameSeconds, maxOfflineSeconds } = CONFIG.sim;
+const { dt, maxFrameSeconds, maxOfflineSeconds } = CONFIG.sim;
 
 applySkin();
 const loaded = loadGame();
@@ -259,34 +260,12 @@ function paintDecor(kind: DecorKind, wx: number, wy: number, start: boolean): vo
   } else if (!placeDecor(world, kind, x, y) && canPlaceDecor(world, kind, x, y)) hud.message(`Not enough for a ${DECOR_TEXT[kind].name}.`);
 }
 
+/** Time away pays only resources (core/offline.ts); the town is left as it was. */
 function catchUp(seconds: number): void {
+  const got = awayEarnings(world, seconds, Date.now());
   const t = Math.min(seconds, maxOfflineSeconds);
-  const before = { ...s.resources };
-  const pop = s.villagers.length;
-  // Lucky Chest boosts still count for the part of the time away they ran (a speed boost as that much more time), each
-  // ending where it ran out; queued speeds take over in turn.
-  const now = Date.now();
-  let at = now - seconds * 1000;
-  let left = t;
-  for (const { end, speed } of chestTimeline(s.chest, at, now)) {
-    const span = Math.min(left, (end - at) / 1000);
-    simulate(world, span * speed, catchUpDt);
-    left -= span;
-    at = end;
-    expireBoosts(s.chest, end);
-  }
-  const earned = world.fx.filter((fx) => fx.kind === 'achievement').length;
-  world.fx.length = 0; // effects from time away are summed up below, not replayed
-  if (earned) toasts.summary(`${earned} earned while you were away`);
-  const change = (r: 'wood' | 'food' | 'gold') => {
-    const d = s.resources[r] - before[r];
-    return `${d < 0 ? '−' : '+'}${fmt(Math.abs(d))} ${r}`;
-  };
-  const gold = s.resources.gold !== before.gold ? `, ${change('gold')}` : '';
-  const born = s.villagers.length - pop;
-  const villagers = born > 0 ? `, +${born} villager${born === 1 ? '' : 's'}` : '';
-  relicNews();
-  if (t >= 60) hud.message(`Away ${duration(t)}: ${change('wood')}, ${change('food')}${gold}${villagers}`, 8000);
+  const parts = RESOURCES.filter((r) => got[r] >= 1).map((r) => `+${fmt(got[r])} ${r}`);
+  if (t >= 60) hud.message(`Away ${duration(t)}: ${parts.join(', ') || 'nothing gathered'}`, 8000);
 }
 
 // A finger doesn't hover, so on touch a placement starts with its footprint in sight: over the building or road being
