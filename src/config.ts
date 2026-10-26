@@ -184,7 +184,7 @@ export const CONFIG = {
     // Growing Families: with room and a food surplus (Well Fed's), a villager is born every `seconds` / (1 + perHouse ×
     // linked Houses); level 2 adds Spring Births, 1 villager per `springPerHouses` linked Houses (at least 1) as spring begins
     families: { seconds: 900, perHouse: 0.05, springPerHouses: 5 },
-    surveyors: 2, // extra roads per house per level
+    surveyors: 1, // extra roads per house per level
     outpost: { wood: 20_000, stone: 2_000, gold: 500 },
     toll: 0.1, // gold per road tile walked, per level
     fair: { tradeMult: 1.5 }, // Midsummer Fair: Trading Post gold × this all summer (and no market commission)

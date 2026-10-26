@@ -544,6 +544,11 @@ button.danger { color: #ffb6a3; }
   .stats small { font-size: 12px; line-height: 15px; }
   .stats .per { display: none; }
   .season-bar { width: 56px; }
+  /* Well Fed, Hungry or Cold: a one-line tag hanging from the plaque's bottom edge, so it never wraps onto a row of its own. */
+  .stats { position: relative; }
+  #shortage { position: absolute; top: calc(100% + 5px); left: 50%; translate: -50% -50%; display: flex; align-items: baseline; gap: 6px; padding: 0 6px; border: solid transparent; border-width: 6px 6px 10px; border-image: var(--frame-parchment) 3 3 5 fill / 6px 6px 10px stretch; }
+  #shortage b { font-size: 14px; line-height: 18px; }
+  #toasts { top: calc(28px + env(safe-area-inset-top) + var(--hud-h, 48px)); }
   #tools { display: none; } /* the next-up achievement: no room on a phone (Achievements is in the menu) */
   #tutorial { margin: 6px 8px 0; font-size: 13px; }
   #panel { grid-template-columns: minmax(0, 1fr); gap: 6px; max-height: 38dvh; padding: 6px 8px; }
@@ -566,9 +571,10 @@ button.danger { color: #ffb6a3; }
   #panel .sub { font-size: 13px; line-height: 1.4; }
   .building-status { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; padding: 4px 8px; font-size: 13px; line-height: 1.4; }
   .building-status .building-tally { display: inline-flex; padding: 0; border: 0; background: none; font-size: 13px; }
-  .upgrade-card.compact { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 6px 6px 8px; }
+  /* The button's column stops at about half the card, so a long cost (the Tailor's five resources) wraps onto more lines instead of squeezing the stats. */
+  .upgrade-card.compact { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(55%); align-items: center; gap: 8px; padding: 4px 6px 6px 8px; }
   .upgrade-card.compact h3 { font-size: 15px; line-height: 20px; }
-  .upgrade-card.compact h3 small { color: #654222; font-size: 12px; font-weight: 400; }
+  .upgrade-card.compact h3 small { color: #654222; font-size: 12px; font-weight: 400; white-space: nowrap; }
   .upgrade-card.compact p { font-size: 13px; line-height: 18px; }
   .upgrade-card.compact > button { flex-direction: column; gap: 0; width: auto; min-width: 116px; min-height: 44px; padding: 2px 8px; }
   .upgrade-card.compact > button .cost { justify-content: center; gap: 0 8px; font-size: 13px; }

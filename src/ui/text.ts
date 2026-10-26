@@ -152,7 +152,7 @@ export const SKILL_TEXT: Record<SkillId, { name: string; desc: string; icon: UiI
   deepShafts: { name: 'Deep Shafts', desc: 'Miners work ×1.5 in winter and are never slowed by cold', icon: 'mine' },
   errandRunners: { name: 'Errand Runners', desc: 'Empty-handed villagers walk +25% faster per level', icon: 'run' },
   wellFed: { name: 'Well Fed', desc: 'While you have 10 food in stock per villager, all gathering is ×1.2', icon: 'bowl' },
-  surveyors: { name: 'Surveyors', desc: '+2 roads per house per level', icon: 'map' },
+  surveyors: { name: 'Surveyors', desc: '+1 road per house per level', icon: 'map' },
   frontierOutpost: { name: 'Frontier Outpost', desc: 'Unlocks the Outpost: a second town hub you can build anywhere on cleared land', icon: 'house' },
   tollRoads: { name: 'Toll Roads', desc: 'Villagers pay 0.1 gold per road tile they walk, per level', icon: 'toll' },
   guildContracts: { name: 'Guild Contracts', desc: 'The Market posts 3 contracts. Finish one for a gold reward and a new one takes its place', icon: 'scroll' },

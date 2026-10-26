@@ -63,7 +63,7 @@ describe('settlement and trade skills', () => {
     addBuilding(s, 'house', ox + 5, oy);
     const roads = roadStock(s);
     s.skills = { surveyors: 2 };
-    expect(roadStock(s)).toBe(roads + 2 * 2 * 2);
+    expect(roadStock(s)).toBe(roads + 2 * 2 * 1);
   });
 
   it('the Outpost takes deliveries, roots its own roads, hires villagers, and only one may stand', () => {

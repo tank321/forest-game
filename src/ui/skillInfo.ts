@@ -78,7 +78,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'dynamite': return level ? `Blast every ${k.dynamite.cooldown} s: ${k.dynamite.stoneSeconds} s of stone, trees hit like ${k.dynamite.taps} taps` : 'No blasting';
     case 'errandRunners': return `+${Math.round(k.errandRunners * 100 * level)}% walk speed when empty-handed`;
     case 'wellFed': return level ? `Gathering ×${k.wellFed.gather} with ${k.wellFed.perVillager} food per villager in stock` : 'No surplus bonus';
-    case 'surveyors': return `+${k.surveyors * level} roads per house`;
+    case 'surveyors': return `+${k.surveyors * level} road${k.surveyors * level === 1 ? '' : 's'} per house`;
     case 'frontierOutpost': return `${BUILDING_TEXT.outpost.name} ${level ? 'unlocked' : 'not yet buildable'}`;
     case 'tollRoads': return `${Number((k.toll * level).toFixed(2))} gold per road tile walked`;
     case 'guildContracts': return level ? `${k.contracts.board} contracts on the Market board` : 'No contracts';

@@ -208,6 +208,14 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v56** – Surveyors halved, and a slimmer plaque and tidier Tailor on phones. No save change.
+- On phones, Well Fed, Hungry and Cold show as a one-line tag hanging from the bottom of the stats plaque instead of
+  taking a row of their own, so the plaque stays two rows tall and more of the map shows.
+- **Surveyors** now adds 1 road per house per level (was 2), so +1 and +2 at its two levels. Roads already laid stay
+  where they are; a town over its new stock lays no more until it has room again.
+- On phones, an upgrade's button no longer grows to fit its whole cost on one line: at the Tailor, where Shoes and
+  Backpack cost five resources, the cost wraps onto more lines and the level and stats beside it read normally again.
+
 **v55** – On phones, the Lucky Chest's boost badges under the chest shrink to an icon, the time left and its bar, so a
 few running at once no longer cover the corner of the map. No save change.
 
@@ -490,7 +498,7 @@ fast."); a queued speed also says which one it waits for. No save change.
 - Saves load unchanged; skills already learned stay learned.
 
 **v17** – Settlement and Trade skills, Frontier Outpost, Guild Contracts, Merchant Caravans.
-- Settlement: Swift Feet → Big Baskets → **Errand Runners** (empty-handed villagers walk +25% per level), **Well Fed** (gathering ×1.2 while there are 10 food in stock per villager; a green badge on the plaque); → Roomy Houses → Recruiters, Master Builders → **Surveyors** (+2 roads per house per level).
+- Settlement: Swift Feet → Big Baskets → **Errand Runners** (empty-handed villagers walk +25% per level), **Well Fed** (gathering ×1.2 while there are 10 food in stock per villager; a green badge on the plaque); → Roomy Houses → Recruiters, Master Builders → **Surveyors** (+1 road per house per level).
 - Trade: Markets → Trading Posts → Pack Mules, **Toll Roads** (0.1 gold per road tile walked, per level); → Tax Offices → Tax Collectors, **Guild Contracts**; → Shrewd Traders → **Midsummer Fair** (all summer: no Market commission, Trading Posts ×1.5).
 - Masteries:
   - **Frontier Outpost** (Settlement): unlocks one Outpost, a second hub that takes every resource, hires villagers and roots its own road network. Houses and Markets can be built against it.
