@@ -13,6 +13,7 @@ import {
   GROUND_PALETTE,
   GROUND_TINTS,
   HOUSE_LIGHTS,
+  joinFarm,
   LIGHTS_PALETTE,
   MULE_FRAMES,
   MULE_H,
@@ -153,6 +154,56 @@ describe('sprites', () => {
       for (const ch of Object.keys(WELL_FARM_TINTS[season])) expect(farm.has(ch)).toBe(true);
       expect(seasonalBuilding('farm', season, true)!.palette).not.toEqual(seasonalBuilding('farm', season)!.palette);
     }
+  });
+
+  describe('joinFarm', () => {
+    const farm = BUILDING_SPRITES.farm!;
+    const NORTH = 0b111, EAST = 0b111 << 3, SOUTH = 0b111 << 6, WEST = 0b111 << 9;
+    const fence = /[Llj]/;
+    // The cells a joined side can change: the fence rows and columns and the bare soil beside them, corners included.
+    const edge = (x: number, y: number) => y <= 8 || y >= 45 || x <= 5 || x >= 43;
+
+    it('leaves a lone farm as drawn, and keeps every join the same size in farm chars', () => {
+      expect(joinFarm(farm, 0)).toEqual(farm);
+      const bad: string[] = [];
+      for (let mask = 0; mask < 1 << 12; mask++) {
+        const g = joinFarm(farm, mask);
+        if (g.length !== farm.length || g.some((r, y) => r.length !== farm[y].length)) bad.push(`${mask}: size`);
+        for (let y = 0; y < g.length; y++) {
+          for (let x = 0; x < g[y].length; x++) {
+            if (g[y][x] !== '.' && !(g[y][x] in BUILDING_PALETTE)) bad.push(`${mask}: ${g[y][x]} at ${x},${y}`);
+            if (!edge(x, y) && g[y][x] !== farm[y][x]) bad.push(`${mask}: field changed at ${x},${y}`); // the field inside never changes
+          }
+        }
+      }
+      expect(bad.slice(0, 5)).toEqual([]);
+    });
+
+    it('opens the whole fence of a farm joined on every side', () => {
+      const g = joinFarm(farm, NORTH | EAST | SOUTH | WEST);
+      for (let y = 0; y < g.length; y++) for (let x = 0; x < g[y].length; x++) if (edge(x, y)) expect(g[y][x]).not.toMatch(fence);
+    });
+
+    it('lines the crops up across the seam with a farm in line', () => {
+      // Stacked: the lower farm's overhang covers the upper farm's last rows with the same pixels.
+      const upper = joinFarm(farm, SOUTH);
+      const lower = joinFarm(farm, NORTH);
+      for (let y = 0; y < 4; y++) expect(lower[y]).toBe(upper[48 + y]);
+      // Side by side: the opened columns repeat the field's 4 px crop rows.
+      const west = joinFarm(farm, EAST);
+      const east = joinFarm(farm, WEST);
+      for (let y = 21; y <= 44; y++) {
+        expect(west[y].slice(46)).toBe(west[y].slice(42, 44));
+        expect(east[y].slice(0, 2)).toBe(east[y].slice(4, 6));
+      }
+    });
+
+    it('keeps the fence where only part of a side is joined', () => {
+      const g = joinFarm(farm, 0b001); // only the north-west tile
+      expect(g[4].slice(20, 46)).toBe(farm[4].slice(20, 46)); // the rest of the rail stands
+      expect(g[4].slice(14, 16)).toBe('lL'); // and turns along the neighbor's fence
+      expect(g[4].slice(0, 2)).toBe('Ll'); // the west fence runs on north
+    });
   });
 
   it('building entrances sit on the bottom row of a building with a sprite', () => {

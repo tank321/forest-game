@@ -16,6 +16,7 @@ import { fmt } from '../ui/text';
 import { bake, halo } from './bake';
 import type { Camera } from './camera';
 import { CRITTER_MIN_ZOOM, critterFrame, Critters, hopLift, TRACK_LIFE, type Critter } from './critters';
+import { farmJoins } from './farms';
 import {
   BUILDING_ENTRANCES,
   BUILDING_SPRITES,
@@ -35,6 +36,7 @@ import {
   GROUND_PALETTE,
   GROUND_TINTS,
   HOUSE_LIGHTS,
+  joinFarm,
   LIGHTS_PALETTE,
   type GroundTile,
   MULE_FEET,
@@ -179,11 +181,8 @@ export class Renderer {
     const { grid, palette } = seasonalBuilding('house', season, false, STONE_HOUSE)!;
     return bake(grid, { ...palette, ...STONE_HOUSE_TINT }, 1);
   });
-  /** Baked farm sprite per season for a farm a Well boosts: irrigated fields. */
-  private wellFarmSprites = SEASONS.map((season) => {
-    const { grid, palette } = seasonalBuilding('farm', season, true)!;
-    return bake(grid, palette, 1);
-  });
+  /** Baked farm sprites by season, Well (irrigated fields) and `farmJoins` mask, baked when first drawn. */
+  private farmSprites = new Map<string, HTMLCanvasElement>();
   /** Baked decorations: [season][kind][join mask] (only joining kinds have more than one). Like buildings, never fogged. */
   private decorSprites = SEASONS.map((season) =>
     Object.fromEntries(DECOR_KINDS.map((kind) => [kind, Array.from({ length: DECOR[kind].joins ? 16 : 1 }, (_, mask) => {
@@ -495,8 +494,9 @@ export class Renderer {
     const vision = visionRadius(s);
     const props: { depth: number; draw: () => void }[] = [];
     const wellFed = wellFarms(s, linked);
+    const joins = farmJoins(s);
     for (const b of s.buildings) {
-      props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id), now) });
+      props.push({ depth: b.y + BUILDINGS[b.kind].h, draw: () => this.drawBuilding(s, b, !linked.has(b.id), wellFed.has(b.id), joins.get(b.id) ?? 0, now) });
     }
     const view = this.visibleTiles(s);
     const joined = joinedDecor(s, 'prop');
@@ -687,10 +687,11 @@ export class Renderer {
   }
 
   /**
-   * `isolated`: not connected by road, so tinted grey until it is. `wellFed`: a farm a Well boosts, drawn irrigated.
+   * `isolated`: not connected by road, so tinted grey until it is. `wellFed`: a farm a Well boosts, drawn irrigated;
+   * `joins`: a farm's edge tiles touching other farms (`farmJoins`), where its fence opens.
    * In winter some houses hang Christmas lights, twinkling on wall-clock `now` (ms).
    */
-  private drawBuilding(s: GameState, b: Building, isolated: boolean, wellFed: boolean, now: number): void {
+  private drawBuilding(s: GameState, b: Building, isolated: boolean, wellFed: boolean, joins: number, now: number): void {
     const { ctx, cam } = this;
     const k = cam.zoom;
     const d = BUILDINGS[b.kind];
@@ -699,7 +700,7 @@ export class Renderer {
       ctx.fillRect(sx, sy, (d.w - 0.1) * k, (d.h - 0.1) * k);
     };
     const season = this.seasonAt(s.time, b.y * s.w + b.x);
-    const sprite = wellFed ? this.wellFarmSprites[season] : b.stone ? this.stoneHouseSprites[season] : this.buildingSprites[season][b.kind];
+    const sprite = b.kind === 'farm' ? this.farmSprite(season, wellFed, joins) : b.stone ? this.stoneHouseSprites[season] : this.buildingSprites[season][b.kind];
     if (sprite) {
       const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
       ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);
@@ -722,6 +723,17 @@ export class Renderer {
       ctx.fillStyle = 'rgba(150,150,150,.5)';
       footprint();
     }
+  }
+
+  /** A farm's sprite in a season, irrigated if a Well boosts it, its fence opened where other farms touch it (`joins`). */
+  private farmSprite(season: number, wellFed: boolean, joins: number): HTMLCanvasElement {
+    const key = `${season}:${wellFed ? 1 : 0}:${joins}`;
+    let sprite = this.farmSprites.get(key);
+    if (!sprite) {
+      const { grid, palette } = seasonalBuilding('farm', SEASONS[season], wellFed)!;
+      this.farmSprites.set(key, (sprite = bake(joinFarm(grid, joins), palette, 1)));
+    }
+    return sprite;
   }
 
   /**

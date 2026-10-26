@@ -208,6 +208,10 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v57** – Farms that touch now draw as one big field: the fence between them comes down and the crop rows run on across
+the seam. Where farms only partly overlap, the fence turns along the edge of the joined field. Looks only: farming,
+Crop Rotation and Wells work as before. No save change.
+
 **v56** – Surveyors halved, and a slimmer plaque and tidier Tailor on phones. No save change.
 - On phones, Well Fed, Hungry and Cold show as a one-line tag hanging from the bottom of the stats plaque instead of
   taking a row of their own, so the plaque stays two rows tall and more of the map shows.

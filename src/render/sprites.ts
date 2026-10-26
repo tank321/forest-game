@@ -936,6 +936,84 @@ export function composeRoad(mask: number): string[] {
   return g.map((r) => r.join(''));
 }
 
+/** Where `joinFarm` samples the crop rows: one repeat (4 px wide, 12 rows tall) clear of the scarecrow. */
+const FARM_CROPS = { x: 8, y: 21, w: 4, h: 12 };
+const FARM_SIDE = 3; // tiles along each side of a farm
+const MARGIN_PX = 6; // columns from each side of the farm grid kept bare beside the fence: 0–5 and 43–47
+const mod = (n: number, m: number) => ((n % m) + m) % m;
+
+/**
+ * A farm's grid with its fence opened where other farms touch it, so touching farms read as one field. `mask` has a bit
+ * per edge tile: north tiles 0–2 (bits 0–2, west to east), east 3–5 and west 9–11 (north to south), south 6–8.
+ * Opened fence is filled with crops repeated from the field: a farm is a whole number of repeats each way, so the rows
+ * line up across the seam with a neighbor in line. Where only part of a side is joined, the fence turns along the
+ * neighbor's fence; at a corner joined on one side only, the fence runs straight on into the neighbor's.
+ */
+export function joinFarm(grid: readonly string[], mask: number): string[] {
+  if (!mask) return [...grid];
+  const g = grid.map((r) => [...r]);
+  const { x: cx, y: cy, w: cw, h: ch } = FARM_CROPS;
+  const on = (bit: number) => (mask >> bit) & 1;
+  const W = grid[0].length;
+  const T = SPRITE_W;
+  const top = 0, topEnd = OVERHANG_PX + 4; // north fence: posts in the overhang, rail, shadow and the bare margin
+  const bottom = grid.length - 7; // south fence: the bare margin, posts, rail and its shadow
+  const left = 0, right = W - 2; // side fences, two px wide
+  // The field leaves bare soil beside its side fences (a crop there would overlap the fence); a joined side fills it.
+  const margin = MARGIN_PX;
+  const sideOn = (first: number, y: number) =>
+    on(first + (y <= topEnd ? 0 : y >= bottom ? FARM_SIDE - 1 : Math.min(FARM_SIDE - 1, Math.floor((y - OVERHANG_PX) / T))));
+  const crop = (x: number, y: number) => {
+    const row = grid[cy + mod(y - cy, ch)];
+    const bare = (x < margin && !sideOn(9, y)) || (x >= W - margin + 1 && !sideOn(3, y));
+    return bare ? row[x] : row[cx + mod(x - cx, cw)];
+  };
+  // Pieces two px wide, top row at (x, y); '*' is crops.
+  const paint = (x: number, y: number, rows: readonly string[]) =>
+    rows.forEach((r, dy) => [...r].forEach((c, dx) => (g[y + dy][x + dx] = c === '*' ? crop(x + dx, y + dy) : c)));
+  const fill = (x0: number, x1: number, y0: number, y1: number) => {
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = crop(x, y);
+  };
+  const rep = (row: string, n: number) => Array<string>(n).fill(row);
+  for (let i = 0; i < FARM_SIDE; i++) {
+    const x0 = Math.max(i * T, 2), x1 = Math.min(i * T + T - 1, W - 3);
+    const y0 = Math.max(OVERHANG_PX + i * T, topEnd + 1), y1 = Math.min(OVERHANG_PX + i * T + T - 1, bottom - 1);
+    if (on(i)) {
+      fill(x0, x1, top, topEnd);
+      // A neighbor offset sideways: its side fence comes down to this farm's rail.
+      if (i > 0 && !on(i - 1)) paint(i * T, top, [...rep('Ll', 6), '**', '**', '**']);
+      if (i < FARM_SIDE - 1 && !on(i + 1)) paint(i * T + T - 2, top, [...rep('lL', 6), '**', '**', '**']);
+    }
+    if (on(6 + i)) {
+      fill(x0, x1, bottom, grid.length - 1);
+      if (i > 0 && !on(6 + i - 1)) paint(i * T, bottom, ['**', '**', '**', '**', 'Ll', 'Ll', 'Ll']);
+      if (i < FARM_SIDE - 1 && !on(6 + i + 1)) paint(i * T + T - 2, bottom, ['**', '**', '**', '**', 'lL', 'lL', 'lL']);
+    }
+    // A neighbor offset up or down: its rail runs into this farm's side fence.
+    if (on(9 + i)) {
+      fill(left, margin - 1, y0, y1);
+      if (i > 0 && !on(9 + i - 1)) paint(left, y0, ['jl', 'll']);
+      if (i < FARM_SIDE - 1 && !on(9 + i + 1)) paint(left, y1 - 2, ['jl', 'll', 'Ll']);
+    }
+    if (on(3 + i)) {
+      fill(W - margin + 1, right + 1, y0, y1);
+      if (i > 0 && !on(3 + i - 1)) paint(right, y0, ['lj', 'll']);
+      if (i < FARM_SIDE - 1 && !on(3 + i + 1)) paint(right, y1 - 2, ['lj', 'll', 'lL']);
+    }
+  }
+  const corner = (x: number, y: number, along: number, across: number, straight: string, onward: readonly string[]) => {
+    const rows = y === top ? topEnd + 1 : grid.length - bottom;
+    if (on(along) && on(across)) fill(x, x + 1, y, y + rows - 1);
+    else if (on(along)) paint(x, y, rep(straight, rows)); // the side fence runs on into the neighbor's
+    else if (on(across)) paint(x, y, onward); // the rail runs on into the neighbor's
+  };
+  // The west end keeps its post, the east end drops it: posts stay 6 px apart across the seam.
+  corner(left, top, 0, 9, 'Ll', ['..', '..', 'ox', 'Lx', 'Lj', 'll', 'xx', 'nn', 'nn']);
+  corner(right, top, 2, 3, 'lL', ['..', '..', '..', '..', 'jj', 'll', 'xx', 'nn', 'nn']);
+  corner(left, bottom, 6, 11, 'Ll', ['nn', 'nn', 'jn', 'Ln', 'Lj', 'll', 'xx']);
+  corner(right, bottom, 8, 5, 'lL', ['nn', 'nn', 'nn', 'nn', 'jj', 'll', 'xx']);
+  return g.map((r) => r.join(''));
+}
 
 /** RGBA per building grid char. */
 export const BUILDING_PALETTE: Record<string, Rgba> = {

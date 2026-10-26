@@ -99,6 +99,9 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
   `OVERHANG_PX` (4) rows taller than their footprint and reach into the tile above, so a building
   sprite is `w·16 × h·16 + 4`. Villagers are composed from layers (`composeVillager`: pose + hat +
   tool or load) and anchored at `VILLAGER_FEET`.
+- **Joined farms.** Farms that touch draw as one field: `farmJoins` (`render/farms.ts`) gives each farm a 12-bit mask of
+  its edge tiles touching another farm, and `joinFarm` (`sprites.ts`) opens the fence there, filling it with crops repeated
+  from the field. The renderer bakes each season × Well × mask sprite when first drawn. Looks only; the simulation never reads it.
 - **Ground.** Grass is drawn into an offscreen canvas at 16 px per tile, and only cells whose fog
   level or shown season changed are redrawn. Variants are picked by a hash of the tile index.
 - **Seasons.** Seasonal looks are palette tints over the summer art (`TREE_TINTS`, `GROUND_TINTS`,
