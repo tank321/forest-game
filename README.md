@@ -208,6 +208,9 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v55** – On phones, the Lucky Chest's boost badges under the chest shrink to an icon, the time left and its bar, so a
+few running at once no longer cover the corner of the map. No save change.
+
 **v54** – The Mason's Yard, and one Market per town.
 - **Mason's Yard** (4×4, one per town): a new Mining skill under Masons, offered once 4 levels are learned in Mining,
   unlocks it for 3000 wood and 800 stone. It is a stone drop-off, so it pays to build it near your Quarries, and it

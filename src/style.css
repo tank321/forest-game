@@ -593,6 +593,13 @@ button.danger { color: #ffb6a3; }
   #panel .hotbar button:not(.poor) .meter { visibility: hidden; }
   .hotbar .badge { position: absolute; top: -4px; right: -5px; min-width: 20px; padding: 0 4px; border: 2px solid var(--ink); border-radius: 9px; background: var(--gold); color: var(--ink); font-size: 11px; font-weight: 700; line-height: 14px; text-align: center; }
   #panel .need { color: #ff9a80; }
+  /* Lucky Chest boosts: just the icon, time left and bar, so a stack of them leaves the map in view. */
+  .chest-boosts { gap: 4px; }
+  .chest-boost { column-gap: 4px; min-width: 0; padding: 0 5px 2px 2px; box-shadow: 0 0 8px 1px var(--boost, #f2d77a); }
+  .chest-boost .ico { grid-row: auto; width: 20px; height: 20px; background-size: 20px; }
+  .chest-boost b { display: none; }
+  .chest-boost small { font-size: 12px; line-height: 20px; }
+  .chest-boost-bar { height: 4px; margin-top: 1px; }
   #menu { gap: 4px; padding: 6px 8px calc(8px + env(safe-area-inset-bottom)); }
   #menu > button { flex: 1 1 0; justify-content: center; min-height: 44px; padding: 0; }
   .menu-label { display: none; }
