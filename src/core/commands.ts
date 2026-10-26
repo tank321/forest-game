@@ -3,9 +3,10 @@ import { count, nextCareer, record } from './achievements';
 import { addBoost, chestMult, isBoost, refillChest, rollChest, windfall, type ChestReward } from './chest';
 import { addBuilding, atLimit, BUILDINGS, buildingAt, buildingById, CITY_KINDS, footprint, HUB_KINDS, isUnlocked, mulesOf, type BuildingKind } from './buildings';
 import {
-  buildingCost, buildingRefund, gain, marketQuote, muleCost, pay, popCap, upgradeCost, villagerCost, type TradeResource, type UpgradeKind,
+  buildingCost, buildingRefund, gain, marketQuote, muleCost, pay, popCap, roadCost, stoneHouseCost, upgradeCost, villagerCost,
+  type TradeResource, type UpgradeKind,
 } from './economy';
-import { DECOR, decorAt, decorFits, decorTiles, isDecorUnlocked, type DecorKind, type DecorLayer } from './decor';
+import { DECOR, decorAt, decorFits, decorTiles, decorUnder, isDecorUnlocked, type DecorKind, type DecorLayer } from './decor';
 import { inBounds, isChoppable, isCollectable, neighbors4, neighbors8 } from './grid';
 import { rushToMark } from './flags';
 import { contractDone, newContract } from './guild';
@@ -116,7 +117,7 @@ export function claimContract(w: World, k: number): boolean {
   const c = s.contracts[k];
   if (!c || !lvl(s, 'guildContracts') || !hasMarket(s) || !contractDone(s, c)) return false;
   gainBonus(w, 'gold', c.reward);
-  s.contracts[k] = newContract(s);
+  s.contracts[k] = newContract(s, s.contracts.filter((_, j) => j !== k));
   count(s, 'contracts');
   return true;
 }
@@ -178,6 +179,32 @@ export function buyMule(w: World, id: number): boolean {
   return true;
 }
 
+/** The Mason's Yard works while connected by road. */
+export function hasYard(s: GameState): boolean {
+  const linked = linkedBuildings(s);
+  return s.buildings.some((b) => b.kind === 'masonsYard' && linked.has(b.id));
+}
+
+/** Mason's Yard: buys a road tile for the stock. */
+export function buyRoad(w: World): boolean {
+  const s = w.state;
+  if (!hasYard(s) || !pay(s, roadCost(s))) return false;
+  s.roadsBought++;
+  return true;
+}
+
+/** Mason's Yard: rebuilds a house in stone, for more room. Its cost joins what the house cost, so removal refunds half of it. */
+export function buildStoneHouse(w: World, id: number): boolean {
+  const s = w.state;
+  const b = buildingById(s, id);
+  if (b?.kind !== 'house' || b.stone || !hasYard(s)) return false;
+  const cost = stoneHouseCost(s);
+  if (!pay(s, cost)) return false;
+  b.stone = true;
+  for (const [r, n] of Object.entries(cost) as [ResourceKey, number][]) b.paidCost[r] = (b.paidCost[r] ?? 0) + n;
+  return true;
+}
+
 /** Pause/resume a workplace; its workers return to lumberjacking while paused. */
 export function togglePause(w: World, id: number): boolean {
   const s = w.state;
@@ -199,7 +226,7 @@ function canPlaceAt(w: World, kind: BuildingKind, x: number, y: number, moving?:
     !inBounds(s, x, y) || !inBounds(s, x + def.w - 1, y + def.h - 1)) return false;
   const tiles = footprint(s, { kind, x, y });
   const own = new Set(moving ? footprint(s, moving) : []);
-  if (tiles.some((i) => s.tiles[i] !== Tile.Grass && !own.has(i))) return false;
+  if (tiles.some((i) => s.tiles[i] !== Tile.Grass && !own.has(i)) || decorUnder(s, tiles)) return false;
   if (!def.cityNeighbor) return true;
   return tiles.some((i) =>
     neighbors4(s, i).some((n) => {
@@ -215,7 +242,6 @@ export function placeBuilding(w: World, kind: BuildingKind, x: number, y: number
   const cost = buildingCost(s, kind);
   if (!pay(s, cost)) return false;
   addBuilding(s, kind, x, y, cost);
-  returnDecor(s, footprint(s, { kind, x, y }));
   refreshRoadRoutes(w); // villagers walk around buildings, so any building can change the way home
   return true;
 }
@@ -234,7 +260,6 @@ export function moveBuilding(w: World, id: number, x: number, y: number): boolea
   b.x = x;
   b.y = y;
   for (const i of footprint(w.state, b)) w.state.tiles[i] = Tile.Building;
-  returnDecor(w.state, footprint(w.state, b));
   refreshBuildingRoutes(w, b, false);
   return true;
 }
@@ -275,17 +300,16 @@ function refreshBuildingRoutes(w: World, b: Building, removed: boolean): void {
 /** Re-routes a delivery: to the nearest drop-off, or a tax collector to its office. */
 const homeward = (w: World, v: Villager) => (v.job === 'tax' ? collectorHome(w, v) : goHome(w, v, jobResource(v.job)));
 
-/** A road can be laid on open ground while the road stock lasts. */
+/** A road can be laid on open ground free of decorations while the road stock lasts. */
 export function canPlaceRoad(w: World, i: number): boolean {
   const s = w.state;
-  return Number.isInteger(i) && i >= 0 && i < s.tiles.length && s.tiles[i] === Tile.Grass && roadsBuilt(s) < roadStock(s);
+  return Number.isInteger(i) && i >= 0 && i < s.tiles.length && s.tiles[i] === Tile.Grass && !decorUnder(s, [i]) && roadsBuilt(s) < roadStock(s);
 }
 
 /** Lays one road tile. Buildings work once a road joins them to the Town Center. */
 export function placeRoad(w: World, i: number): boolean {
   if (!canPlaceRoad(w, i)) return false;
   w.state.tiles[i] = Tile.Road;
-  returnDecor(w.state, [i]);
   refreshRoadRoutes(w);
   return true;
 }
@@ -299,13 +323,12 @@ export function removeRoad(w: World, i: number): boolean {
   return true;
 }
 
-/** Moves one road tile onto open ground; the stock is unchanged. */
+/** Moves one road tile onto open ground free of decorations; the stock is unchanged. */
 export function moveRoad(w: World, from: number, to: number): boolean {
   const s = w.state;
-  if (!Number.isInteger(from) || !Number.isInteger(to) || s.tiles[from] !== Tile.Road || s.tiles[to] !== Tile.Grass) return false;
+  if (!Number.isInteger(from) || !Number.isInteger(to) || s.tiles[from] !== Tile.Road || s.tiles[to] !== Tile.Grass || decorUnder(s, [to])) return false;
   s.tiles[from] = Tile.Grass;
   s.tiles[to] = Tile.Road;
-  returnDecor(s, [to]);
   refreshRoadRoutes(w);
   return true;
 }
@@ -353,7 +376,7 @@ export function moveDecor(w: World, i: number, layer: DecorLayer, x: number, y: 
   return true;
 }
 
-/** Takes up the decorations (of `layer`, or both) covering any of `tiles` and returns their cost: building or laying road over one never loses it. */
+/** Takes up the decorations (of `layer`, or both) covering any of `tiles` and returns their cost. */
 function returnDecor(s: GameState, tiles: number[], layer?: DecorLayer): void {
   const hit = new Set(tiles);
   s.decor = s.decor.filter((d) => {

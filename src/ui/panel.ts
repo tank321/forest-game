@@ -4,14 +4,14 @@ import { removeBuilding, removeDecor, removeRoad } from '../core/commands';
 import { DECOR, DECOR_KINDS, isDecorUnlocked } from '../core/decor';
 import { buildingCost, buildingRefund, canAfford } from '../core/economy';
 import { linkedBuildings, roadNetwork, roadsBuilt, roadStock } from '../core/roads';
-import { Tile } from '../core/types';
+import { Tile, type Cost, type ResourceKey, type Resources } from '../core/types';
 import type { World } from '../core/world';
 import { ACTIONS, INFO, tallyHtml, type Action, type Thumb } from './actions';
 import { MarketView } from './market';
 import { readPref, writePref } from './prefs';
 import { paints } from './placement';
 import type { UiState } from './state';
-import { achievementName, BUILDING_TEXT, costHtml, DECOR_TEXT } from './text';
+import { achievementName, BUILDING_TEXT, costHtml, DECOR_TEXT, fmt } from './text';
 
 const BUILDABLE = (Object.keys(BUILDINGS) as BuildingKind[]).filter((k) => BUILDINGS[k].buildable);
 const REMOVE_MS = 3000; // a second tap on Remove within this long removes the building
@@ -25,6 +25,11 @@ function change(current: string, next: string | null): string {
   return unit === unitB.join(' ') ? `${a} → <b class="upgrade-next">${b}</b>${unit ? ` ${unit}` : ''}` : `${current} → <b class="upgrade-next">${next}</b>`;
 }
 
+/** How far the stock goes toward a cost, 0–1, by its scarcest resource. */
+const progress = (c: Cost, have: Resources) =>
+  Math.min(1, ...(Object.entries(c) as [ResourceKey, number][]).map(([k, v]) => (v > 0 ? have[k] / v : 1)));
+const costText = (c: Cost) => (Object.entries(c) as [ResourceKey, number][]).filter(([, v]) => v > 0).map(([k, v]) => `${fmt(v)} ${k}`).join(', ');
+
 /** Bottom panel: placement prompt, selected building's actions, or the build menu. */
 export class Panel {
   private key = '';
@@ -32,7 +37,9 @@ export class Panel {
   private coarse = matchMedia('(pointer: coarse)'); // touch screens aim a placement before placing it
   private narrow = matchMedia('(max-width: 899px)'); // the phone layout (style.css): a compact panel
   private removing: { id: number; until: number } | null = null; // Remove tapped once, awaiting the second tap
-  private folded = readPref(CONFIG.buildMenu.key) === 'hidden'; // on a phone the build menu folds down to its heading
+  private scrolls = new Map<string, number>(); // how far each card row (by panel title) was swiped, kept across other panels
+  private title = '';
+  private full = readPref(CONFIG.buildMenu.key) === 'full'; // on a phone the build menu shows named cards, not the hotbar
 
   constructor(
     private el: HTMLElement,
@@ -46,7 +53,11 @@ export class Panel {
     const { title, thumb, sub, status, tally, actions, custom, foldable } = this.view();
     custom?.update(); // updates itself in place, so it stays out of the change key
     const have = this.world().state.resources;
+    const narrow = this.narrow.matches;
+    const compact = !!foldable && narrow && !this.full; // a phone's build menu as one row of icon tiles
     const html = actions.map((a) => {
+      // Hotbar tile: just the icon, a bar filling toward its cost (patched in place below), and a badge.
+      if (a.thumb && compact) return `<i class="thumb thumb-${a.thumb}"></i><span class="meter"><i></i></span>${a.badge ? `<span class="badge">${a.badge}</span>` : ''}`;
       const cost = a.locked ? `<span class="cost">${a.locked}</span>` : a.cost && !a.upgrade ? `<span class="cost">${costHtml(a.cost, have)}</span>` : '';
       // Build card: icon and name share a fixed top row, costs run full width below.
       if (a.thumb) return `<i class="thumb thumb-${a.thumb}"></i><span class="name">${a.label}</span>${cost}`;
@@ -54,39 +65,41 @@ export class Panel {
       const refund = a.refund ? `<span class="refund">Refund: ${costHtml(a.refund, { ...have, ...a.refund }) || 'none'} · ${lost}</span>` : '';
       return `<span class="label">${a.label}${cost}${refund}</span>`;
     });
-    const folded = !!foldable && this.folded;
-    const narrow = this.narrow.matches;
-    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, this.ui.decorSel, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, folded, narrow,
+    const key = JSON.stringify([this.ui.selected?.id, this.ui.road, this.ui.moving?.id, this.ui.decorSel, title, thumb, sub, status, html, !!custom, tally !== undefined, foldable, compact, narrow,
       actions.map((a) => [a.enabled, a.secondary, a.danger, a.upgrade, a.hint]),
-      actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : '')]);
+      actions.map((a) => a.upgrade && a.cost ? costHtml(a.cost, have) : compact && a.cost ? costText(a.cost) : '')]);
     if (key === this.key) {
       // The counter ticks up constantly, so it is patched in place rather than rebuilding the buttons.
       const counter = this.el.querySelector('.building-tally');
       if (counter && tally !== undefined && counter.innerHTML !== tally) counter.innerHTML = tally;
+      if (compact) this.fillMeters(actions, have);
       return;
     }
     this.key = key;
-    this.el.classList.toggle('folded', folded);
-    this.el.classList.toggle('detail', !foldable); // a building, road or placement: the phone layout hides the next-up card
-    // The fold button only shows on narrow screens (style.css).
-    const fold = foldable ? `<button class="fold" aria-expanded="${!folded}" aria-label="${folded ? 'Show' : 'Hide'} the build menu"><i class="fold-arrow"></i></button>` : '';
-    const heading = thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}${fold}</h2>` : `<h2>${title}${fold}</h2>`;
+    const grid = this.el.querySelector('.build-grid');
+    if (grid) this.scrolls.set(this.title, grid.scrollLeft); // a swiped card row stays put when redrawn or come back to
+    this.title = title;
+    this.el.classList.toggle('compact', compact);
+    // The fold button only shows on narrow screens (style.css): it switches the build menu between the hotbar and named cards.
+    const fold = foldable ? `<button class="fold" aria-expanded="${!compact}" aria-label="${compact ? 'Show names and costs' : 'Show the compact build bar'}"><i class="fold-arrow"></i></button>` : '';
+    const heading = compact ? '' : thumb ? `<h2 class="with-thumb"><i class="thumb thumb-${thumb}"></i>${title}${fold}</h2>` : `<h2>${title}${fold}</h2>`;
     // On a phone the status and the tally share one line.
     const info = narrow
       ? (status || tally !== undefined ? `<p class="building-status">${status ?? ''}${tally !== undefined ? `<span class="building-tally">${tally}</span>` : ''}</p>` : '')
       : `${status ? `<p class="building-status">${status}</p>` : ''}${tally !== undefined ? `<p class="building-tally">${tally}</p>` : ''}`;
-    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${info}<div class="actions"></div><div class="building-controls"></div>`;
+    this.el.innerHTML = `${heading}${sub ? `<p class="sub">${sub}</p>` : ''}${info}<div class="actions"></div>${compact ? fold : ''}<div class="building-controls"></div>`;
     const foldBtn = this.el.querySelector<HTMLButtonElement>('.fold');
     if (foldBtn) {
       foldBtn.onclick = () => {
-        this.folded = !this.folded;
-        writePref(CONFIG.buildMenu.key, this.folded ? 'hidden' : 'shown');
+        this.full = !this.full;
+        writePref(CONFIG.buildMenu.key, this.full ? 'full' : 'compact');
         this.key = ''; // redrawn next frame
       };
     }
     const box = this.el.querySelector('.actions')!;
     const cards = actions.filter((a) => !a.secondary);
     box.classList.toggle('build-grid', cards.length > 0 && cards.every((a) => a.thumb));
+    box.classList.toggle('hotbar', compact);
     actions.forEach((a, i) => {
       const b = document.createElement('button');
       b.innerHTML = html[i];
@@ -94,6 +107,12 @@ export class Panel {
       if (a.locked) b.classList.add('locked');
       if (a.danger) b.classList.add('danger');
       b.disabled = !a.enabled;
+      if (a.thumb && compact) {
+        // A tile is tappable even when it can't be afforded yet: aiming it shows the name and full cost.
+        b.disabled = false;
+        b.classList.toggle('poor', !a.enabled);
+        b.setAttribute('aria-label', a.cost ? `${a.label}: ${costText(a.cost)}` : a.label);
+      }
       b.onclick = a.run;
       if (a.upgrade) {
         const u = a.upgrade;
@@ -123,6 +142,17 @@ export class Panel {
       } else (a.secondary ? this.el.querySelector('.building-controls')! : box).append(b);
     });
     if (custom) box.replaceWith(custom.el);
+    box.scrollLeft = this.scrolls.get(title) ?? 0;
+    if (compact) this.fillMeters(actions, have);
+  }
+
+  /** Sets each hotbar tile's bar to how far the stock goes toward its cost, without redrawing the tiles. */
+  private fillMeters(actions: Action[], have: Resources): void {
+    const tiles = this.el.querySelectorAll<HTMLElement>('.hotbar > button .meter > i');
+    actions.filter((a) => a.thumb).forEach((a, i) => {
+      const width = `${Math.floor(100 * (a.cost ? progress(a.cost, have) : 1))}%`;
+      if (tiles[i] && tiles[i].style.width !== width) tiles[i].style.width = width;
+    });
   }
 
   /** How to choose where a placement goes: tap it with a mouse; on touch, aim the footprint and tap it to confirm. */
@@ -147,6 +177,20 @@ export class Panel {
         title: 'Roads',
         sub: `Tap or drag over cleared land to lay road; start on a road (or right-click) to lift it. Buildings work only where they touch the Town Center or a road joined to it. ${built} of ${roadStock(s)} roads laid; each house adds ${CONFIG.roads.perHouse}.`,
         actions: [{ label: 'Done', cost: null, enabled: true, run: () => (ui.paving = false) }],
+      };
+    }
+    if (ui.placing && this.narrow.matches) {
+      // On a phone the build menu's tiles carry no names or costs, so aiming one shows them, and what is still short.
+      const kind = ui.placing;
+      const cost = buildingCost(s, kind);
+      const short = (Object.entries(cost) as [ResourceKey, number][]).filter(([k, v]) => s.resources[k] < v).map(([k]) => k);
+      const need = short.length ? `<b class="need">Not enough ${short.join(' or ')} yet.</b> ` : '';
+      return {
+        title: `Place ${BUILDING_TEXT[kind].name}`,
+        thumb: kind,
+        sub: `${need}${this.aim('your territory')} Yellow = needs a road. ${BUILDING_TEXT[kind].desc}`,
+        status: costHtml(cost, s.resources),
+        actions: [{ label: '✕', cost: null, secondary: true, enabled: true, run: () => (ui.placing = null) }],
       };
     }
     if (ui.placing) {
@@ -272,13 +316,14 @@ export class Panel {
         ],
       };
     }
+    const left = Math.max(0, roadStock(s) - roadsBuilt(s));
     return {
       title: 'Build',
       sub: 'Tap a building to select it.',
       foldable: true,
-      // Kinds still locked behind a skill, or at their limit (the Tailor, the Outpost), stay out of the menu.
+      // Kinds still locked behind a skill, or at their limit (the Tailor, the Market, the Outpost), stay out of the menu.
       actions: [
-        { label: `Road (${Math.max(0, roadStock(s) - roadsBuilt(s))} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const },
+        { label: `Road (${left} left)`, cost: null, enabled: true, run: () => (ui.paving = true), thumb: 'road' as const, badge: String(left) },
         ...BUILDABLE.filter((k) => isUnlocked(s, k) && !atLimit(s, k)).map((k) => {
           const cost = buildingCost(s, k);
           return {

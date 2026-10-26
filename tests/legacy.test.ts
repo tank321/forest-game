@@ -35,7 +35,7 @@ describe('legacy', () => {
   it('asks for 5 more levels at each of the first two rebuilds, then 10 more, up to every skill', () => {
     const s = smallWorld().state;
     const at = (runs: number) => legacyRequirement({ ...s, legacy: { runs, perks: {} } });
-    expect([0, 1, 2, 3, 4, 8, 9, 20].map(at)).toEqual([15, 20, 25, 35, 45, 85, 92, 92]);
+    expect([0, 1, 2, 3, 4, 8, 9, 20].map(at)).toEqual([15, 20, 25, 35, 45, 85, 93, 93]);
   });
 
   it('multiplies gathering, walking and carrying', () => {

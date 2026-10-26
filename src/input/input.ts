@@ -114,6 +114,9 @@ export function attachInput(el: HTMLElement, cam: Camera, h: InputHandlers): voi
   };
   el.addEventListener('pointerup', end);
   el.addEventListener('pointercancel', end);
+  // A tap acts on pointerup, but a touch browser follows it with a click aimed at whatever is under the finger by then,
+  // such as a card in the relic menu that tap just opened. Cancelling the touchend drops that click.
+  el.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
   el.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && h.leave());
   el.addEventListener('contextmenu', (e) => e.preventDefault());
   el.addEventListener(

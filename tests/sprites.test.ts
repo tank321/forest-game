@@ -25,6 +25,8 @@ import {
   RELIC_TINTS,
   ROOFS,
   SPRITE_W,
+  STONE_HOUSE,
+  STONE_HOUSE_TINT,
   STUMP,
   TREE_H,
   TREE_PALETTE,
@@ -121,6 +123,17 @@ describe('sprites', () => {
       for (const row of grid) expect(row).toHaveLength(d.w * SPRITE_W);
       for (const ch of grid.join('')) expect(ch === '.' || ch in BUILDING_PALETTE).toBe(true);
     }
+  });
+
+  it('the stone house matches the house: its size, palette, roof and door, with stone walls', () => {
+    const house = BUILDING_SPRITES.house!;
+    expect(STONE_HOUSE).toHaveLength(house.length);
+    for (const row of STONE_HOUSE) expect(row).toHaveLength(house[0].length);
+    for (const ch of STONE_HOUSE.join('')) expect(ch === '.' || ch in BUILDING_PALETTE).toBe(true);
+    expect(STONE_HOUSE.slice(0, 11)).toEqual(house.slice(0, 11)); // the same roof, so snow and lights fit
+    expect(STONE_HOUSE.join('')).not.toMatch(/[wW]/); // no plaster left
+    expect(STONE_HOUSE.join('').split('D').length).toBe(house.join('').split('D').length); // the door where it was
+    for (const ch of Object.keys(STONE_HOUSE_TINT)) expect(STONE_HOUSE.slice(0, 11).join('')).toContain(ch); // the slate is on the roof
   });
 
   it('every season keeps each building sprite its size and in its palette', () => {

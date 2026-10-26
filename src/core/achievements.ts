@@ -106,6 +106,8 @@ export const ACHIEVEMENTS = {
   firstTaxOffice: first('taxOffice'),
   firstTradingPost: first('tradingPost'),
   firstOutpost: first('outpost'),
+  firstMasonsYard: first('masonsYard'),
+  stoneHouse: { group: 'firsts', metric: (s) => Number(s.buildings.some((b) => b.stone)), tiers: [1] },
   clearCut: feat((s) => s.treesLeft === 0),
   allBuildings: feat((s) => KINDS.every((k) => isUnlocked(s, k))),
   maxSkill: feat((s) => SKILL_IDS.some((id) => SKILLS[id].max > 1 && lvl(s, id) >= SKILLS[id].max)),

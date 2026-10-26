@@ -49,6 +49,9 @@ relative paths (`base: './'`) and writes `dist/sw.js` from `pwa/sw.js`, listing 
     farms), plus an optional `also` resource delivered alongside
     it (herders' food from Fertile Herding) and an optional walk `speed` stat (orchardists). Workplaces never run out. Workers walk to their own
     spot (`pathToWork` in `movement.ts`), spread over the interior by their index among the staff.
+  - The **Mason's Yard** is a stone drop-off whose actions live in `commands.ts`: `buyRoad` adds a road to `GameState.roadsBought`
+    (counted in `roadStock`) and `buildStoneHouse` sets a house's `stone` flag (`popCap` adds room); both need `hasYard`, and
+    their prices (`roadCost`, `stoneHouseCost`) are in `economy.ts`. Stone houses draw `STONE_HOUSE` with `STONE_HOUSE_TINT`.
   - `NEEDS` (`buildings.ts`) names a building a workplace requires (Trading Post → Market). `isActive`
     checks it, so an unmet need unstaffs the workplace like a pause.
   - **Pack mules** (`systems/mules.ts`, `GameState.mules`) are not villagers: `muleSystem` gives each Trading Post its `mulesOf` (one, plus any bought with `buyMule`, priced by `muleCost`),
@@ -134,8 +137,8 @@ must be handled:
 - **Decoration:** add it to `DECOR` (`decor.ts`; `layer` ground or prop, a flat `cost`, `joins` for fence-like runs,
   `trophy` to lock it behind an achievement tier), its grid to `DECOR_SPRITES` (plus `DECOR_ARMS` if it joins, and any
   `DECOR_SEASONS` looks) in `render/sprites.ts`, and its text to `DECOR_TEXT`. Decorations are looks only: tiles under them
-  stay `Tile.Grass` and nothing in the simulation reads `GameState.decor`; `returnDecor` (`commands.ts`) refunds any a
-  building or road covers. A decoration kind must not share a name with a building kind (`ui/placement.ts` aims either).
+  stay `Tile.Grass` and nothing in the simulation reads `GameState.decor`, except that buildings and roads can't be placed
+  or moved onto one (`decorUnder` in `canPlaceAt`/`canPlaceRoad`/`moveRoad`). A decoration kind must not share a name with a building kind (`ui/placement.ts` aims either).
 - **Guild Contracts and caravan deals** live in `guild.ts` and are saved in `GameState.contracts` / `caravan`;
   `tick` tops the board up and brings the caravan at season boundaries, and the Market panel (`ui/market.ts`) shows both.
 - **Resource:** add it to `RESOURCES` (`types.ts`). Drop-off fields and HUD counters pick it up

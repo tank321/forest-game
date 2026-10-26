@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../src/config';
-import { addBuilding, footprint, mulesOf } from '../src/core/buildings';
+import { addBuilding, atLimit, footprint, mulesOf } from '../src/core/buildings';
 import { buyMule, buyResource, removeBuilding, sellResource } from '../src/core/commands';
 import { buildingCost, marketQuote, muleCost } from '../src/core/economy';
 import { tileAt } from '../src/core/grid';
@@ -31,6 +31,13 @@ function withMarket(villagers = 0, post = false, seed = 1): { w: World; marketId
 }
 
 describe('market', () => {
+  it('only one may stand', () => {
+    const { w, marketId } = withMarket();
+    expect(atLimit(w.state, 'market')).toBe(true); // so canPlace refuses a second and the build menu hides it
+    expect(removeBuilding(w, marketId)).toBe(true);
+    expect(atLimit(w.state, 'market')).toBe(false);
+  });
+
   it('quotes value minus commission for sales and plus commission for purchases, rounded in its favor', () => {
     const s = smallWorld().state;
     expect(marketQuote(s, 'wood', 100, 'sell')).toBe(80);

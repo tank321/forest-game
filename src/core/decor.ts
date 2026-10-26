@@ -82,6 +82,9 @@ export function decorOn(s: GameState, i: number): Decor[] {
   return s.decor.filter((d) => covers(d, x, y));
 }
 
+/** Whether any decoration, of either layer, covers one of `tiles`. Buildings and roads can't be laid over one. */
+export const decorUnder = (s: GameState, tiles: readonly number[]) => tiles.some((i) => decorOn(s, i).length > 0);
+
 /** Whether `kind` fits at (x, y): open ground under every tile, and none of them holding another of its layer (`moving` aside). */
 export function decorFits(s: GameState, kind: DecorKind, x: number, y: number, moving?: Decor): boolean {
   const { w, h, layer } = DECOR[kind];

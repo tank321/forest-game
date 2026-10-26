@@ -1,8 +1,10 @@
 import { CONFIG } from '../config';
 import { BUILDINGS, buildingGap, countOf, isActive, mulesOf, NEEDS, workersOf, type BuildingKind } from '../core/buildings';
-import { linkedBuildings } from '../core/roads';
-import { blast, blastWait, buyMule, hireVillager, togglePause, upgrade } from '../core/commands';
-import { canAfford, commission, maxLevel, muleCost, popCap, upgradeCost, villagerCost, type UpgradeKind } from '../core/economy';
+import { linkedBuildings, roadsBuilt, roadStock } from '../core/roads';
+import { blast, blastWait, buildStoneHouse, buyMule, buyRoad, hasYard, hireVillager, togglePause, upgrade } from '../core/commands';
+import {
+  canAfford, commission, maxLevel, muleCost, popCap, roadCost, stoneHouseCost, stoneHouses, upgradeCost, villagerCost, type UpgradeKind,
+} from '../core/economy';
 import { lvl } from '../core/skills';
 import { getStats, type Stats } from '../core/stats';
 import { jobResource } from '../core/systems/workplace';
@@ -22,6 +24,7 @@ export interface Action {
   run: () => void;
   thumb?: Thumb; // shown as a parchment card with the building's (or a road's, or a decoration's) sprite
   locked?: string; // a card not yet available: its thumb in silhouette and this in place of the cost
+  badge?: string; // on a phone's hotbar tile: a count in its corner (roads left)
   refund?: Cost;
   secondary?: boolean;
   danger?: boolean;
@@ -132,6 +135,37 @@ function blastAction(w: World, b: Building): Action {
   };
 }
 
+/** Mason's Yard: another road for the stock. */
+function roadAction(w: World): Action {
+  const s = w.state;
+  const cost = roadCost(s);
+  const linked = hasYard(s);
+  return {
+    label: 'Buy a road',
+    hint: linked ? 'Each road bought costs more than the last.' : 'Connect the yard by road to buy roads.',
+    cost,
+    enabled: linked && canAfford(s, cost),
+    run: () => buyRoad(w),
+  };
+}
+
+/** A house rebuilt in stone at the Mason's Yard, once the skill is learned. */
+function stoneHouseAction(w: World, b: Building): Action[] {
+  const s = w.state;
+  if (!lvl(s, 'masonsYard') || b.stone) return [];
+  const cost = stoneHouseCost(s);
+  const linked = hasYard(s);
+  return [{
+    label: 'Rebuild in stone',
+    hint: linked
+      ? `Room for ${CONFIG.masonsYard.stoneHouse.pop} more villagers. Each stone house costs more than the last.`
+      : `Needs a ${BUILDING_TEXT.masonsYard.name} connected by road.`,
+    cost,
+    enabled: linked && canAfford(s, cost),
+    run: () => buildStoneHouse(w, b.id),
+  }];
+}
+
 /** Actions offered when a building of each kind is selected. New buildings add an entry here. */
 export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   townCenter: (w) => [
@@ -174,6 +208,8 @@ export const ACTIONS: Partial<Record<BuildingKind, Selected>> = {
   sheepFarm: (w, b) => [pauseAction(w, b)],
   cottonPlantation: (w, b) => [pauseAction(w, b)],
   tradingPost: (w, b) => [muleAction(w, b), pauseAction(w, b)],
+  house: stoneHouseAction,
+  masonsYard: (w) => [roadAction(w)],
   taxOffice: (w, b) => [
     upgradeAction(w, 'satchel', 'Satchel', (st) => [{ label: 'Houses per round', value: `${st.taxStops}` }]),
     pauseAction(w, b),
@@ -254,6 +290,14 @@ export const INFO: Partial<Record<BuildingKind, Info>> = {
   cottonPlantation: (w, b) => {
     const st = getStats(w.state);
     return `${staffInfo(w, b, 'picker')} · Each picks ${perSec(st.cottonRate, 'cloth')} and carries ${Math.round(st.cottonCarry)}`;
+  },
+  house: (w, b) => {
+    const room = CONFIG.economy.popPerHouse + lvl(w.state, 'roomyHouses') + (b.stone ? CONFIG.masonsYard.stoneHouse.pop : 0);
+    return `${b.stone ? 'Stone house' : 'Wooden house'} · Room for ${room} villagers`;
+  },
+  masonsYard: (w) => {
+    const s = w.state;
+    return `Miners deliver stone here · Roads: ${roadsBuilt(s)} of ${roadStock(s)} laid, ${s.roadsBought} bought here · ${plural(stoneHouses(s), 'stone house')}`;
   },
   market: (w) => {
     const c = commission(w.state);

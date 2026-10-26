@@ -53,6 +53,7 @@ export interface Building {
   tally: Cost; // lifetime amounts its workers produced (workplaces) or it collected (drop-offs, Tax Office)
   due?: number; // house: gold owed, waiting for a tax collector
   mules?: number; // Trading Post: pack mules it keeps, its first included (see systems/mules.ts)
+  stone?: true; // house: rebuilt in stone at the Mason's Yard (more room)
 }
 
 /** A decoration (see decor.ts): looks only, never read by the simulation. */
@@ -108,6 +109,7 @@ export interface GameState {
   career: { past: Record<Counter, number>; earned: Partial<Record<AchievementId, number>> }; // kept across rebuilds: past runs' counters, achievement tiers earned
   births: number; // Growing Families: progress toward the next birth, 0–1
   decor: Decor[]; // decorations placed this run (see decor.ts)
+  roadsBought: number; // road tiles bought at the Mason's Yard this run
   chest: ChestState; // Lucky Chest: when it can next be opened and the boost running, in wall-clock ms (kept across rebuilds)
 }
 

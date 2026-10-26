@@ -148,6 +148,7 @@ button.danger { color: #ffb6a3; }
 .market-deal, .market-contract { flex-wrap: wrap; gap: 4px 8px; min-height: 46px; padding: 4px 8px; }
 .market-contract { flex-direction: column; gap: 0; }
 .market-contract small { display: inline-flex; align-items: center; gap: 2px; color: var(--tan); font-size: 12px; }
+.market-contract.gold small { color: var(--ink); font-weight: 700; } /* a finished one: tan is unreadable on gold */
 .market-guild .ico { width: 16px; height: 16px; background-size: 16px; }
 .market-custom { display: flex; gap: 6px; }
 .market-custom input { flex: 1; min-width: 0; min-height: 46px; padding: 0 8px; background: none; color: var(--cream); font: inherit; font-size: 18px; font-variant-numeric: tabular-nums; appearance: textfield; }
@@ -543,21 +544,18 @@ button.danger { color: #ffb6a3; }
   .stats small { font-size: 12px; line-height: 15px; }
   .stats .per { display: none; }
   .season-bar { width: 56px; }
-  #tools { padding: 6px 8px 0; }
+  #tools { display: none; } /* the next-up achievement: no room on a phone (Achievements is in the menu) */
   #tutorial { margin: 6px 8px 0; font-size: 13px; }
   #panel { grid-template-columns: minmax(0, 1fr); gap: 6px; max-height: 38dvh; padding: 6px 8px; }
   #panel h2 { display: flex; align-items: center; gap: 10px; font-size: 20px; line-height: 28px; }
   #panel .fold { display: inline-flex; justify-content: center; min-width: 52px; min-height: 36px; margin-left: auto; }
-  /* A chevron: down tucks the menu away, up brings it back. */
+  /* A chevron: up opens the named cards, down goes back to the hotbar. */
   .fold-arrow { width: 12px; height: 12px; border: solid var(--cream); border-width: 0 4px 4px 0; filter: drop-shadow(0 1px 1px #1b100b); transform: translateY(-3px) rotate(45deg); }
-  #panel.folded .fold-arrow { transform: translateY(3px) rotate(-135deg); }
-  /* The card row's own `#panel .actions.build-grid { display: grid }` is more specific than a bare child rule. */
-  #panel.folded > :not(h2), #panel.folded > .actions.build-grid { display: none; }
-  #panel.folded:has(.tutorial-glow) > .actions.build-grid { display: grid; } /* the tutorial's target stays in reach */
+  #panel.compact .fold-arrow { transform: translateY(3px) rotate(-135deg); }
   #panel:has(.build-grid) > .sub { display: none; }
   /*
    * A selected building, road or placement (panel.ts renders it compact): one header line with the name beside
-   * Move, Remove, Pause and ✕; status and tally on one small line; upgrades as rows. The next-up card steps aside.
+   * Move, Remove, Pause and ✕; status and tally on one small line; upgrades as rows.
    */
   #panel { grid-template-columns: minmax(0, 1fr) auto; max-height: 50dvh; }
   #panel > * { grid-column: 1 / -1; }
@@ -576,12 +574,25 @@ button.danger { color: #ffb6a3; }
   .upgrade-card.compact > button .cost { justify-content: center; gap: 0 8px; font-size: 13px; }
   .gold .chip.short { color: #b3261e; }
   .action-with-hint button { min-height: 38px; }
-  #side:has(#panel.detail) #nextUpBtn { display: none; }
-  #side:has(#panel.detail) #tools { display: none; }
   #panel .actions.build-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #panel .build-grid button { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px auto; justify-items: center; gap: 2px; text-align: center; }
   #panel .build-grid .name { font-size: 14px; }
   #panel .build-grid .cost { justify-content: center; font-size: 14px; }
+  /*
+   * The hotbar (the build menu's default on a phone): one row of icon tiles with the chevron beside it, no heading.
+   * A tile it can't afford yet is dimmed, with a bar filling toward its cost; the row fades out where it scrolls on.
+   */
+  #panel.compact > .actions { grid-column: 1; grid-row: 1; }
+  #panel.compact > .fold { grid-column: 2; grid-row: 1; align-self: center; }
+  #panel .actions.hotbar { grid-auto-columns: 56px; padding-bottom: 4px; mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); }
+  #panel .hotbar button { position: relative; grid-template-rows: 44px 5px; gap: 3px; padding: 2px 0 0; }
+  #panel .hotbar .thumb { width: 44px; height: 44px; }
+  #panel .hotbar button.poor .thumb { filter: saturate(.3) brightness(.75); opacity: .8; }
+  .meter { display: block; width: 34px; height: 5px; border: 1px solid #937b52; background: #c6b58e; }
+  .meter > i { display: block; height: 100%; background: #527c38; }
+  #panel .hotbar button:not(.poor) .meter { visibility: hidden; }
+  .hotbar .badge { position: absolute; top: -4px; right: -5px; min-width: 20px; padding: 0 4px; border: 2px solid var(--ink); border-radius: 9px; background: var(--gold); color: var(--ink); font-size: 11px; font-weight: 700; line-height: 14px; text-align: center; }
+  #panel .need { color: #ff9a80; }
   #menu { gap: 4px; padding: 6px 8px calc(8px + env(safe-area-inset-bottom)); }
   #menu > button { flex: 1 1 0; justify-content: center; min-height: 44px; padding: 0; }
   .menu-label { display: none; }

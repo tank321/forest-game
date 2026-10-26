@@ -1,15 +1,16 @@
 import { CONFIG } from './config';
 import { checkAchievements } from './core/achievements';
-import { BUILDINGS, buildingAt } from './core/buildings';
+import { BUILDINGS, buildingAt, footprint, type BuildingKind } from './core/buildings';
 import { chestSpeed, chestTimeline, expireBoosts } from './core/chest';
 import {
-  canPlaceDecor, chopTree, moveBuilding, moveDecor, moveRoad, openRelic, placeBuilding, placeDecor, placeRoad, removeDecor, removeRoad, toggleMark,
+  canPlace, canPlaceDecor, chopTree, moveBuilding, moveDecor, moveRoad, openRelic, placeBuilding, placeDecor, placeRoad, removeDecor, removeRoad, toggleMark,
 } from './core/commands';
-import { DECOR, decorAt, type DecorKind } from './core/decor';
+import { DECOR, decorAt, decorUnder, type DecorKind } from './core/decor';
 import { inBounds, isCollectable, tileAt } from './core/grid';
 import { roadsBuilt, roadStock } from './core/roads';
 import { clearSave, deserialize, loadGame, saveGame, serialize } from './core/save';
 import { SEASONS, seasonOf } from './core/seasons';
+import { lvl } from './core/skills';
 import { simulate, tick } from './core/sim';
 import { createInitialState } from './core/state';
 import { Tile } from './core/types';
@@ -110,7 +111,7 @@ attachInput(canvas, cam, {
     }
     if (i < 0 || i === lastTile) return;
     lastTile = i;
-    const noneLeft = `No roads left. Each house adds ${CONFIG.roads.perHouse} more.`;
+    const noneLeft = `No roads left. Each house adds ${CONFIG.roads.perHouse} more${lvl(s, 'masonsYard') ? `, and the ${BUILDING_TEXT.masonsYard.name} sells them` : ''}.`;
     if (lifting) removeRoad(world, i);
     else if (placeRoad(world, i)) {
       if (roadsBuilt(s) >= roadStock(s)) {
@@ -118,6 +119,7 @@ attachInput(canvas, cam, {
         hud.message(noneLeft);
       }
     } else if (s.tiles[i] === Tile.Grass && roadsBuilt(s) >= roadStock(s)) hud.message(noneLeft);
+    else if (decorUnder(s, [i])) hud.message(DECORATED);
   },
   // On touch a placement is aimed first (drag it, or tap where it should go) and placed by tapping its footprint.
   grab: () => aiming(ui) !== null,
@@ -162,7 +164,7 @@ attachInput(canvas, cam, {
       if (moveRoad(world, ui.road, to)) {
         ui.road = to;
         ui.movingRoad = false;
-      } else hud.message('Cannot move there. Choose cleared land.');
+      } else hud.message(to >= 0 && decorUnder(s, [to]) ? DECORATED : 'Cannot move there. Choose cleared land.');
       return;
     }
     if (ui.movingDecor && ui.decorSel) {
@@ -178,14 +180,14 @@ attachInput(canvas, cam, {
       if (moveBuilding(world, b.id, x, y)) {
         ui.moving = null;
         hud.message(`${BUILDING_TEXT[b.kind].name} moved.`);
-      } else hud.message('Cannot move there. Choose clear land; city buildings must touch the Town Center or another city building.');
+      } else hud.message(onDecor(b.kind, x, y) ? DECORATED : 'Cannot move there. Choose clear land; city buildings must touch the Town Center or another city building.');
       return;
     }
     if (ui.placing) {
       if (alt) return; // right click cancels placing (contextmenu listener below)
       const { x, y } = placementAt(ui.placing, wx, wy);
       if (placeBuilding(world, ui.placing, x, y)) ui.placing = null;
-      else hud.message("Can't build there");
+      else hud.message(onDecor(ui.placing, x, y) ? DECORATED : canPlace(world, ui.placing, x, y) ? `Not enough for a ${BUILDING_TEXT[ui.placing].name}.` : "Can't build there");
       return;
     }
     if (ui.decor) {
@@ -229,6 +231,11 @@ addEventListener('contextmenu', (e) => {
   ui.placing = ui.decor = null;
   ui.paving = false;
 });
+
+const DECORATED = 'Remove the decorations there first.';
+/** Whether decorations stand in the way of a building of `kind` at (x, y). */
+const onDecor = (kind: BuildingKind, x: number, y: number) =>
+  inBounds(s, x, y) && inBounds(s, x + BUILDINGS[kind].w - 1, y + BUILDINGS[kind].h - 1) && decorUnder(s, footprint(s, { kind, x, y }));
 
 /** The decoration standing on tile `i`, else the one lying there (none on a building, road or tree). */
 function decorOn(i: number) {

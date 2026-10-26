@@ -32,6 +32,21 @@ const masonry = (s: Pick<GameState, 'skills'>, c: Cost): Cost =>
 export const buildingCost = (s: Pick<GameState, 'skills' | 'buildings' | 'legacy'>, kind: BuildingKind, owned = countOf(s, kind)): Cost =>
   masonry(s, scale(BUILDINGS[kind].cost(owned), (lvl(s, 'masterBuilders') ? 0.8 : 1) * perkMult(s, 'prosperousCity', L.prosperousCity.build)));
 
+/** Mason's Yard: the next road, priced by how many the town has bought this run. */
+export function roadCost(s: Pick<GameState, 'skills' | 'roadsBought'>): Cost {
+  const { cost, growth } = CONFIG.masonsYard.road;
+  return masonry(s, scale(cost, growth ** s.roadsBought));
+}
+
+/** Houses rebuilt in stone. */
+export const stoneHouses = (s: Pick<GameState, 'buildings'>) => s.buildings.reduce((n, b) => n + (b.stone ? 1 : 0), 0);
+
+/** Mason's Yard: rebuilding the next house in stone, priced by how many stand. */
+export function stoneHouseCost(s: Pick<GameState, 'skills' | 'buildings'>): Cost {
+  const { cost, growth } = CONFIG.masonsYard.stoneHouse;
+  return masonry(s, scale(cost, growth ** stoneHouses(s)));
+}
+
 /** Refund original construction materials only, rounded down per resource. */
 /** The next extra pack mule, priced by how many the town has bought (each post's first is free); null at a full post. */
 export function muleCost(s: Pick<GameState, 'buildings'>, post: Building): Cost | null {
@@ -66,11 +81,13 @@ export function marketQuote(s: Pick<GameState, 'skills' | 'legacy' | 'time'>, re
   return side === 'sell' ? Math.floor(value * (1 - c) + 1e-9) : Math.ceil(value * (1 + c) - 1e-9);
 }
 
-/** Base population plus room in every house connected by road. */
+/** Base population plus room in every house connected by road; a stone house has more. */
 export function popCap(s: GameState): number {
   const linked = linkedBuildings(s);
-  const houses = s.buildings.reduce((n, b) => n + (b.kind === 'house' && linked.has(b.id) ? 1 : 0), 0);
-  return (perk(s, 'urbanCore') ? L.urbanCore.basePop : basePop) + (popPerHouse + lvl(s, 'roomyHouses')) * houses;
+  const houses = s.buildings.filter((b) => b.kind === 'house' && linked.has(b.id));
+  const stone = houses.reduce((n, b) => n + (b.stone ? 1 : 0), 0);
+  return (perk(s, 'urbanCore') ? L.urbanCore.basePop : basePop) + (popPerHouse + lvl(s, 'roomyHouses')) * houses.length +
+    CONFIG.masonsYard.stoneHouse.pop * stone;
 }
 
 export type UpgradeKind = keyof GameState['upgrades'];

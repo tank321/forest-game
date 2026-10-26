@@ -924,6 +924,7 @@ export const BUILDING_ENTRANCES: Partial<Record<BuildingKind, number>> = {
   sheepFarm: 1,
   cottonPlantation: 3,
   outpost: 1,
+  masonsYard: 1,
 };
 
 /** A road tile: the pad plus an arm for each set bit of `mask` (1 north, 2 east, 4 south, 8 west). */
@@ -1721,6 +1722,95 @@ export const BUILDING_SPRITES: Partial<Record<BuildingKind, readonly string[]>> 
     '..xxxxxxxxxxxxxxxxdddddddddddddxxxxxxxxxxxxxxxx.',
     '..................ddddddddddddd.................',
   ],
+  masonsYard: [
+    '.....oooooooooooooooooooooooooooooo.............................',
+    '....ouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRox.ooooooooooooooooox........',
+    '....ouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoxojjjjjjjjjjjjjjjjjx........',
+    '....ouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoxoLLLLLLLLLLLLLLLLLx........',
+    '.oooouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqooooooooooooooooooqooooooo.',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdhdDdddddddddLojLoqkdddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdddDdkddddddLoojLoqhdddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqddkDdddddddLodojLoqqddddqox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqhddDddddddLoddojLoqddddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdddDddddhLodddojLoqddddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdddDddddLodddhojLoqddddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdddDddddodddddojLoqddddddox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqddkDdddddddkddojLoqdddddqox',
+    '.oddouuRuuRuuRuuRuuRuuRuuRuuRuuRuuRoqdddDdddddhddhhojLoqkdddddox',
+    '.oddojjjjjjjjjjjjjjjjjjjjjjjjjjjjjjoqdddDddhdddkhddojLoqhdddddox',
+    '.oddolllllllllllllllllllllllllllllloqddqDddddddddddojLoqhdddkdox',
+    '.oddoLLlLLLlLLLlLLLlLLLlLLLlLLLlLLLoqkddDddkdddddddojLoqdddddkox',
+    '.oddoLLlLLLlLLLlLLLlLLLlLLLlLLLlLLLoqdddDdhddkdddddojLoqddddddox',
+    '.oddoLLlLLLloooooooooooooooooooooLLoqdddDdhddddddhdojLoqddddddox',
+    '.oddoooooooloDDDDDDDDDDDDDDDDDDDoLLoqddKKKdddddddddojLoqddddddox',
+    '.ohdooccccoloDDDDDDDDDDDDDDDDDDDoLLoooooooooodddhddojLoqddhddhox',
+    '.odqooccccoloDDDDDoooooooooDDDDDoLLooSSSSSSsoddddddojLoqhkdqdqox',
+    '.oddoocoocoloDDDDDoSSSSSSsoDDDDDoLLooSaaaaasoddddddojLoqqdddddox',
+    '.oddooccccoloDDDDDoSaaaaasoSDDDDoLLooSaaaaasodhddddojLoqqddddqox',
+    '.oddooccccoloDDDDDosssssssoKDDDDoLLooSaaaaasodkddkdojLoqddddddox',
+    '.oddoooooooloDDDDDoooooooooDKDDDoLLooSaaaaasohdddddojLoqdddqddox',
+    '.oddoLLlLLLloDjjjjjjjjjjjjjjjjjDoLLoosssssssodddddqojLoqddqdddox',
+    '.oddoLLlLLLloDjjjjjjjjjjjjjjjjjDoLLooooooooooddqqkdojLoqddddddox',
+    '.oddoLLlLLLloDDbbDDDDDDDDDDDbbDDoLLoqddhdddddddddqdojLoqddhdddox',
+    '.oddoLLlLLLloDDbbDDDDDDDDDDDbbDDoLLoqdddddddddddkdhojLoqdddkqdox',
+    '.oddoLLlLLLloDDbbDDDDDDDDDDDbbDDoLLoqddddhkddddqdddojLoqddddddox',
+    '.oddoLLlLLLloDDbbDDDDDDDDDDDbbDDoLLoqhdqdddddddddddojLoqdqddddox',
+    '.oddooooooooooooooooooooooooooooooooddddddddqddddddojLoqdddddkox',
+    '.okddqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqddqdkddqdddqddojLoqddddqkox',
+    '.osssdddddkdddddkhekkkekkkekWWdddddddddddddddddddddojLoqdddsssox',
+    '.oasSddddddhddddddekkkekkkekWWddddhkkkddhhddddddddhojLoqdqdaaaox',
+    '.oSaadddddddddqdddeeeeeeeeeeeeddddhddddddddddddddddojLoqdddaSsox',
+    '.osssqhdddddddddddWWekkkekkkekkddddddddddddddddddddojLoqdddsssox',
+    '.oaaSdddddkdddddddWWekkkekkkekdddddddhhdddkdqddddddojLoqhddaasox',
+    '.oaasdddqddddddkddeeeeeeeeeeeedddddddqddddddddooooooooooooosaaox',
+    '.osssddddddddddddkekWWeWkkekkkdddhddddkqddddddojjjjjjjjjjjosssox',
+    '.oaasddddhddddddddekWWeWkkekkkhdddddddddddddddoLLLLLLLLLLLoqaSox',
+    '.osaahddddhqddddddeeeeeeeeeeeedddkddhdddddhdddoLLssLssLssLoqaaox',
+    '.osssdddddddddddddkkekkkeWWWekddddkdddkkdddkqdoLLssLssLssLoqssox',
+    '.osaSddddqddddqdqdkkekkkeWWWekddddkdddddddddhdoLLssLssLssLoqaaox',
+    '.oaaakddddddddddddeeeeeeeeeeeedddddddddhddooooooooLLLLLLLLoqsaox',
+    '.osssdddddkdddddddekkkekkkekWWddddddqdddddoSSSSSsoLLLLLLLLoqssox',
+    '.oaaaddkqddkddddddekkkekkkekWWdddqdddhddddoSaaaasooooooooooqsaox',
+    '.oasSdddddoooooodkeeeeeeeeeeeedddddddddqddoSaaaasoqqqqqqqqqqaaox',
+    '.osssddddhoaaaaoddWWekkkekkkekdddddddddqddossssssodddddddddsssox',
+    '.oasSdddddoaKKZokhWWekkkekkkekhdddddddoooooooooooooooodddddaaaox',
+    '.oaaSooooooKKKZoddeeeeeeeeeeeeddddhqqkoSSSSSsooSSSSSsodddddaasox',
+    '.osssoaaaaoKKKZoddekWWeWkkekkkdddkddddoSaaaasooSaaaasodddddsssox',
+    '.oaSaoaKKoooooooddekWWeWkkekkkdddqdhhkoSaaaasooSaaaasodddddaasox',
+    '.oaasoKKKoaaaaaoddeeeeeeeeeeeekdddddddossssssoossssssodddddsaaox',
+    '.osssoooooooKKZoddkkekkkeWWWekddddoooooooooooooooooooooooodsssox',
+    '.oaasoaaaaaoKKZodkkkekkkeWWWekddddoSSSSSsooSSSSSsooSSSSSsoqsaaox',
+    '.osaaoaKKKZoKKZoddeeeeeeeeeeeeddddoSaaaasooSaaaasooSaaaasoqaaSox',
+    '.osssoKKKKZoooooddekkkekkkekWWddodoSaaaasooSaaaasooSaaaasoqsssox',
+    '.osSaoKKKKZodddKkdekkkekkkekWWhqKhossssssoossssssoossssssoqaSaox',
+    '.oaaaooooooodhdKddeeeeeeeeeeeeddKdooooooooooooooooooooooooqasaox',
+    '.ossshqqdddddddKddWWekkkekkkekddKddqqqqqqqqqqqqqqqqqqqqqqqqsssox',
+    '.osssssssssssssKddWWekkkekkkekddKsssssssssssssssssssssssssssssox',
+    '.oasSaaSsaaaasaKddeeeeeeeeeeeeddKsaaaasaSaasaSaasaaaasSSaasaaaox',
+    '.oasaaaSsaaaasaKdkekWWeWkkekkkqdKsaaSasaaaSsSaaSsSaaasaaaasaaaox',
+    '.oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooox',
+    '..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    '................................................................',
+  ],
+};
+
+/** A house rebuilt in stone at the Mason's Yard: the house's roof (slate, `STONE_HOUSE_TINT`) over dressed stone, so its snow, lights and smoke still fit. */
+export const STONE_HOUSE: readonly string[] = [
+  ...BUILDING_SPRITES.house!.slice(0, 11),
+  '..ossssssssssoxx',
+  '..oaSaasaSaasoxx',
+  '..oaDDDSaLLLLoxx',
+  '..osDLDsaLccLoxx',
+  '..oaDLDaSLLLLoxx',
+  '..oSDLDsaaSaaoxx',
+  ...BUILDING_SPRITES.house!.slice(17),
+];
+/** The stone house's slate roof, recolored over the thatch (in winter the snow covers it). */
+export const STONE_HOUSE_TINT: Record<string, Rgba> = {
+  Y: [128, 140, 156, 255], // #808c9c
+  y: [102, 114, 130, 255], // #667282
+  m: [86, 96, 112, 255], // #566070
+  v: [70, 79, 94, 255], // #464f5e
 };
 
 /** The orchard in winter: bare fruit trees with snow on their branches. */
@@ -1874,6 +1964,7 @@ export const ROOFS: Partial<Record<BuildingKind, readonly RoofSection[]>> = {
   tradingPost: [{ rows: [4, 9], snow: 'ur', shade: 'R' }],
   tailor: [{ rows: [1, 11], snow: 'pt', shade: 'P' }],
   outpost: [{ rows: [3, 12], snow: 'ur', shade: 'R' }],
+  masonsYard: [{ rows: [1, 13], snow: 'u', shade: 'R' }],
 };
 
 /** Where smoke leaves a building's chimney in winter, in art pixels from its sprite's top-left: the middle of the chimney's top. */
@@ -1944,10 +2035,11 @@ export const HOUSE_LIGHTS: readonly (readonly string[])[] = [
 
 /**
  * A building's grid and palette in a season: its seasonal grid and tint over the summer art, and in winter snow on its roof.
- * `wellFed` adds the farm's `WELL_FARM_TINTS`.
+ * `wellFed` adds the farm's `WELL_FARM_TINTS`; `art` stands in for the summer art (the stone house).
  */
-export function seasonalBuilding(kind: BuildingKind, season: Season, wellFed = false): { grid: readonly string[]; palette: Record<string, Rgba> } | undefined {
-  const art = BUILDING_SPRITES[kind];
+export function seasonalBuilding(
+  kind: BuildingKind, season: Season, wellFed = false, art = BUILDING_SPRITES[kind],
+): { grid: readonly string[]; palette: Record<string, Rgba> } | undefined {
   if (!art) return undefined;
   const { grid = art, tint } = BUILDING_SEASONS[season][kind] ?? {};
   const roof = season === 'winter' ? (ROOFS[kind] ?? []) : [];

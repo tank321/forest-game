@@ -31,21 +31,23 @@ flag does the same the moment your land reaches it and it turns red. Nothing sto
 when buildings or forest cut the tree off (a strip of land sealed in behind a row of farms, say), it walks straight over
 them to get there and back, and it walks out the same way if it is left stranded. Tap a building to select it:
 the Town Center hires villagers (with wood, food or cloth), a Lumber Camp upgrades the axe, a Barn
-upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
+upgrades farms, orchards, sheep farms and cotton plantations, a Quarry upgrades picks, a Tailor upgrades shoes, backpacks and coats, a Market trades goods for gold, a Mason's Yard sells roads. A selected building that gathers shows what it has produced or collected so far. Esc cancels.
 While placing a building, **Cancel**, Escape or a right-click anywhere stops placing it.
 On a touch screen, placing or moving a building or road is aimed first: its footprint starts in view (on the
 building being moved, or in the middle of the map), dragging a finger moves it, and tapping elsewhere puts it there.
 Tap the footprint itself to place it. Pinch or two fingers pan and zoom meanwhile.
-On a phone the menu is a row of icons, the build menu is one row of cards you swipe sideways, and the arrow on its
-heading folds it down to the heading (remembered in this browser) so the map gets the screen; tap it again to bring it back.
+On a phone the menu is a row of icons, and the build menu is a hotbar: one row of building icons you swipe sideways,
+with roads left on the Road tile. A building you can't afford yet is dimmed, with a bar filling toward its cost. Tap one
+to aim it, which shows its name, full cost, what is short and what it does (✕ cancels). The arrow beside the hotbar
+switches to the cards with names and costs, and back (remembered in this browser).
 
 At the start the build menu has only the House, Lumber Camp, Barn and Farm. Every other building is
 unlocked by its own skill from a relic (Quarrying, Wells, Orchards, Sheep Farms, Tailoring, Cotton Fields, Markets,
-Tax Offices, Trading Posts) and joins the build menu once learned.
+Tax Offices, Trading Posts, Mason's Yard) and joins the build menu once learned.
 **Guide** (in the menu under the panel) lists every building with a one-line description, its size,
 workers, drop-offs and road needs. Locked buildings are dimmed and name the skill that unlocks them.
 **Achievements** pop up as toasts while you play; higher tiers and secrets get a bigger, longer one. The sidebar
-shows the achievement you are closest to; tap it (or **Achievements** in the menu) to see every one with its progress.
+(on wider screens) shows the achievement you are closest to; tap it (or **Achievements** in the menu) to see every one with its progress.
 Each one plays a bell chime; the speaker button in the menu turns sound off or on.
 **Music** plays in the background and follows the season: each has its own chords, tempo and instruments, crossfading as the
 season turns. The note button in the menu turns it off or on. Audio starts after your first tap or key press, and the music pauses while the tab is hidden.
@@ -62,7 +64,7 @@ already running pauses and resumes after). Every boost shows under the chest wit
 Town Center; the Well needs no road. An isolated building is tinted grey and counts for nothing: no
 workers, no deliveries, no population or tax, no trading. Choose **Road** in the build menu, then tap or
 drag over cleared land to lay road; start a drag on a road to lift it. **Done**, Escape or
-a right-click ends road mode. Roads come from a stock of 12 plus 3 per house, and lifted roads return to it.
+a right-click ends road mode. Roads come from a stock of 12 plus 3 per house (and any bought at the Mason's Yard), and lifted roads return to it.
 Tap a road to select it: **Move** it to another cleared tile, or **Sell** it back to the road stock.
 Roads not yet joined to the Town Center are drawn darker. While placing a building, yellow means it can
 stand there but needs a road. Villagers prefer connected roads when walking (at the same speed).
@@ -85,8 +87,8 @@ unlock with an achievement tier, stay unlocked across rebuilds, and show in silh
 you have earned, and **Town decorations** switches back. Each costs a little and comes back in full. 1×1 pieces are painted like road (tap or
 drag; start a drag on one of that kind to lift them); bigger ones are placed like a building. Fences, hedges, walls and
 paths join the ones beside them, and props can stand on paving, paths, the square and the garden. **Done**, Escape or a right-click ends placing. Tap a
-decoration to **Move** or **Remove** it (or hold a finger on it to pick it up). Villagers walk straight over them, and
-building or laying road over one hands it back. A new map after a rebuild starts without them.
+decoration to **Move** or **Remove** it (or hold a finger on it to pick it up). Villagers walk straight over them, but
+buildings and roads can't be put on one: remove it first. A new map after a rebuild starts without them.
 
 **Food:** a Farm (3×3) takes one empty-handed lumberjack as its farmer; farmers deliver food to
 the Town Center or the nearest Barn (2×2). Pause a farm to give its farmer back. A **Fruit Orchard** (5×5; wood, stone and cloth)
@@ -98,7 +100,11 @@ food-priced villagers, houses from the 4th, and late axe/farm upgrade levels.
 carry stone to the Town Center. Pause a quarry to give its miners back. Stone pays for axe/farm
 levels 7–10, pick upgrades, houses from the 7th, and Wells. A **Well** (1×1) makes every farm
 within 1 tile harvest ×3 and carry ×2 (wells don't stack). A boosted farm looks irrigated: damp soil, lusher crops
-and water channels between the beds, frozen in winter. A Well that is selected, being placed or being moved shows its reach as a dashed blue square, and while placing it the farms it would boost are outlined in blue. Once **Camp Crews** is learned, a Lumber Camp shows the 3 tiles around it where lumberjacks chop ×1.5 the same way, as a dashed gold square.
+and water channels between the beds, frozen in winter. The **Mason's Yard** (4×4, one per town; Masons, once 4 levels
+are learned in Mining) takes stone too, so miners from a nearby Quarry deliver there. Select it to **Buy a road** for the
+road stock (100 stone, each road bought ×1.5 the last). While it is connected, a selected house can be **Rebuilt in stone**
+(200 wood and 150 stone, each stone house ×1.35 the last): a slate-roofed stone house holds 2 more villagers, keeps its
+stone when moved, and half the upgrade comes back if it is removed. Masons discounts the stone in both. A Well that is selected, being placed or being moved shows its reach as a dashed blue square, and while placing it the farms it would boost are outlined in blue. Once **Camp Crews** is learned, a Lumber Camp shows the 3 tiles around it where lumberjacks chop ×1.5 the same way, as a dashed gold square.
 
 **Cloth:** a Sheep Farm (3×3) takes one empty-handed lumberjack as its herder; the herder
 gathers cloth and carries it to the Town Center or the nearest Barn. A **Cotton Plantation** (6×6,
@@ -172,7 +178,7 @@ buttons in the corner and the + and − keys. A link turns solid once its parent
 (or tap it, on phones) for a popup beside it with its current and next-level bonus; skills on offer from a relic
 glow, and clicking one (tapping it a second time on phones) learns it right there. Keyboard users can tab through
 skills (the view and the popup follow focus) and learn an offered one with Enter or Space. **Legacy** opens the Legacy perk tree;
-it turns gold once you have learned enough skill levels to rebuild: 15 on the first run, 5 more after each of the first two rebuilds, then 10 more after each one (15, 20, 25, 35, 45 …), up to every skill learned (92). Pick an available perk and click **Rebuild** twice
+it turns gold once you have learned enough skill levels to rebuild: 15 on the first run, 5 more after each of the first two rebuilds, then 10 more after each one (15, 20, 25, 35, 45 …), up to every skill learned (93). Pick an available perk and click **Rebuild** twice
 to start over on a new map with that perk kept forever. A relic offers 3 skills to choose from, one more after each rebuild
 up to 5 (6 with Relic Hunters). **Export/Import** move
 saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** multiplies your taps ×1/×10/×100/×1000,
@@ -202,6 +208,37 @@ saves as JSON files. In `npm run dev` a row of DEV buttons appears: **Tap** mult
 - `.github/workflows/deploy.yml` – tests, builds and publishes to GitHub Pages on every push to `main`
 
 ## Changelog
+**v54** – The Mason's Yard, and one Market per town.
+- **Mason's Yard** (4×4, one per town): a new Mining skill under Masons, offered once 4 levels are learned in Mining,
+  unlocks it for 3000 wood and 800 stone. It is a stone drop-off, so it pays to build it near your Quarries, and it
+  needs a road to the town. Select it to buy roads one at a time: 100 stone for the first, each ×1.5 the last.
+- **Stone houses:** while a Mason's Yard is connected, select a house and **Rebuild in stone** (200 wood and 150 stone,
+  ×1.35 for each stone house already standing) for room for 2 more villagers. Stone houses get stone walls and a slate
+  roof, stay stone when moved or when the Yard is gone, and refund half the upgrade with the house. Masons discounts the
+  stone in roads and stone houses alike.
+- Two achievements: Chip off the Old Block (build a Mason's Yard) and Set in Stone (rebuild a house in stone).
+- Out of roads, the message points to the Mason's Yard once it is unlocked. A selected house says how many it holds.
+- Save v30: no roads bought yet.
+- Like the Tailor and the Frontier Outpost, only one Market may stand: once it is built it leaves the build menu, and
+  it returns if the Market is removed. Its price no longer climbs (500 wood, 50 stone). Towns that already have more
+  than one keep them.
+- Buildings and roads can no longer be placed or moved onto decorations, which used to vanish under them (their cost
+  came back, unannounced). The spot shows red and asks you to remove the decorations first.
+- On a touch screen, tapping a relic no longer picks a skill by itself: the tap that opened the menu also landed on
+  the card under your finger.
+- A finished Guild Contract's "Claim" line and reward are dark on its gold button, where they were unreadable.
+- The Guild Contract board never posts a contract it already has (at most one "Reach N villagers", one "Fell", and one
+  "Gather" per resource). "Reach" contracts used to pile up while houses were full, until the board held three of the
+  same one, all finished by a single milestone. Save v29 drops the repeats, and the board refills at the next season.
+- On a phone the sidebar no longer shows the next-up achievement, leaving more room for the map and panel.
+  **Achievements** in the menu still lists them all.
+- On a phone the build menu is a hotbar: one row of icon tiles without the heading, about a third the height of the old
+  cards, so the map gets more of the screen. A tile you can't afford yet is dimmed, with a bar showing how close you
+  are, and the Road tile shows how many roads are left. Tapping any tile aims it, and the panel then shows its name,
+  full cost (shortfalls in red), what is missing and what it does, with ✕ to cancel. The arrow beside the hotbar now
+  switches to the named cards with costs and back, instead of folding the menu away.
+- Tapping to place a building you can no longer afford says "Not enough for a …" instead of "Can't build there".
+
 **v53** – More decorations, and trophies get their own page.
 - The decoration palette is split in two: the town decorations, and the five trophies. A **Trophies** button beside
   **Back** (showing how many you have earned) switches to them, and **Town decorations** switches back.

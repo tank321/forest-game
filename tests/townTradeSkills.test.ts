@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addBuilding, atLimit } from '../src/core/buildings';
 import { claimContract, hireVillager, placeBuilding, takeDeal } from '../src/core/commands';
 import { commission, gain } from '../src/core/economy';
+import { fillContracts, sameAsk } from '../src/core/guild';
 import { linkedBuildings, roadStock } from '../src/core/roads';
 import { deserialize, serialize } from '../src/core/save';
 import { simulate } from '../src/core/sim';
@@ -137,6 +138,31 @@ describe('settlement and trade skills', () => {
     delete old.state.caravan;
     const { state } = deserialize(JSON.stringify(old));
     expect([state.contracts, state.caravan]).toEqual([[], null]);
+  });
+
+  it('the contract board never asks for the same thing twice, so one milestone pays once; v28 saves drop repeats', () => {
+    const w = smallWorld(30, 2);
+    const s = w.state;
+    s.nextRelicAt = Infinity;
+    s.skills = { guildContracts: 1 };
+    withMarket(w);
+    const repeats = () => s.contracts.some((c, k) => s.contracts.slice(0, k).some((d) => sameAsk(c, d)));
+    for (let round = 0; round < 200; round++) {
+      fillContracts(s);
+      expect(repeats()).toBe(false);
+      const k = round % 3;
+      s.contracts[k] = { ...s.contracts[k], need: 0 }; // finished, so it can be claimed and replaced
+      expect(claimContract(w, k)).toBe(true);
+      expect(repeats()).toBe(false);
+      expect(s.contracts.filter((d) => d.kind === 'grow').length).toBeLessThanOrEqual(1);
+    }
+
+    const grow = { kind: 'grow', need: 71, reward: 585 } as const;
+    const wood = { kind: 'gather', res: 'wood', need: 50, base: 0, reward: 40 } as const;
+    s.contracts = [grow, { ...grow }, wood, { ...wood, need: 60 }, { ...wood, res: 'food' }];
+    const old = JSON.parse(serialize(s, 1));
+    old.version = 28;
+    expect(deserialize(JSON.stringify(old)).state.contracts).toEqual([grow, wood, { ...wood, res: 'food' }]);
   });
 
   it('the Merchant Caravan comes as winter begins, trades one deal, and leaves at spring, at any step size', () => {

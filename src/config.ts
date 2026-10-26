@@ -122,6 +122,12 @@ export const CONFIG = {
   // Extra pack mules bought at a Trading Post: at most `max` per post (its first included); the k-th bought in the town
   // (counting every post's) costs `cost` × growth^k, a little less than each pays back as it grows
   mules: { max: 5, cost: { wood: 400, food: 150, gold: 100 }, growth: 1.6 },
+  // Mason's Yard: roads for the stock, each costing ×growth the last; stone houses hold `pop` more villagers,
+  // each costing ×growth the last (Masons discounts the stone in both)
+  masonsYard: {
+    road: { cost: { stone: 100 }, growth: 1.5 },
+    stoneHouse: { pop: 2, cost: { wood: 200, stone: 150 }, growth: 1.35 },
+  },
   // Prestige: rebuild once base skill levels are learned, `step` more for each of the first `steady` rebuilds and
   // `later` more for each one after (capped at every skill maxed)
   legacy: {
@@ -144,7 +150,7 @@ export const CONFIG = {
   },
   skills: {
     masteryLevels: 8, // levels learned in a track before its Mastery is offered
-    gates: { orchards: 4, cottonFields: 5, greenhouses: 4, teamwork: 4, taxOffices: 3, guildContracts: 5, growingFamilies: 4 }, // levels learned in its track before this skill is offered
+    gates: { orchards: 4, cottonFields: 5, greenhouses: 4, teamwork: 4, taxOffices: 3, guildContracts: 5, growingFamilies: 4, masonsYard: 4 }, // levels learned in its track before this skill is offered
     // Per-level bonuses of the stat skills: few levels, each a big step
     sharpAxes: 0.5, // villager chop speed bonus per level
     bigBaskets: 5, // villager carry per level, before upgrade multipliers
@@ -208,7 +214,7 @@ export const CONFIG = {
   // zoom = CSS px per tile; carry tags show from carryZoom; glideMs pans to a new relic; a touch held still for holdMs marks a tree;
   // grabPad = tiles of slack around a placement footprint for a finger
   camera: { startZoom: 40, maxZoom: 72, tapSlop: 6, carryZoom: 48, glideMs: 900, holdMs: 450, grabPad: 0.3 },
-  buildMenu: { key: 'forest-game-build-menu' }, // browser storage key: "hidden" while the build menu is folded away on a phone
+  buildMenu: { key: 'forest-game-build-menu' }, // browser storage key: "full" while a phone's build menu shows named cards, not the hotbar
   // browser storage key for the tutorial's step (or "done"); oldKey held the 8-step tutorial's, up to v38
   tutorial: { key: 'forest-game-tutorial-2', oldKey: 'forest-game-tutorial' },
   save: { key: 'forest-game-save', intervalMs: 10_000 },

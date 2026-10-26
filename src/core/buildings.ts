@@ -77,13 +77,15 @@ export const BUILDINGS = {
     cost: () => ({ wood: 800, cloth: 60 }),
   }),
   well: def({ w: 1, h: 1, road: false, unlock: 'wells', cost: (n) => ({ wood: Math.round(150 * 1.5 ** n), stone: Math.round(40 * 1.5 ** n) }) }),
+  // Market: one serves the whole town (trade, contracts, the caravan).
   market: def({
     w: 2,
     h: 2,
     dropoff: ['gold'],
     cityNeighbor: true,
     unlock: 'markets',
-    cost: (n) => ({ wood: Math.round(500 * 1.5 ** n), stone: Math.round(50 * 1.5 ** n) }),
+    limit: 1,
+    cost: () => ({ wood: 500, stone: 50 }),
   }),
   taxOffice: def({
     w: 2,
@@ -100,6 +102,15 @@ export const BUILDINGS = {
     h: 2,
     unlock: 'tradingPosts',
     cost: (n) => ({ wood: Math.round(600 * 1.5 ** n), food: Math.round(150 * 1.5 ** n) }),
+  }),
+  // Mason's Yard: a stone drop-off that sells roads and rebuilds houses in stone (see commands.ts).
+  masonsYard: def({
+    w: 4,
+    h: 4,
+    dropoff: ['stone'],
+    unlock: 'masonsYard',
+    limit: 1,
+    cost: () => ({ wood: 3000, stone: 800 }),
   }),
   // Frontier Outpost: a second hub, anywhere on cleared land. Takes every resource and roots its own roads (see roads.ts).
   outpost: def({
@@ -133,7 +144,7 @@ export const HUB_KINDS: readonly BuildingKind[] = ['townCenter', 'outpost'];
 /** A workplace that works only while a building of the other kind exists. */
 export const NEEDS: Partial<Record<BuildingKind, BuildingKind>> = { tradingPost: 'market' };
 
-/** Whether as many of this kind stand as its `limit` allows (the Tailor, the Outpost). */
+/** Whether as many of this kind stand as its `limit` allows (the Tailor, the Market, the Outpost). */
 export const atLimit = (s: Pick<GameState, 'buildings'>, kind: BuildingKind) => {
   const limit: number | undefined = (BUILDINGS[kind] as BuildingDef).limit;
   return limit !== undefined && countOf(s, kind) >= limit;

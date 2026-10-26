@@ -4,12 +4,13 @@ import type { BoostKind, ChestReward, ChestState } from './chest';
 import { buildingCost } from './economy';
 import type { BuildingKind } from './buildings';
 import { isChoppable } from './grid';
+import { sameAsk } from './guild';
 import { newLegacy } from './legacy';
 import { relicGap } from './relics';
 import { SKILLS, type SkillId } from './skills';
 import { Tile, type GameState, type Resources } from './types';
 
-const VERSION = 28;
+const VERSION = 30;
 
 type Serialized = Omit<GameState, 'tiles' | 'wood'> & { tiles: number[]; wood: number[] };
 interface SaveFile {
@@ -225,6 +226,14 @@ const migrations: Record<number, (f: SaveFile) => SaveFile> = {
   26: (f) => ({ ...f, version: 27, state: { ...f.state, births: 0 } }),
   // v28 adds decorations.
   27: (f) => ({ ...f, version: 28, state: { ...f.state, decor: [] } }),
+  // v29 keeps the contract board free of repeats: a contract asking for the same as an earlier one is dropped,
+  // and the board fills up again at the next season.
+  28: (f) => {
+    const contracts = f.state.contracts.filter((c, k, all) => !all.slice(0, k).some((d) => sameAsk(c, d)));
+    return { ...f, version: 29, state: { ...f.state, contracts } };
+  },
+  // v30 adds the Mason's Yard: no roads bought yet (and no stone houses, an optional field).
+  29: (f) => ({ ...f, version: 30, state: { ...f.state, roadsBought: 0 } }),
 };
 
 /** Max levels of the skills v26 shortened. */

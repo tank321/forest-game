@@ -53,6 +53,8 @@ import {
   seasonalBuilding,
   seasonalDecor,
   SPRITE_W,
+  STONE_HOUSE,
+  STONE_HOUSE_TINT,
   STUMP,
   TREE_PALETTE,
   TREE_SPECIES,
@@ -129,6 +131,7 @@ const BUILDING_COLOR: Record<BuildingKind, string> = {
   market: '#b23b2e',
   taxOffice: '#9aa3ac',
   tradingPost: '#8f7149',
+  masonsYard: '#a9a196',
 };
 /** Health bar over a chopped tree, in art pixels from the tile's top-left (outline included). */
 const BAR = { x: 2, y: 3, w: 12, h: 4 };
@@ -170,6 +173,11 @@ export class Renderer {
         return [kind, bake(grid, palette, 1)];
       }),
     ) as Partial<Record<BuildingKind, HTMLCanvasElement>>;
+  });
+  /** Baked house sprite per season for a house rebuilt in stone. */
+  private stoneHouseSprites = SEASONS.map((season) => {
+    const { grid, palette } = seasonalBuilding('house', season, false, STONE_HOUSE)!;
+    return bake(grid, { ...palette, ...STONE_HOUSE_TINT }, 1);
   });
   /** Baked farm sprite per season for a farm a Well boosts: irrigated fields. */
   private wellFarmSprites = SEASONS.map((season) => {
@@ -691,7 +699,7 @@ export class Renderer {
       ctx.fillRect(sx, sy, (d.w - 0.1) * k, (d.h - 0.1) * k);
     };
     const season = this.seasonAt(s.time, b.y * s.w + b.x);
-    const sprite = wellFed ? this.wellFarmSprites[season] : this.buildingSprites[season][b.kind];
+    const sprite = wellFed ? this.wellFarmSprites[season] : b.stone ? this.stoneHouseSprites[season] : this.buildingSprites[season][b.kind];
     if (sprite) {
       const [sx, sy] = cam.toScreen(b.x, b.y - OVERHANG);
       ctx.drawImage(sprite, sx, sy, d.w * k, (d.h + OVERHANG) * k);

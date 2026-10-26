@@ -54,7 +54,7 @@ export function skillBonus(id: SkillId, level: number): string {
     case 'packMules': return `+${25 * level}% gold per trade trip`;
     case 'shrewdTraders': return `${Math.round(100 * commission({ skills: { shrewdTraders: level }, legacy: newLegacy(), time: 0 }))}% market commission`;
     case 'quarrying': case 'wells': case 'orchards': case 'sheepFarms': case 'tailoring': case 'cottonFields':
-    case 'markets': case 'taxOffices': case 'tradingPosts':
+    case 'markets': case 'taxOffices': case 'tradingPosts': case 'masonsYard':
       return `${BUILDING_TEXT[unlocks(id)!].name} ${level ? 'unlocked' : 'not yet buildable'}`;
     case 'sweepingStrike': return level ? `Taps also hit the trees around for ${CONFIG.skills.sweep * 100}%` : 'Taps hit one tree';
     case 'momentum': return `Combo up to +${Math.round(CONFIG.skills.combo.capPerLevel * 100 * level)}%`;

@@ -64,6 +64,7 @@ export const SKILLS = {
   markets: { max: 1 },
   taxOffices: { max: 1 },
   tradingPosts: { max: 1 },
+  masonsYard: { max: 1 },
 } as const satisfies Record<string, { max: number }>;
 export type SkillId = keyof typeof SKILLS;
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
@@ -74,7 +75,7 @@ export const TRACKS = {
   settlement: ['swiftFeet', 'bigBaskets', 'errandRunners', 'wellFed', 'roomyHouses', 'recruiters', 'growingFamilies', 'masterBuilders', 'surveyors', 'frontierOutpost'],
   farming: ['greenThumbs', 'wells', 'deepWells', 'cropRotation', 'farmhands', 'orchards', 'rootCellars', 'greenhouses', 'harvestFestival'],
   herding: ['sheepFarms', 'openPastures', 'shearingDay', 'fertileHerding', 'goldenFleece', 'tailoring', 'weavers', 'cottonFields', 'grazingFlocks'],
-  mining: ['quarrying', 'stonecutters', 'quarryCrews', 'deepShafts', 'masons', 'cobblestone', 'richVeins', 'geodes', 'dynamite'],
+  mining: ['quarrying', 'stonecutters', 'quarryCrews', 'deepShafts', 'masons', 'cobblestone', 'masonsYard', 'richVeins', 'geodes', 'dynamite'],
   trade: ['markets', 'tradingPosts', 'packMules', 'tollRoads', 'taxOffices', 'taxCollectors', 'deputies', 'guildContracts', 'shrewdTraders', 'midsummerFair', 'merchantCaravans'],
 } as const satisfies Record<string, readonly SkillId[]>;
 export type Track = keyof typeof TRACKS;
@@ -120,6 +121,7 @@ const PARENT: Partial<Record<SkillId, SkillId>> = {
   deepShafts: 'stonecutters',
   masons: 'quarrying',
   cobblestone: 'masons',
+  masonsYard: 'masons',
   richVeins: 'quarrying',
   geodes: 'richVeins',
   tradingPosts: 'markets',

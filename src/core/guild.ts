@@ -20,17 +20,25 @@ export function contractProgress(s: GameState, c: Contract): number {
 
 export const contractDone = (s: GameState, c: Contract) => contractProgress(s, c) >= c.need;
 
+/** Whether two contracts ask for the same thing (the same kind, and for Gather the same resource). */
+export const sameAsk = (a: Contract, b: Contract) => a.kind === b.kind && (a.kind !== 'gather' || a.res === (b as typeof a).res);
+
 /**
  * A new contract, sized to a few minutes of the town's lifetime average rate and paid the market value of
  * what it asks for: the goods themselves, the wood in the trees, or the wood price of the hires.
+ * It never repeats one of `others` (the rest of the board), so one milestone can't finish two contracts at once.
+ * With at most two others there is always something left: wood to gather, trees to fell or villagers to grow.
  */
-export function newContract(s: GameState): Contract {
+export function newContract(s: GameState, others: readonly Contract[]): Contract {
   const k = CONFIG.skills.contracts;
   const [lo, hi] = k.minutes;
   const seconds = 60 * (lo + Math.floor(rand(s) * (hi - lo + 1)));
-  const kind = pick(s, ['gather', 'gather', 'fell', 'grow'] as const);
+  const gatherable = produced(s).filter((res) => !others.some((c) => c.kind === 'gather' && c.res === res));
+  const kinds = (['gather', 'gather', 'fell', 'grow'] as const).filter((kind) =>
+    kind === 'gather' ? gatherable.length > 0 : !others.some((c) => c.kind === kind));
+  const kind = pick(s, kinds);
   if (kind === 'gather') {
-    const res = pick(s, produced(s));
+    const res = pick(s, gatherable);
     const need = Math.max(k.min.gather, Math.round(rate(s, res) * seconds));
     return { kind, res, need, base: s.totals[res], reward: Math.round(need * CONFIG.market.prices[res] * k.rewardMult) };
   }
@@ -45,7 +53,7 @@ export function newContract(s: GameState): Contract {
 
 /** Tops the board up to `CONFIG.skills.contracts.board` contracts. */
 export function fillContracts(s: GameState): void {
-  while (s.contracts.length < CONFIG.skills.contracts.board) s.contracts.push(newContract(s));
+  while (s.contracts.length < CONFIG.skills.contracts.board) s.contracts.push(newContract(s, s.contracts));
 }
 
 /** The Merchant Caravan's deals: buy a resource cheap or sell one dear, sized to minutes of the town's average rate. */

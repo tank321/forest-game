@@ -105,31 +105,32 @@ describe('decorations', () => {
     expect(removeDecor(w, -1, 'ground')).toBe(false);
   });
 
-  it('are handed back when a building or road takes their tile', () => {
+  it('keep buildings and roads off their tiles until they are removed', () => {
     const w = yard();
     const s = w.state;
     placeDecor(w, 'paving', 7, 6);
     placeDecor(w, 'bench', 7, 6);
     placeDecor(w, 'flowerBed', 9, 6);
     placeDecor(w, 'pond', 6, 15);
-    placeDecor(w, 'lamp', 12, 6);
     const before = { ...s.resources };
+    const decor = structuredClone(s.decor);
 
-    expect(placeBuilding(w, 'lumberCamp', 6, 6)).toBe(true); // covers (7, 6): paving and bench go back
+    expect(placeBuilding(w, 'lumberCamp', 6, 6)).toBe(false); // would cover (7, 6)
+    expect(placeBuilding(w, 'lumberCamp', 11, 6)).toBe(true);
     const camp = s.buildings.at(-1)!;
-    expect(s.decor.map((d) => d.kind)).toEqual(['flowerBed', 'pond', 'lamp']);
-    expect(s.resources.stone).toBe(before.stone + DECOR.paving.cost.stone!);
-    expect(s.resources.wood).toBe(before.wood + DECOR.bench.cost.wood! - camp.paidCost.wood!);
-
-    expect(moveBuilding(w, camp.id, 8, 6)).toBe(true); // onto the flower bed
-    expect(s.decor.map((d) => d.kind)).toEqual(['pond', 'lamp']);
-
-    expect(placeRoad(w, at(w, 7, 16))).toBe(true); // a corner of the pond
-    expect(s.decor.map((d) => d.kind)).toEqual(['lamp']);
+    expect(moveBuilding(w, camp.id, 8, 6)).toBe(false); // onto the flower bed
+    expect(placeRoad(w, at(w, 7, 16))).toBe(false); // a corner of the pond
     expect(placeRoad(w, at(w, 14, 6))).toBe(true);
-    expect(moveRoad(w, at(w, 14, 6), at(w, 12, 6))).toBe(true);
-    expect(s.decor).toEqual([]);
-    expect(s.resources.stone).toBe(before.stone + DECOR.paving.cost.stone! + DECOR.pond.cost.stone! + DECOR.lamp.cost.stone!);
+    expect(moveRoad(w, at(w, 14, 6), at(w, 9, 6))).toBe(false);
+    expect(s.decor).toEqual(decor); // nothing was taken up or refunded
+    expect(s.resources.stone).toBe(before.stone);
+
+    expect(removeDecor(w, at(w, 9, 6), 'ground')).toBe(true);
+    expect(moveBuilding(w, camp.id, 8, 6)).toBe(true);
+    expect(removeDecor(w, at(w, 7, 6), 'prop')).toBe(true);
+    expect(placeRoad(w, at(w, 7, 6))).toBe(false); // the paving is still there
+    expect(removeDecor(w, at(w, 7, 6), 'ground')).toBe(true);
+    expect(placeRoad(w, at(w, 7, 6))).toBe(true);
   });
 
   it('change nothing in the simulation', () => {
